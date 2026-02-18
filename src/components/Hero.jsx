@@ -59,7 +59,7 @@ function Navbar() {
           justify-content: center;
           align-items: center;
           gap: 10px;
-          z-index: 100;
+          z-index: 50;
         }
 
         .nav-pill {
@@ -178,7 +178,7 @@ function Navbar() {
           white-space: nowrap;
         }
 
-        .resume-pill:hover { background: #F6F6F6; }
+        .resume-pill:hover { background: #111111; color: #fff; transition: background 1.20s ease, color 0.15s ease; }
       `}</style>
 
       <div className="navbar-wrapper">
@@ -403,6 +403,7 @@ export default function Hero() {
             right: "9.5%",
             transform: "translateY(-50%)",
             marginTop: "20px",
+            zIndex: 10,
           }}
         >
           <div style={{ marginBottom: 20, overflow: "hidden" }}>
