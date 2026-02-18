@@ -26,6 +26,7 @@ function SplitText({ line, delay = 0 }) {
           style={{
             display: "inline-block",
             verticalAlign: "bottom",
+            overflow: "hidden", /* clip per-word so animation works without clipping parent */
           }}
         >
           <span
@@ -69,7 +70,6 @@ function Navbar() {
           background: #FFFFFF;
           border: 1.5px solid #D4D4D4;
           border-radius: 14px;
-          /* Tighter right padding so icons don't feel pushed too far left */
           padding: 0 8px 0 14px;
           width: 480px;
         }
@@ -106,7 +106,6 @@ function Navbar() {
 
         .nav-spacer { flex: 1; }
 
-        /* Icons sit flush as a group, evenly spaced */
         .nav-icons {
           display: flex;
           align-items: center;
@@ -125,18 +124,15 @@ function Navbar() {
           cursor: pointer;
         }
 
-        /* Default: near-black icons */
         .nav-icon-img {
           transition: filter 0.18s ease;
           filter: invert(10%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);
         }
 
-        /* Hover: exactly #7b7b7b — pure mid-grey, no color tint */
         .nav-icon-wrap:hover .nav-icon-img {
           filter: invert(48%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);
         }
 
-        /* Tooltip */
         .nav-label {
           position: absolute;
           top: calc(100% + 8px);
@@ -178,7 +174,11 @@ function Navbar() {
           white-space: nowrap;
         }
 
-        .resume-pill:hover { background: #111111; color: #fff; transition: background 1.20s ease, color 0.15s ease; }
+        .resume-pill:hover {
+          background: #111111;
+          color: #fff;
+          transition: background 1.20s ease, color 0.15s ease;
+        }
       `}</style>
 
       <div className="navbar-wrapper">
@@ -190,16 +190,13 @@ function Navbar() {
               <span>Aadhith</span>
             </div>
           </div>
-
           <div className="nav-spacer" />
-
           <div className="nav-icons">
             <NavIcon src="/Home icon.png" alt="Home" label="Home" href="#home" />
             <NavIcon src="/Project icon.png" alt="Projects" label="Projects" href="#projects" />
             <NavIcon src="/Contact icon.png" alt="Contact" label="Contact" href="#contact" />
           </div>
         </div>
-
         <a className="resume-pill" href="#resume">Resume</a>
       </div>
     </>
@@ -239,12 +236,13 @@ export default function Hero() {
     <>
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
         html, body {
           width: 100%;
           height: 100%;
-          background: #fff;
           overflow-x: hidden;
         }
+
         body {
           font-family: -apple-system, "SF Pro Text", BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
           -webkit-font-smoothing: antialiased;
@@ -261,13 +259,11 @@ export default function Hero() {
           100% { background-position:  200% center; }
         }
 
-        /* Scroll button: fade up in, then gently bounces */
         @keyframes scrollEntry {
           from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* Badge */
         .available-badge {
           display: inline-block;
           padding: 10px 24px;
@@ -318,14 +314,12 @@ export default function Hero() {
           text-rendering: optimizeLegibility;
         }
 
-        /* Scroll button wrapper — entry only */
         .scroll-btn-wrapper {
           animation: scrollEntry 0.8s cubic-bezier(0.16,1,0.3,1) 1100ms both;
         }
 
         .scroll-btn {
           display: inline-flex;
-          overflow: hidden;
           padding: 0;
           border: 1.5px solid #C2C2C2;
           border-radius: 24px;
@@ -352,7 +346,6 @@ export default function Hero() {
           letter-spacing: -0.005em;
         }
 
-        /* Small downward chevron */
         .scroll-chevron {
           display: inline-block;
           width: 9px;
@@ -364,18 +357,20 @@ export default function Hero() {
         }
       `}</style>
 
+      {/* Hero wrapper — no overflow:hidden so absolute children + animations work freely */}
       <div
         style={{
           position: "relative",
           width: "100%",
           height: "100vh",
-          background: "#FFFFFF",
-          overflow: "hidden",
+          background: "#ffffff",
+          borderRadius: "inherit", /* inherit border-radius from sticky parent for card effect */
+          overflow: "hidden",      /* clip the rounded corners only, not the animations */
         }}
       >
         <Navbar />
 
-        {/* Ghost */}
+        {/* Ghost — parallax */}
         <div
           style={{
             position: "absolute",
@@ -406,6 +401,7 @@ export default function Hero() {
             zIndex: 10,
           }}
         >
+          {/* Badge — slides up */}
           <div style={{ marginBottom: 20, overflow: "hidden" }}>
             <span
               style={{
@@ -419,6 +415,7 @@ export default function Hero() {
             </span>
           </div>
 
+          {/* Headline */}
           <h1 className="hero-headline">
             <span style={{ display: "block" }}>
               <SplitText line="Exceptional design" delay={280} />
