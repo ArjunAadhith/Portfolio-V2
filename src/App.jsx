@@ -1,5 +1,6 @@
 import Hero from "./components/Hero.jsx";
 import About from "./components/About.jsx";
+import Skills from "./components/Skills.jsx";
 import { useEffect } from "react";
 
 export default function App() {
@@ -56,6 +57,7 @@ export default function App() {
         }}
       >
         <About />
+        <Skills />
       </div>
 
     </div>
