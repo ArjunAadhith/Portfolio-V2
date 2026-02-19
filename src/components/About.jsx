@@ -217,12 +217,6 @@ export default function About() {
           padding-bottom: 6px;         /* breathing room for "j" */
         }
 
-        /* ── Shuffle name + static comma wrapper ── */
-        /*
-         * We wrap only "Arjun Aadhith" inside <Shuffle>.
-         * The comma "," lives OUTSIDE the Shuffle as plain text
-         * so it is always fully visible and never shuffled.
-         */
         .hname-shuffle-wrap {
           display: inline-flex;
           align-items: baseline;
@@ -255,7 +249,6 @@ export default function About() {
           line-height: 1.06;
           letter-spacing: -0.03em;
           -webkit-font-smoothing: antialiased;
-          /* no margin — sits right after the shuffle text */
         }
 
         /* Override Shuffle component defaults to match heading style */

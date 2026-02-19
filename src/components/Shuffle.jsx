@@ -7,6 +7,10 @@ import './Shuffle.css';
 
 gsap.registerPlugin(ScrollTrigger, GSAPSplitText, useGSAP);
 
+// Extra bottom padding (px) added to every char wrapper so descenders
+// (j, g, y, p, q …) are never clipped by overflow:hidden.
+const DESCENDER_PAD = 12;
+
 const Shuffle = ({
   text,
   className = '',
@@ -117,56 +121,71 @@ const Shuffle = ({
         const rolls = Math.max(1, Math.floor(shuffleTimes));
         const rand = set => set.charAt(Math.floor(Math.random() * set.length)) || '';
 
+        const isVertical = shuffleDirection === 'up' || shuffleDirection === 'down';
+
         chars.forEach(ch => {
           const parent = ch.parentElement;
           if (!parent) return;
 
-          const w = ch.getBoundingClientRect().width;
-          const h = ch.getBoundingClientRect().height;
+          const rect = ch.getBoundingClientRect();
+          const w = rect.width;
+          const h = rect.height;
           if (!w) return;
 
+          // ── Wrapper ──────────────────────────────────────────────────────
+          // We increase the height by DESCENDER_PAD and use a negative
+          // margin-bottom of the same amount so surrounding layout is
+          // unaffected, while the overflow:hidden window is tall enough
+          // to show the full descender stroke.
           const wrap = document.createElement('span');
           Object.assign(wrap.style, {
             display: 'inline-block',
             overflow: 'hidden',
             width: w + 'px',
-            height: shuffleDirection === 'up' || shuffleDirection === 'down' ? h + 'px' : 'auto',
+            // For vertical directions we also need extra height so the
+            // sliding strip reveals the descender on the real char.
+            height: isVertical
+              ? (h + DESCENDER_PAD) + 'px'
+              : (h + DESCENDER_PAD) + 'px',
+            // Pull the extra padding back so the line-box height stays the
+            // same — characters below the baseline still show.
+            marginBottom: '-' + DESCENDER_PAD + 'px',
             verticalAlign: 'bottom'
           });
 
+          // ── Inner strip (the sliding track) ──────────────────────────────
           const inner = document.createElement('span');
           Object.assign(inner.style, {
             display: 'inline-block',
-            whiteSpace: shuffleDirection === 'up' || shuffleDirection === 'down' ? 'normal' : 'nowrap',
+            whiteSpace: isVertical ? 'normal' : 'nowrap',
             willChange: 'transform'
           });
 
           parent.insertBefore(wrap, ch);
           wrap.appendChild(inner);
 
-          const firstOrig = ch.cloneNode(true);
-          Object.assign(firstOrig.style, {
-            display: shuffleDirection === 'up' || shuffleDirection === 'down' ? 'block' : 'inline-block',
+          // Helper: style applied to every char clone in the strip
+          const charStyle = {
+            display: isVertical ? 'block' : 'inline-block',
             width: w + 'px',
-            textAlign: 'center'
-          });
+            textAlign: 'center',
+            // Keep extra room at the bottom of each "frame" so the
+            // descender is not sliced mid-animation.
+            paddingBottom: DESCENDER_PAD + 'px',
+            boxSizing: 'content-box'
+          };
+
+          const firstOrig = ch.cloneNode(true);
+          Object.assign(firstOrig.style, charStyle);
 
           ch.setAttribute('data-orig', '1');
-          Object.assign(ch.style, {
-            display: shuffleDirection === 'up' || shuffleDirection === 'down' ? 'block' : 'inline-block',
-            width: w + 'px',
-            textAlign: 'center'
-          });
+          Object.assign(ch.style, charStyle);
 
           inner.appendChild(firstOrig);
           for (let k = 0; k < rolls; k++) {
             const c = ch.cloneNode(true);
             if (scrambleCharset) c.textContent = rand(scrambleCharset);
-            Object.assign(c.style, {
-              display: shuffleDirection === 'up' || shuffleDirection === 'down' ? 'block' : 'inline-block',
-              width: w + 'px',
-              textAlign: 'center'
-            });
+            Object.assign(c.style, charStyle);
             inner.appendChild(c);
           }
           inner.appendChild(ch);
@@ -180,6 +199,10 @@ const Shuffle = ({
             if (firstCopy) inner.appendChild(firstCopy);
           }
 
+          // Each "frame" height is h + DESCENDER_PAD so the travel
+          // distance must use the padded value.
+          const frameH = h + DESCENDER_PAD;
+
           let startX = 0, finalX = 0, startY = 0, finalY = 0;
 
           if (shuffleDirection === 'right') {
@@ -189,14 +212,14 @@ const Shuffle = ({
             startX = 0;
             finalX = -steps * w;
           } else if (shuffleDirection === 'down') {
-            startY = -steps * h;
+            startY = -steps * frameH;
             finalY = 0;
           } else if (shuffleDirection === 'up') {
             startY = 0;
-            finalY = -steps * h;
+            finalY = -steps * frameH;
           }
 
-          if (shuffleDirection === 'left' || shuffleDirection === 'right') {
+          if (!isVertical) {
             gsap.set(inner, { x: startX, y: 0, force3D: true });
             inner.setAttribute('data-start-x', String(startX));
             inner.setAttribute('data-final-x', String(finalX));
