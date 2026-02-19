@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
+import Shuffle from "./Shuffle";
+import ScrollReveal from "./ScrollReveal";
 
 const TITLES = [
   "UI/UX Designer",
@@ -8,6 +10,7 @@ const TITLES = [
   "Developer",
 ];
 
+/* ── Typewriter hook ── */
 function useTypewriter(words, typingSpeed = 75, erasingSpeed = 40, pause = 1600) {
   const [displayed, setDisplayed] = useState(words[0]);
   const [wordIndex, setWordIndex] = useState(0);
@@ -19,10 +22,7 @@ function useTypewriter(words, typingSpeed = 75, erasingSpeed = 40, pause = 1600)
 
     if (phase === "typing") {
       if (displayed.length < current.length) {
-        timeout = setTimeout(
-          () => setDisplayed(current.slice(0, displayed.length + 1)),
-          typingSpeed
-        );
+        timeout = setTimeout(() => setDisplayed(current.slice(0, displayed.length + 1)), typingSpeed);
       } else {
         timeout = setTimeout(() => setPhase("pausing"), pause);
       }
@@ -30,35 +30,70 @@ function useTypewriter(words, typingSpeed = 75, erasingSpeed = 40, pause = 1600)
       timeout = setTimeout(() => setPhase("erasing"), 200);
     } else if (phase === "erasing") {
       if (displayed.length > 0) {
-        timeout = setTimeout(
-          () => setDisplayed(displayed.slice(0, -1)),
-          erasingSpeed
-        );
+        timeout = setTimeout(() => setDisplayed(displayed.slice(0, -1)), erasingSpeed);
       } else {
         const next = (wordIndex + 1) % words.length;
         setWordIndex(next);
         setPhase("typing");
       }
     }
-
     return () => clearTimeout(timeout);
   }, [displayed, phase, wordIndex, words, typingSpeed, erasingSpeed, pause]);
 
   return displayed;
 }
 
+/* ── Pixel grid reveal overlay ── */
+const COLS = 16;
+const ROWS = 20;
+const TOTAL = COLS * ROWS;
+
+function PixelOverlay({ reveal }) {
+  const delays = useMemo(() => {
+    return Array.from({ length: TOTAL }, () => Math.random() * 900);
+  }, []);
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        display: "grid",
+        gridTemplateColumns: `repeat(${COLS}, 1fr)`,
+        gridTemplateRows: `repeat(${ROWS}, 1fr)`,
+        pointerEvents: "none",
+        zIndex: 2,
+      }}
+    >
+      {delays.map((delay, i) => (
+        <div
+          key={i}
+          style={{
+            background: "#E8E8E8",
+            borderRadius: "2px",
+            transformOrigin: "center",
+            transform: reveal ? "scale(0)" : "scale(1)",
+            opacity: reveal ? 0 : 1,
+            transition: reveal
+              ? `transform 0.55s cubic-bezier(0.4,0,0.2,1) ${delay}ms,
+                 opacity   0.55s cubic-bezier(0.4,0,0.2,1) ${delay}ms`
+              : "none",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function About() {
   const sectionRef = useRef(null);
   const [visible, setVisible] = useState(false);
-  const [nameHovered, setNameHovered] = useState(false);
   const typedTitle = useTypewriter(TITLES);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) setVisible(true);
-      },
-      { threshold: 0.1 }
+      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
+      { threshold: 0.12 }
     );
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
@@ -93,6 +128,7 @@ export default function About() {
           font-weight: 300;
         }
 
+        /* ────────────────────────────── Section */
         .about-section {
           width: 100%;
           min-height: 100vh;
@@ -106,25 +142,30 @@ export default function About() {
           width: 100%;
           max-width: 1440px;
           margin: 0 auto;
-          padding: 0 9% 0 9%;
+          padding: 0 9%;
           display: flex;
           align-items: center;
           justify-content: space-between;
           min-height: 100vh;
         }
 
-        /* ── LEFT ── */
+        /* ────────────────────────────── LEFT */
         .about-left {
           flex: 0 0 auto;
           width: 44%;
           display: flex;
           flex-direction: column;
           align-items: flex-start;
+          margin-left: -38px;
         }
 
+        /* ─────────────────────────────────────────────────────
+           FIX: overflow visible so descenders (j, g, y, p, q)
+           are never clipped by the heading or reveal wrappers.
+        ───────────────────────────────────────────────────── */
         .about-heading {
           margin: 0 0 40px 0;
-          padding: 0;
+          padding: 0 0 8px 0;          /* small bottom padding for descenders */
           font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
           font-size: clamp(48px, 5.2vw, 76px);
           font-weight: 800;
@@ -132,33 +173,34 @@ export default function About() {
           letter-spacing: -0.03em;
           color: #111;
           -webkit-font-smoothing: antialiased;
+          overflow: visible;           /* ← allow descenders to show */
         }
 
-        /* Reveal */
+        /* ── Scroll reveal ── */
         .reveal-block {
           display: block;
-          overflow: hidden;
+          overflow: visible;           /* ← keep descenders visible here too */
         }
 
         .reveal-inner {
           display: block;
           opacity: 0;
-          transform: translateY(48px);
-          transition: opacity 0.7s cubic-bezier(0.22,1,0.36,1),
-                      transform 0.7s cubic-bezier(0.22,1,0.36,1);
+          transform: translateY(52px);
+          overflow: visible;           /* ← and here */
+          transition: opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+                      transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
         }
-
         .reveal-inner.d1 { transition-delay: 0.05s; }
-        .reveal-inner.d2 { transition-delay: 0.18s; }
-        .reveal-inner.d3 { transition-delay: 0.28s; }
-        .reveal-inner.d4 { transition-delay: 0.38s; }
-
+        .reveal-inner.d2 { transition-delay: 0.20s; }
+        .reveal-inner.d3 { transition-delay: 0.34s; }
+        .reveal-inner.d4 { transition-delay: 0.48s; }
+        .reveal-inner.d5 { transition-delay: 0.60s; }
         .reveal-inner.visible {
           opacity: 1;
           transform: translateY(0);
         }
 
-        /* "I'm" */
+        /* ── Name / heading ── */
         .him {
           font-style: italic;
           color: #111;
@@ -166,45 +208,76 @@ export default function About() {
           white-space: nowrap;
         }
 
-        /* Name — FIX: white-space nowrap keeps it on one line always */
-        .hname {
+        .heading-line1 {
+          display: flex;
+          align-items: baseline;
+          gap: 0;
+          white-space: nowrap;
+          overflow: visible;           /* ← descenders on this line */
+          padding-bottom: 6px;         /* breathing room for "j" */
+        }
+
+        /* ── Shuffle name + static comma wrapper ── */
+        /*
+         * We wrap only "Arjun Aadhith" inside <Shuffle>.
+         * The comma "," lives OUTSIDE the Shuffle as plain text
+         * so it is always fully visible and never shuffled.
+         */
+        .hname-shuffle-wrap {
+          display: inline-flex;
+          align-items: baseline;
+          overflow: visible;
+        }
+
+        .hname-shuffle {
+          display: inline-block;
           color: #6E6E6E;
           font-style: normal;
           font-weight: 800;
+          white-space: nowrap;
+          font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+          font-size: clamp(48px, 5.2vw, 76px);
+          line-height: 1.06;
+          letter-spacing: -0.03em;
+          -webkit-font-smoothing: antialiased;
           cursor: default;
-          display: inline;
+          overflow: visible;
+        }
+
+        /* Static comma — inherits heading styles, always visible */
+        .hname-comma {
+          display: inline-block;
+          color: #6E6E6E;
+          font-style: normal;
+          font-weight: 800;
+          font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+          font-size: clamp(48px, 5.2vw, 76px);
+          line-height: 1.06;
+          letter-spacing: -0.03em;
+          -webkit-font-smoothing: antialiased;
+          /* no margin — sits right after the shuffle text */
+        }
+
+        /* Override Shuffle component defaults to match heading style */
+        .hname-shuffle .shuffle-parent {
+          visibility: hidden;
+          display: inline-block;
           white-space: nowrap;
+          font-family: inherit;
+          font-size: inherit;
+          font-weight: inherit;
+          line-height: inherit;
+          letter-spacing: inherit;
+          color: inherit;
+          text-transform: none;
+          -webkit-font-smoothing: antialiased;
         }
 
-        /* Shine hover */
-        .hname-shine {
-          background: linear-gradient(
-            100deg,
-            #4a4a4a 0%,
-            #8a8a8a 20%,
-            #d4d4d4 50%,
-            #8a8a8a 80%,
-            #4a4a4a 100%
-          );
-          background-size: 250% auto;
-          -webkit-background-clip: text;
-          background-clip: text;
-          -webkit-text-fill-color: transparent;
-          animation: shineMove 5.8s linear infinite;
+        .hname-shuffle .shuffle-parent.is-ready {
+          visibility: visible;
         }
 
-        @keyframes shineMove {
-          0%   { background-position: -250% center; }
-          100% { background-position:  250% center; }
-        }
-
-        /* Line 1 wrapper — must never wrap */
-        .heading-line1 {
-          display: block;
-          white-space: nowrap;
-        }
-
-        /* Typewriter role line */
+        /* ── Typewriter ── */
         .typewriter-line {
           display: block;
           color: #111;
@@ -229,20 +302,18 @@ export default function About() {
           50%       { opacity: 0; }
         }
 
-        /* Paragraph */
-        .about-para {
-          font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
-          font-size: clamp(14px, 1.1vw, 16px);
-          font-weight: 400;
-          line-height: 1.78;
-          color: #3A3A3A;
-          margin: 0 0 44px 0;
+        /* ── Paragraph via ScrollReveal ── */
+        /*
+         * We wrap ScrollReveal in a reveal-inner for the fade-up,
+         * but the ScrollReveal itself handles the per-word blur/opacity.
+         * Remove the old about-para margin since ScrollReveal.css handles it.
+         */
+        .about-para-wrap {
+          width: 100%;
           max-width: 520px;
-          letter-spacing: -0.005em;
-          -webkit-font-smoothing: antialiased;
         }
 
-        /* Buttons */
+        /* ────────────────────────────── BUTTONS */
         .about-btns {
           display: flex;
           flex-direction: row;
@@ -251,6 +322,7 @@ export default function About() {
         }
 
         .btn-pill {
+          position: relative;
           height: 46px;
           padding: 0 28px;
           border: 1.5px solid #C4C4C4;
@@ -267,23 +339,47 @@ export default function About() {
           gap: 8px;
           text-decoration: none;
           white-space: nowrap;
+          overflow: hidden;
           -webkit-font-smoothing: antialiased;
-          transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+          transition:
+            color        0.40s cubic-bezier(0.16, 1, 0.3, 1),
+            border-color 0.40s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-pill::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: #111111;
+          border-radius: inherit;
+          transform: translateY(102%);
+          transition: transform 0.46s cubic-bezier(0.16, 1, 0.3, 1);
+          z-index: 0;
+        }
+
+        .btn-pill:hover::before {
+          transform: translateY(0);
+        }
+
+        .btn-pill-inner {
+          position: relative;
+          z-index: 1;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
         }
 
         .btn-pill:hover {
-          background: #111;
-          border-color: #111;
-          color: #fff;
+          color: #ffffff;
+          border-color: #111111;
         }
 
-        /* FIX: SVG icon — use currentColor so it inherits hover color */
         .btn-icon-svg {
           display: block;
           flex-shrink: 0;
         }
 
-        /* ── RIGHT ── */
+        /* ────────────────────────────── RIGHT / IMAGE */
         .about-right {
           flex: 0 0 auto;
           width: 50%;
@@ -293,25 +389,29 @@ export default function About() {
           margin-right: -8%;
         }
 
-        .about-img-wrap {
+        .about-img-outer {
+          position: relative;
+          display: inline-block;
           opacity: 0;
-          transform: translateX(60px);
-          transition: opacity 1s cubic-bezier(0.22,1,0.36,1) 0.1s,
-                      transform 1s cubic-bezier(0.22,1,0.36,1) 0.1s;
+          transform: translateY(40px);
+          transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.15s,
+                      transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.15s;
         }
 
-        .about-img-wrap.visible {
+        .about-img-outer.visible {
           opacity: 1;
-          transform: translateX(0);
+          transform: translateY(0);
         }
 
         .about-img {
           display: block;
           max-width: 100%;
           height: auto;
+          position: relative;
+          z-index: 1;
         }
 
-        /* Responsive */
+        /* ────────────────────────────── Responsive */
         @media (max-width: 900px) {
           .about-inner {
             flex-direction: column-reverse;
@@ -322,10 +422,11 @@ export default function About() {
           .about-left, .about-right {
             width: 100%;
           }
+          .about-left {
+            margin-left: 0;
+          }
           .about-right {
             justify-content: center;
-          }
-          .about-img-wrap {
             margin-right: 0;
           }
           .typewriter-line,
@@ -342,18 +443,43 @@ export default function About() {
           <div className="about-left">
             <h1 className="about-heading">
 
-              {/* Line 1: I'm Arjun Aadhith, — always single line */}
+              {/* Line 1: I'm Arjun Aadhith, */}
               <span className="reveal-block">
                 <span className={`reveal-inner d1 ${visible ? "visible" : ""}`}>
                   <span className="heading-line1">
-                    <span className="him">I'm </span>
-                    <span
-                      className={`hname ${nameHovered ? "hname-shine" : ""}`}
-                      onMouseEnter={() => setNameHovered(true)}
-                      onMouseLeave={() => setNameHovered(false)}
-                    >
-                      Arjun Aadhith,
+
+                    {/* "I'm " — italic, always static */}
+                    <span className="him">I'm&nbsp;</span>
+
+                    {/*
+                      Shuffle wraps ONLY "Arjun Aadhith" (no comma).
+                      The comma sits right after as a plain sibling span
+                      so it is always rendered at full opacity, never shuffled.
+                    */}
+                    <span className="hname-shuffle-wrap">
+                      <span className="hname-shuffle">
+                        <Shuffle
+                          text="Arjun Aadhith"
+                          tag="span"
+                          shuffleDirection="right"
+                          duration={0.35}
+                          animationMode="evenodd"
+                          shuffleTimes={1}
+                          ease="power3.out"
+                          stagger={0.03}
+                          threshold={0.1}
+                          triggerOnce={true}
+                          triggerOnHover={true}
+                          respectReducedMotion={true}
+                          loop={false}
+                          loopDelay={0}
+                          textAlign="left"
+                        />
+                      </span>
+                      {/* Static comma — never shuffled, always fully visible */}
+                      <span className="hname-comma">,</span>
                     </span>
+
                   </span>
                 </span>
               </span>
@@ -369,46 +495,66 @@ export default function About() {
 
             </h1>
 
-            {/* Paragraph */}
+            {/*
+              Paragraph — replaced with ScrollReveal.
+              The outer reveal-inner handles the initial fade-up (same as before).
+              ScrollReveal then drives per-word blur/opacity via scroll.
+            */}
             <div className="reveal-block">
-              <p className={`about-para reveal-inner d3 ${visible ? "visible" : ""}`}>
-                Hello! I'm a creative professional specializing in UI/UX design,
-                graphic design, product design, visual design, illustration, and
-                logo design, with a strong foundation in development. I transform
-                ideas into user-centered, visually refined, and functional digital
-                experiences that solve real problems with clarity and intent.
-              </p>
+              <div className={`reveal-inner d3 about-para-wrap ${visible ? "visible" : ""}`}>
+                <ScrollReveal
+                  enableBlur={true}
+                  baseOpacity={0.1}
+                  baseRotation={3}
+                  blurStrength={4}
+                  rotationEnd="bottom bottom"
+                  wordAnimationEnd="bottom bottom"
+                >
+                  Hello! I'm a creative professional specializing in UI/UX design,
+                  graphic design, product design, visual design, illustration, and
+                  logo design, with a strong foundation in development. I transform
+                  ideas into user-centered, visually refined, and functional digital
+                  experiences that solve real problems with clarity and intent.
+                </ScrollReveal>
+              </div>
             </div>
 
             {/* Buttons */}
             <div className={`about-btns reveal-inner d4 ${visible ? "visible" : ""}`}>
-              <a href="#more" className="btn-pill">Read More</a>
-              <a href="/resume.pdf" download className="btn-pill">
-                Resume
-                {/* FIX: currentColor inherits #fff on hover automatically */}
-                <svg
-                  className="btn-icon-svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 14 14"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M7 1v8.5M7 9.5L4 6.5M7 9.5L10 6.5M1 12.5h12"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+
+              <a href="#more" className="btn-pill">
+                <span className="btn-pill-inner">Read More</span>
               </a>
+
+              <a href="/resume.pdf" download className="btn-pill">
+                <span className="btn-pill-inner">
+                  Resume
+                  <svg
+                    className="btn-icon-svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 14 14"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M7 1v8.5M7 9.5L4 6.5M7 9.5L10 6.5M1 12.5h12"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+              </a>
+
             </div>
           </div>
 
-          {/* ── RIGHT ── */}
+          {/* ── RIGHT — image with pixel dissolve overlay ── */}
           <div className="about-right">
-            <div className={`about-img-wrap ${visible ? "visible" : ""}`}>
+            <div className={`about-img-outer ${visible ? "visible" : ""}`}>
+              <PixelOverlay reveal={visible} />
               <img
                 src="/arjun profile.png"
                 alt="Arjun Aadhith"

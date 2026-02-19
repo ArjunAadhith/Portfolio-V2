@@ -1,0 +1,19 @@
+.scroll-reveal {
+  margin: 0;
+}
+
+.scroll-reveal-text {
+  font-size: clamp(14px, 1.1vw, 16px);
+  font-weight: 400;
+  line-height: 1.78;
+  color: #3A3A3A;
+  margin: 0 0 44px 0;
+  max-width: 520px;
+  letter-spacing: -0.005em;
+  font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.sr-word {
+  display: inline-block;
+}
