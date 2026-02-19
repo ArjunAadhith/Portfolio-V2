@@ -1,6 +1,7 @@
 import Hero from "./components/Hero.jsx";
 import About from "./components/About.jsx";
 import Skills from "./components/Skills.jsx";
+import Projects from "./components/Projects.jsx";
 import { useEffect } from "react";
 
 export default function App() {
@@ -41,7 +42,7 @@ export default function App() {
           zIndex: 1,
           transformOrigin: "top center",
           willChange: "transform, border-radius",
-          overflow: "visible", /* keep visible so Hero's absolute children aren't clipped */
+          overflow: "visible", 
           boxShadow: "0 8px 60px rgba(0,0,0,0.15)",
         }}
       >
@@ -58,6 +59,7 @@ export default function App() {
       >
         <About />
         <Skills />
+        <Projects />
       </div>
 
     </div>
