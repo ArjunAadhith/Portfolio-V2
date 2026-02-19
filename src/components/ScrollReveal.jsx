@@ -14,8 +14,6 @@ const ScrollReveal = ({
   blurStrength = 4,
   containerClassName = '',
   textClassName = '',
-  rotationEnd = 'bottom bottom',
-  wordAnimationEnd = 'bottom bottom',
 }) => {
   const containerRef = useRef(null);
 
@@ -40,7 +38,14 @@ const ScrollReveal = ({
         ? scrollContainerRef.current
         : window;
 
-    gsap.fromTo(
+    // Collect only this component's triggers — never kill others (e.g. Shuffle)
+    const triggers = [];
+    const wordEls = el.querySelectorAll('.sr-word');
+
+    // ── Container rotation ─────────────────────────────────────────────
+    // end: 'top 60%' is always reachable on a full-height section.
+    // scrub: 0.5 catches up in 0.5s — no stuck half-rotated state.
+    const rotTween = gsap.fromTo(
       el,
       { transformOrigin: '0% 50%', rotate: baseRotation },
       {
@@ -49,61 +54,75 @@ const ScrollReveal = ({
         scrollTrigger: {
           trigger: el,
           scroller,
-          start: 'top bottom',
-          end: rotationEnd,
-          scrub: true,
+          start:   'top 95%',
+          end:     'top 60%',
+          scrub:   0.5,
+          // Force to final state once the end marker is passed
+          onLeave:     () => gsap.set(el, { rotate: 0 }),
+          onLeaveBack: () => gsap.set(el, { rotate: baseRotation }),
         },
       }
     );
+    if (rotTween.scrollTrigger) triggers.push(rotTween.scrollTrigger);
 
-    const wordEls = el.querySelectorAll('.sr-word');
-
-    gsap.fromTo(
+    // ── Word opacity ───────────────────────────────────────────────────
+    // end: 'top 55%' — for a 100vh section the top edge will pass 55%
+    // as soon as the section is fully on-screen, so onLeave fires and
+    // snaps everything to opacity:1 with zero lag even if scrub hasn't
+    // caught up yet.
+    const opTween = gsap.fromTo(
       wordEls,
-      { opacity: baseOpacity, willChange: 'opacity' },
+      { opacity: baseOpacity },
       {
         ease: 'none',
         opacity: 1,
-        stagger: 0.05,
+        stagger: 0.08,
         scrollTrigger: {
           trigger: el,
           scroller,
-          start: 'top bottom-=20%',
-          end: wordAnimationEnd,
-          scrub: true,
+          start:   'top 95%',
+          end:     'top 55%',
+          scrub:   0.5,
+          onLeave:     () => gsap.set(wordEls, { opacity: 1,           willChange: 'auto' }),
+          onLeaveBack: () => gsap.set(wordEls, { opacity: baseOpacity                    }),
         },
       }
     );
+    if (opTween.scrollTrigger) triggers.push(opTween.scrollTrigger);
 
+    // ── Word blur ──────────────────────────────────────────────────────
+    // Identical start/end to opacity so both complete at the same scroll pos.
     if (enableBlur) {
-      gsap.fromTo(
+      const blurTween = gsap.fromTo(
         wordEls,
         { filter: `blur(${blurStrength}px)` },
         {
           ease: 'none',
           filter: 'blur(0px)',
-          stagger: 0.05,
+          stagger: 0.08,
           scrollTrigger: {
             trigger: el,
             scroller,
-            start: 'top bottom-=20%',
-            end: wordAnimationEnd,
-            scrub: true,
+            start:   'top 95%',
+            end:     'top 55%',
+            scrub:   0.5,
+            onLeave:     () => gsap.set(wordEls, { filter: 'blur(0px)',              willChange: 'auto' }),
+            onLeaveBack: () => gsap.set(wordEls, { filter: `blur(${blurStrength}px)`                  }),
           },
         }
       );
+      if (blurTween.scrollTrigger) triggers.push(blurTween.scrollTrigger);
     }
 
+    // Scoped cleanup — only kills THIS component's triggers
     return () => {
-      ScrollTrigger.getAll().forEach((t) => t.kill());
+      triggers.forEach(t => t.kill());
     };
   }, [
     scrollContainerRef,
     enableBlur,
     baseRotation,
     baseOpacity,
-    rotationEnd,
-    wordAnimationEnd,
     blurStrength,
   ]);
 

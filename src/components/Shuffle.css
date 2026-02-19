@@ -1,45 +1,24 @@
-.shuffle-parent {
+.scroll-reveal {
+  margin: 0;
+  overflow: visible;
+}
+
+.scroll-reveal-text {
+  font-size: clamp(14px, 1.1vw, 16px);
+  font-weight: 400;
+  line-height: 1.78;
+  color: #3A3A3A;
+  margin: 0 0 44px 0;
+  max-width: 520px;
+  letter-spacing: -0.005em;
+  font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.sr-word {
   display: inline-block;
-  white-space: normal;
-  word-wrap: break-word;
-  will-change: transform;
-  line-height: inherit;
-  font-family: inherit;
-  font-size: inherit;
-  font-weight: inherit;
-  letter-spacing: inherit;
-  color: inherit;
-  text-transform: none;
-  visibility: hidden;
-}
-
-.shuffle-parent.is-ready {
-  visibility: visible;
-}
-
-.shuffle-char-wrapper {
-  display: inline-block;
-  overflow: hidden;
-  vertical-align: baseline;
-  position: relative;
-}
-
-.shuffle-char-wrapper > span {
-  display: inline-flex;
-  will-change: transform;
-}
-
-.shuffle-char {
-  line-height: inherit;
-  display: inline-block;
-  text-align: center;
-}
-
-.shuffle-word {
-  display: inline-block;
-  white-space: nowrap;
-}
-
-.shuffle-line {
-  display: block;
+  /* GPU layer per word — makes opacity + filter transitions hardware-accelerated */
+  will-change: opacity, filter;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }

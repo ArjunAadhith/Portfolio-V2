@@ -74,10 +74,12 @@ function PixelOverlay({ reveal }) {
             transformOrigin: "center",
             transform: reveal ? "scale(0)" : "scale(1)",
             opacity: reveal ? 0 : 1,
+            // Reveal: staggered dissolve out. Cover: reverse stagger floods back in.
             transition: reveal
               ? `transform 0.55s cubic-bezier(0.4,0,0.2,1) ${delay}ms,
                  opacity   0.55s cubic-bezier(0.4,0,0.2,1) ${delay}ms`
-              : "none",
+              : `transform 0.4s  cubic-bezier(0.4,0,0.2,1) ${900 - delay}ms,
+                 opacity   0.4s  cubic-bezier(0.4,0,0.2,1) ${900 - delay}ms`,
           }}
         />
       ))}
@@ -88,11 +90,19 @@ function PixelOverlay({ reveal }) {
 export default function About() {
   const sectionRef = useRef(null);
   const [visible, setVisible] = useState(false);
+  // imgVisible toggles on/off as user enters/leaves the section
+  // (separate from 'visible' which is one-time for heading animations)
+  const [imgVisible, setImgVisible] = useState(false);
   const typedTitle = useTypewriter(TITLES);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
+      ([entry]) => {
+        // visible: one-time latch — heading animations never revert
+        if (entry.isIntersecting) setVisible(true);
+        // imgVisible: toggles both ways — pixel overlay reveal/re-cover
+        setImgVisible(entry.isIntersecting);
+      },
       { threshold: 0.12 }
     );
     if (sectionRef.current) observer.observe(sectionRef.current);
@@ -156,7 +166,7 @@ export default function About() {
           display: flex;
           flex-direction: column;
           align-items: flex-start;
-          margin-left: -38px;
+          margin-left: -25px;
         }
 
         /* ─────────────────────────────────────────────────────
@@ -217,6 +227,12 @@ export default function About() {
           padding-bottom: 6px;         /* breathing room for "j" */
         }
 
+        /* ── Shuffle name + static comma wrapper ── */
+        /*
+         * We wrap only "Arjun Aadhith" inside <Shuffle>.
+         * The comma "," lives OUTSIDE the Shuffle as plain text
+         * so it is always fully visible and never shuffled.
+         */
         .hname-shuffle-wrap {
           display: inline-flex;
           align-items: baseline;
@@ -249,6 +265,7 @@ export default function About() {
           line-height: 1.06;
           letter-spacing: -0.03em;
           -webkit-font-smoothing: antialiased;
+          /* no margin — sits right after the shuffle text */
         }
 
         /* Override Shuffle component defaults to match heading style */
@@ -546,8 +563,8 @@ export default function About() {
 
           {/* ── RIGHT — image with pixel dissolve overlay ── */}
           <div className="about-right">
-            <div className={`about-img-outer ${visible ? "visible" : ""}`}>
-              <PixelOverlay reveal={visible} />
+            <div className={`about-img-outer ${imgVisible ? "visible" : ""}`}>
+              <PixelOverlay reveal={imgVisible} />
               <img
                 src="/arjun profile.png"
                 alt="Arjun Aadhith"

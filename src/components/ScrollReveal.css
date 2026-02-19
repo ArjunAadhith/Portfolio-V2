@@ -1,5 +1,7 @@
 .scroll-reveal {
   margin: 0;
+  /* transform-origin set inline via GSAP; ensure no overflow clip */
+  overflow: visible;
 }
 
 .scroll-reveal-text {
@@ -12,8 +14,15 @@
   letter-spacing: -0.005em;
   font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* Prevent text reflow during blur animation */
+  will-change: transform;
 }
 
 .sr-word {
   display: inline-block;
+  /* GPU-accelerate each word for silky blur transitions */
+  will-change: opacity, filter;
+  /* Prevent subpixel gaps between words during animation */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
