@@ -9,27 +9,6 @@ const CARDS = [
 
 const N = CARDS.length;
 
-/*
-  HOW THIS WORKS — no scroll math, uses browser-native sticky
-  ─────────────────────────────────────────────────────────────
-  Each card has its OWN sticky wrapper (position:sticky, top:0, height:100vh).
-  Total outer height = N × 100vh = 400vh.
-
-  As user scrolls:
-    scroll 0 – 100vh  → card 0 wrapper is sticky at top (already was)
-    scroll 100vh      → card 1 wrapper reaches top → becomes sticky, stacks over card 0
-    scroll 200vh      → card 2 stacks over card 1
-    scroll 300vh      → card 3 stacks over card 2
-
-  z-index: card i = i+1, so later cards always cover earlier ones.
-
-  IntersectionObserver on each wrapper fires when that wrapper's top
-  enters the viewport → triggers CSS "rise from below" transition on the card.
-
-  Inner div has overflow:hidden → clips the card while it's rising (at translateY > 0).
-  This does NOT break sticky because the sticky element is the WRAPPER, not the inner div.
-*/
-
 export default function Projects() {
   return (
     <>
