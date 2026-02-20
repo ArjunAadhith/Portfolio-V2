@@ -29,27 +29,10 @@ export default function Projects() {
           font-weight: 800;
         }
 
-        /* ── Outer container ── */
-        #pj-outer {
-          position: relative;
-          height: ${N * 100}vh;   /* 400vh — each card gets 100vh of scroll */
-          background: #000;
-        }
-
-        /* ── Heading row — always on top ── */
+        /* ── Header — normal flow, scrolls naturally with section ── */
         #pj-header {
-          position: sticky;
-          top: 0;
-          height: 0;              /* takes no flow space */
-          overflow: visible;
-          z-index: 999;
-          pointer-events: none;
-        }
-
-        #pj-header-inner {
-          position: absolute;
-          top: 0; left: 0; right: 0;
-          padding: 52px 24px 0;
+          position: relative;
+          background: #000;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -58,17 +41,17 @@ export default function Projects() {
         .pj-label {
           position: absolute;
           top: 52px;
-          left: clamp(80px, 10vw, 160px);
+          left: clamp(80px, 60vw, 160px);
           font-family: 'SF Pro Display', -apple-system, sans-serif;
-          font-size: 13.5px;
-          font-weight: 700;
+          font-size: 16px;
+          font-weight: 500;
           color: #fff;
           line-height: 1.55;
           letter-spacing: -0.01em;
         }
 
         .pj-heading {
-          margin: 72px 0 0;
+          margin: 122px 0 0; /* was 72px — shifted 50px down */
           font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
           font-size: clamp(40px, 5.8vw, 72px);
           font-weight: 800;
@@ -87,38 +70,32 @@ export default function Projects() {
           -webkit-text-fill-color: transparent;
         }
 
-        /* ── Card sticky wrapper ── */
+        #pj-outer {
+          position: relative;
+          height: ${N * 100}vh;
+          background: #000;
+          overflow: clip;
+        }
+
         .pj-wrapper {
           position: sticky;
           top: 0;
           height: 100vh;
-          /* inner will handle overflow clipping */
         }
 
-        /* ── Inner clip container ──
-           overflow:hidden clips the rising card.
-           NOT on the sticky element itself → sticky still works. */
-        .pj-clip {
-          position: absolute;
-          inset: 0;
-          overflow: hidden;
-        }
-
-        /* ── Card shell ── */
         .pj-card {
           position: absolute;
           width: 1078px;
           height: 620px;
           left: 50%;
-          top: 232px;
-          border-radius: 28px;
+          top: 60px;
+          border-radius: 50px;
           background: #000000;
           overflow: hidden;
           box-shadow:
             0 24px 80px rgba(0,0,0,.65),
             0 4px 20px rgba(0,0,0,.4);
           cursor: none;
-          /* INITIAL STATE — off screen below (clipped by .pj-clip) */
           transform: translateX(-50%) translateY(100%);
           opacity: 0;
           transition:
@@ -127,13 +104,11 @@ export default function Projects() {
             box-shadow .3s ease;
         }
 
-        /* ENTERED STATE — card has risen into view */
         .pj-card.entered {
           transform: translateX(-50%) translateY(0);
           opacity: 1;
         }
 
-        /* card 0 is always visible from the start */
         .pj-card.init {
           transform: translateX(-50%) translateY(0);
           opacity: 1;
@@ -146,7 +121,6 @@ export default function Projects() {
             0 8px 32px rgba(0,0,0,.5);
         }
 
-        /* ── Image fills card ── */
         .pj-img {
           display: block;
           width: 100%;
@@ -157,7 +131,6 @@ export default function Projects() {
           -webkit-user-drag: none;
         }
 
-        /* ── Visit Now tooltip ── */
         .pj-tip {
           position: absolute;
           pointer-events: none;
@@ -180,7 +153,6 @@ export default function Projects() {
           transform: scale(1) translateY(0);
         }
 
-        /* ── Responsive fallback for smaller screens ── */
         @media (max-width: 1120px) {
           .pj-card {
             width: calc(100vw - 32px);
@@ -202,52 +174,40 @@ export default function Projects() {
         }
       `}</style>
 
+      <div id="pj-header">
+        <p className="pj-label">
+          Let's Explore My<br />Creative Journey
+        </p>
+        <h2 className="pj-heading">The Art of Frontend</h2>
+      </div>
+
       <div id="pj-outer">
-
-        {/* ── Heading — always on top via z-index:999 ── */}
-        <div id="pj-header">
-          <div id="pj-header-inner">
-            <p className="pj-label">
-              Let's Explore My<br />Creative Journey
-            </p>
-            <h2 className="pj-heading">The Art of Frontend</h2>
-          </div>
-        </div>
-
-        {/* ── One sticky wrapper per card ── */}
         {CARDS.map((card, i) => (
           <StickyCard key={card.id} card={card} index={i} />
         ))}
-
       </div>
     </>
   );
 }
 
-/* ─────────────────────────────────────────────
-   StickyCard — handles its own sticky + observe
-───────────────────────────────────────────── */
 function StickyCard({ card, index }) {
   const wrapperRef = useRef(null);
   const cardRef    = useRef(null);
-  const [entered,  setEntered]  = useState(index === 0); // card 0 visible from start
+  const [entered,  setEntered]  = useState(index === 0);
   const [tip,      setTip]      = useState({ show: false, x: 0, y: 0 });
 
-  /* Observe wrapper entering viewport → trigger rise animation */
   useEffect(() => {
-    if (index === 0) return; // card 0 always visible
+    if (index === 0) return;
 
     const obs = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setEntered(true);
-          obs.disconnect(); // only trigger once per page load
+          obs.disconnect();
         }
       },
       {
         threshold: 0,
-        // Fire when the wrapper's TOP edge reaches the viewport BOTTOM
-        // rootMargin: bottom margin = 0, so fires as soon as any part enters
         rootMargin: "0px 0px 0px 0px",
       }
     );
@@ -269,33 +229,26 @@ function StickyCard({ card, index }) {
       className="pj-wrapper"
       style={{ zIndex: index + 1 }}
     >
-      <div className="pj-clip">
-        <div
-          ref={cardRef}
-          className={`pj-card ${index === 0 ? "init" : entered ? "entered" : ""}`}
-          onMouseMove={onMove}
-          onMouseLeave={onLeave}
-          onClick={() => { window.location.href = card.link; }}
+      <div
+        ref={cardRef}
+        className={`pj-card ${index === 0 ? "init" : entered ? "entered" : ""}`}
+        onMouseMove={onMove}
+        onMouseLeave={onLeave}
+        onClick={() => { window.location.href = card.link; }}
+      >
+        <span
+          className={`pj-tip${tip.show ? " on" : ""}`}
+          style={{ left: tip.x + 16, top: tip.y - 20 }}
         >
-          {/* Visit Now tooltip */}
-          <span
-            className={`pj-tip${tip.show ? " on" : ""}`}
-            style={{ left: tip.x + 16, top: tip.y - 20 }}
-          >
-            Visit Now
-          </span>
+          Visit Now
+        </span>
 
-          {/*
-            Replace src with your actual image path.
-            e.g. src="/src/assets/paradize.png"
-          */}
-          <img
-            src={card.image}
-            alt={`Project ${card.id}`}
-            className="pj-img"
-            draggable={false}
-          />
-        </div>
+        <img
+          src={card.image}
+          alt={`Project ${card.id}`}
+          className="pj-img"
+          draggable={false}
+        />
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import Hero from "./components/Hero.jsx";
 import About from "./components/About.jsx";
 import Skills from "./components/Skills.jsx";
 import Projects from "./components/Projects.jsx";
+import Mycreations from "./components/Mycreations.jsx";
 import { useEffect } from "react";
 
 export default function App() {
@@ -60,6 +61,7 @@ export default function App() {
         <About />
         <Skills />
         <Projects />
+        <Mycreations />
       </div>
 
     </div>
