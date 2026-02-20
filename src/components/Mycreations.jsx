@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
 const CARDS = [
-  { id: 1, title: "Stucor Desktop\n\u2013 UI Redesign",  image: "/1.png", link: "https://your-link-1.com" },
-  { id: 2, title: "Pet Frnd \u2013 Mobile\nUI Design",    image: "/2.png", link: "https://your-link-2.com" },
-  { id: 3, title: "Nexus Dashboard\n\u2013 Analytics",    image: "/3.png", link: "https://your-link-3.com" },
-  { id: 4, title: "Bloom \u2013 E-Commerce\nMobile App",  image: "/4.png", link: "https://your-link-4.com" },
-  { id: 5, title: "Verdant \u2013 SaaS\nLanding Page",    image: "/5.png", link: "https://your-link-5.com" },
-  { id: 6, title: "Aether \u2013 Music\nStreaming App",    image: "/6.png", link: "https://your-link-6.com" },
-  { id: 7, title: "Vaulted \u2013 Finance\nDashboard",    image: "/7.png", link: "https://your-link-7.com" },
-  { id: 8, title: "Solace \u2013 Mental\nHealth App",      image: "/8.png", link: "https://your-link-8.com" },
-  { id: 9, title: "Krate \u2013 Food\nDelivery App",       image: "/9.png", link: "https://your-link-9.com" },
+  { id: 1, title: "Stucor Desktop",  image: "/1.png", link: "https://www.figma.com/proto/nIfAXuv4TethAKm2JepTGh/Stucor-Desktop-UI?page-id=0%3A1&node-id=12-84&viewport=143%2C191%2C0.05&t=Tg8Ge3zHR5MsyIu5-1&scaling=min-zoom&content-scaling=fixed&starting-point-node-id=308%3A273" },
+  { id: 2, title: "Pet Frnd",    image: "/2.png", link: "https://www.figma.com/proto/b0oJ5zPBtnU1Nb2v998pyl/Pet-Frnd?page-id=0%3A1&node-id=8-2&p=f&viewport=124%2C610%2C0.36&t=3l9jE8RIDk5x3itd-1&scaling=scale-down&content-scaling=fixed&starting-point-node-id=8%3A2" },
+  { id: 3, title: "TS Motors",    image: "/3.png", link: "https://www.figma.com/proto/sMiKy8vqCBgqGw2QYWXKp5/TS-MOTORS?page-id=0%3A1&node-id=4-3&p=f&viewport=62%2C418%2C0.22&t=tPUShUGbfKycNK7D-1&scaling=scale-down&content-scaling=fixed&starting-point-node-id=4%3A3&show-proto-sidebar=1" },
+  { id: 4, title: "Google Sheet",  image: "/4.png", link: "https://www.figma.com/proto/1EXdPGE9ee6CT9m7TOaT3G/Google-Sheet-UI?page-id=0%3A1&node-id=1-8&viewport=161%2C430%2C0.79&t=WMM4bVIK5p1TsLpP-1&scaling=scale-down&content-scaling=fixed" },
+  { id: 5, title: "Apple control center",    image: "/5.png", link: "https://www.figma.com/proto/DRSTFzuFqxQzIQJgyAeErs/Apple-Control-Center-Glass-UI?page-id=1%3A2&node-id=3-3&viewport=930%2C1967%2C0.34&t=NnPwPJqwLJ06caQF-1&scaling=scale-down&content-scaling=fixed" },
+  { id: 6, title: "Music player",    image: "/6.png", link: "https://www.figma.com/proto/929gYewDfQUwWcfhbgq5A3/Music-UI-Vision?page-id=0%3A1&node-id=1-2&viewport=346%2C382%2C0.77&t=2HpKgEDGGyCxceIY-1&scaling=scale-down&content-scaling=fixed&starting-point-node-id=1%3A2" },
+  { id: 7, title: "Yacht Booking",    image: "/7.png", link: "https://www.figma.com/proto/3rnSAp7DD9GnHI7vl5Yeco/Yacht-Booking?page-id=0%3A1&node-id=1-2&viewport=240%2C457%2C0.54&t=xpDAYoVJG4CJPOLB-1&scaling=scale-down&content-scaling=fixed&starting-point-node-id=1%3A2" },
+  { id: 8, title: "Login Page",      image: "/8.png", link: "https://www.figma.com/proto/FXAYL15VONilLo2ApgF0ag/Untitled?page-id=0%3A1&node-id=118-4&viewport=-1127%2C151%2C0.15&t=40pru97sFl0w3Kx9-1&scaling=min-zoom&content-scaling=fixed&starting-point-node-id=102%3A2" },
+  { id: 9, title: "DDDAS Site Design",       image: "/9.png", link: "https://www.figma.com/proto/1itf6UuzeiXOBFBhmhj4eM/DDDAS-Design?page-id=0%3A1&node-id=1-2&viewport=240%2C164%2C0.09&t=7HYdcdULhxg9uwW2-1&scaling=min-zoom&content-scaling=fixed" },
 ];
 
 const CARD_W       = 644;
