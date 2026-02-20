@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
 const CARDS = [
-  { id: 1, image: "/Paradize.png", link: "/project-1" },
-  { id: 2, image: "/Rideease.png", link: "/project-2" },
-  { id: 3, image: "/flixora.png",  link: "/project-3" },
-  { id: 4, image: "/codefest.png", link: "/project-4" },
+  { id: 1, image: "/Paradize.png", link: "https://paradize-ecom.netlify.app/" },
+  { id: 2, image: "/Rideease.png", link: "https://rideease-car.netlify.app/" },
+  { id: 3, image: "/flixora.png",  link: "https://flixora-streaming-platform.netlify.app/" },
+  { id: 4, image: "/codefest.png", link: "https://codefest-2k25.netlify.app/" },
 ];
 
 const N = CARDS.length;
@@ -58,7 +58,7 @@ export default function Projects() {
         .pj-label {
           position: absolute;
           top: 52px;
-          left: clamp(24px, 6vw, 96px);
+          left: clamp(80px, 10vw, 160px);
           font-family: 'SF Pro Display', -apple-system, sans-serif;
           font-size: 13.5px;
           font-weight: 700;
@@ -107,20 +107,19 @@ export default function Projects() {
         /* ── Card shell ── */
         .pj-card {
           position: absolute;
-          /* top gap leaves space for the heading */
+          width: 1078px;
+          height: 620px;
+          left: 50%;
           top: 232px;
-          left: clamp(16px, 3vw, 48px);
-          right: clamp(16px, 3vw, 48px);
-          bottom: clamp(24px, 4vh, 48px);
           border-radius: 28px;
-          background: #1c1d2e;
+          background: #000000;
           overflow: hidden;
           box-shadow:
             0 24px 80px rgba(0,0,0,.65),
             0 4px 20px rgba(0,0,0,.4);
           cursor: none;
           /* INITIAL STATE — off screen below (clipped by .pj-clip) */
-          transform: translateY(100%);
+          transform: translateX(-50%) translateY(100%);
           opacity: 0;
           transition:
             transform .9s cubic-bezier(0.22, 1, 0.36, 1),
@@ -130,13 +129,13 @@ export default function Projects() {
 
         /* ENTERED STATE — card has risen into view */
         .pj-card.entered {
-          transform: translateY(0);
+          transform: translateX(-50%) translateY(0);
           opacity: 1;
         }
 
         /* card 0 is always visible from the start */
         .pj-card.init {
-          transform: translateY(0);
+          transform: translateX(-50%) translateY(0);
           opacity: 1;
           transition: box-shadow .3s ease;
         }
@@ -179,6 +178,22 @@ export default function Projects() {
         .pj-tip.on {
           opacity: 1;
           transform: scale(1) translateY(0);
+        }
+
+        /* ── Responsive fallback for smaller screens ── */
+        @media (max-width: 1120px) {
+          .pj-card {
+            width: calc(100vw - 32px);
+            height: 620px;
+            left: 16px;
+            transform: translateY(100%);
+          }
+          .pj-card.entered {
+            transform: translateY(0);
+          }
+          .pj-card.init {
+            transform: translateY(0);
+          }
         }
 
         @media (max-width: 600px) {
