@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 
 const IMAGES = [
   { id: 1, src: "/m1.png", label: "Aston Martin Valhalla",         link: "https://3d-car-model-design.netlify.app/" },
@@ -8,9 +8,13 @@ const IMAGES = [
   { id: 5, src: "/m5.png", label: "Awaken",                         link: "https://gaming-wallpaper.netlify.app/" },
 ];
 
-const TIP_LERP = 0.11;
+const TIP_LERP    = 0.11;
+const SCROLL_EASE = 0.072;
 
-/* ─── Card with cursor tooltip ─────────────────────────────────────── */
+/* ─── easing helper ─────────────────────────────────────────────────── */
+// Not needed for RAF lerp, but used for nothing else here.
+
+/* ─── Card ──────────────────────────────────────────────────────────── */
 function ShowcaseCard({ img }) {
   const cardRef    = useRef(null);
   const tipRef     = useRef(null);
@@ -87,49 +91,64 @@ function ShowcaseCard({ img }) {
 
 /* ─── Main ──────────────────────────────────────────────────────────── */
 export default function SplitShowcase() {
-  const sectionRef    = useRef(null);
-  const rightRef      = useRef(null);
-  const scrollTarget  = useRef(0);
-  const scrollCurrent = useRef(0);
+  const wrapperRef    = useRef(null); // tall outer section (provides scroll budget)
+  const stickyRef     = useRef(null); // position:sticky inner shell
+  const rightRef      = useRef(null); // right panel (overflow:hidden)
+  const innerRef      = useRef(null); // inner cards div — measured for real height
+
+  const scrollCurrent = useRef(0);   // smoothly interpolated right-panel scroll
   const rafRef        = useRef(null);
   const lastTsRef     = useRef(null);
+  const extraRef      = useRef(0);   // scroll budget stored in a ref (no re-render loop)
 
-  useEffect(() => {
-    const section = sectionRef.current;
-    const right   = rightRef.current;
-    if (!section || !right) return;
+  const [wrapperHeight, setWrapperHeight] = useState("100vh");
 
-    const onWheel = (e) => {
-      const { top, bottom } = section.getBoundingClientRect();
-      const vh = window.innerHeight;
+  /*
+    HOW IT WORKS — sticky + tall wrapper pattern
+    ─────────────────────────────────────────────
+    The outer wrapper is taller than 100vh by exactly the right panel's
+    overflowing content height. As the user scrolls normally through that
+    extra height, the sticky inner panel stays pinned at the top.
 
-      if (top > 1 || bottom < vh - 1) return;
+    We map "how far into the extra height have we scrolled" → right panel
+    scrollTop, with smooth exponential-decay interpolation.
 
-      const maxScroll   = right.scrollHeight - right.clientHeight;
-      const atTop       = scrollTarget.current <= 0;
-      const atBottom    = scrollTarget.current >= maxScroll - 1;
-      const goingUp     = e.deltaY < 0;
-      const goingDown   = e.deltaY > 0;
+    Result:
+    • No scroll locking.
+    • No wheel hijacking.
+    • Works perfectly in BOTH directions.
+    • The next section only appears after the wrapper has been fully scrolled
+      (i.e., after the user has scrolled through all the extra height =
+      after every card is visible).
+    • Reversing: scroll back up → progress reverses → cards scroll back up.
+    • Premium floaty lag because scrollCurrent lags behind the target.
+  */
 
-      if ((atTop && goingUp) || (atBottom && goingDown)) {
-        if (atTop && goingUp) {
-          scrollTarget.current  = 0;
-          scrollCurrent.current = 0;
-        }
-        return;
-      }
+  /* ── Measure inner content → set wrapper height ── */
+  const measure = useCallback(() => {
+    const inner = innerRef.current;
+    const right = rightRef.current;
+    if (!inner || !right) return;
 
-      e.preventDefault();
-      scrollTarget.current = Math.max(0, Math.min(maxScroll, scrollTarget.current + e.deltaY));
-    };
-
-    section.addEventListener("wheel", onWheel, { passive: false });
-    return () => section.removeEventListener("wheel", onWheel);
+    const maxRightScroll = Math.max(0, inner.offsetHeight - right.clientHeight);
+    extraRef.current = maxRightScroll;
+    // Add a small buffer (half a vh) so the bottom card settles before release
+    setWrapperHeight(`calc(100vh + ${maxRightScroll + 40}px)`);
   }, []);
 
   useEffect(() => {
-    const right = rightRef.current;
-    if (!right) return;
+    // Measure after first paint so layout is settled
+    const t = setTimeout(measure, 80);
+    window.addEventListener("resize", measure);
+    return () => { clearTimeout(t); window.removeEventListener("resize", measure); };
+  }, [measure]);
+
+  /* ── RAF loop: map page scroll → right panel scrollTop ── */
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    const right   = rightRef.current;
+    const inner   = innerRef.current;
+    if (!wrapper || !right || !inner) return;
 
     const tick = (ts) => {
       const dt = lastTsRef.current == null
@@ -137,17 +156,28 @@ export default function SplitShowcase() {
         : Math.min(ts - lastTsRef.current, 50);
       lastTsRef.current = ts;
 
-      const diff   = scrollTarget.current - scrollCurrent.current;
-      const factor = 1 - Math.exp(-dt * 0.010);
+      // How many px we've scrolled past the wrapper's top
+      const scrolledIn   = Math.max(0, -wrapper.getBoundingClientRect().top);
+      const budget       = extraRef.current;
+      const maxRight     = Math.max(0, inner.offsetHeight - right.clientHeight);
+
+      // Map [0, budget] → [0, maxRight]
+      const target = budget > 0
+        ? Math.min(maxRight, (scrolledIn / budget) * maxRight)
+        : 0;
+
+      // Exponential decay — frame-rate independent
+      const diff   = target - scrollCurrent.current;
+      const factor = 1 - Math.exp(-dt * SCROLL_EASE);
 
       if (Math.abs(diff) < 0.04) {
-        scrollCurrent.current = scrollTarget.current;
+        scrollCurrent.current = target;
       } else {
         scrollCurrent.current += diff * factor;
       }
 
       right.scrollTop = scrollCurrent.current;
-      rafRef.current  = requestAnimationFrame(tick);
+      rafRef.current = requestAnimationFrame(tick);
     };
 
     rafRef.current = requestAnimationFrame(tick);
@@ -155,66 +185,93 @@ export default function SplitShowcase() {
       cancelAnimationFrame(rafRef.current);
       lastTsRef.current = null;
     };
-  }, []);
+  }, [wrapperHeight]); // restart loop when height is measured
 
   return (
     <>
       <style>{CSS}</style>
 
-      <section className="sc2-section" ref={sectionRef}>
+      {/*
+        OUTER WRAPPER — tall, gives the scroll budget.
+        Its height = 100vh + (cards overflow height + buffer).
+        This is what creates the "pinned" effect without any JS scroll locking.
+      */}
+      <div
+        ref={wrapperRef}
+        className="sc2-wrapper"
+        style={{ height: wrapperHeight }}
+      >
+        {/* STICKY SHELL — always visible, pinned at top of wrapper */}
+        <div ref={stickyRef} className="sc2-sticky">
 
-        <div className="sc2-left">
-          <div className="sc2-left-inner">
-            <p className="sc2-eyebrow">Selected Works</p>
-            <h2 className="sc2-title">
-              Multidisciplinary<br />
-              Creative Showcase
-            </h2>
-            <p className="sc2-body">
-              A curated collection of branding,
-              motion, and digital experiences
-              crafted with intention.
-            </p>
-            <a href="/explore" className="sc2-btn">
-              <span className="sc2-btn-bg" />
-              <span className="sc2-btn-text">Explore More</span>
-            </a>
-            <div className="sc2-counter">
-              <span className="sc2-counter-num">05+</span>
-              <span className="sc2-counter-divider" />
-              <span className="sc2-counter-label">Projects</span>
+          {/* LEFT */}
+          <div className="sc2-left">
+            <div className="sc2-left-inner">
+              <p className="sc2-eyebrow">Selected Works</p>
+              <h2 className="sc2-title">
+                Multidisciplinary<br />
+                Creative Showcase
+              </h2>
+              <p className="sc2-body">
+                A curated collection of branding,
+                motion, and digital experiences
+                crafted with intention.
+              </p>
+              <a href="/explore" className="sc2-btn">
+                <span className="sc2-btn-bg" />
+                <span className="sc2-btn-text">Explore More</span>
+              </a>
+              <div className="sc2-counter">
+                <span className="sc2-counter-num">05+</span>
+                <span className="sc2-counter-divider" />
+                <span className="sc2-counter-label">Projects</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="sc2-right" ref={rightRef}>
-          <div className="sc2-cards">
-            {IMAGES.map((img) => (
-              <ShowcaseCard key={img.id} img={img} />
-            ))}
+          {/* RIGHT — overflow hidden, scrollTop driven by RAF */}
+          <div className="sc2-right" ref={rightRef}>
+            <div className="sc2-cards" ref={innerRef}>
+              {IMAGES.map((img) => (
+                <ShowcaseCard key={img.id} img={img} />
+              ))}
+            </div>
           </div>
-        </div>
 
-      </section>
+        </div>
+      </div>
     </>
   );
 }
 
+/* ─── Styles ────────────────────────────────────────────────────────── */
 const CSS = `
-  .sc2-section *, .sc2-section *::before, .sc2-section *::after {
+  /* Scope reset */
+  .sc2-wrapper *, .sc2-wrapper *::before, .sc2-wrapper *::after {
     box-sizing: border-box; margin: 0; padding: 0;
   }
 
-  .sc2-section {
-    display: flex;
-    width: 100%;
-    height: 100vh;
-    background: #0a0a0a;
-    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* ── Tall outer wrapper — natural page scroll container ── */
+  .sc2-wrapper {
     position: relative;
+    width: 100%;
+    /* height set inline = 100vh + right panel overflow + buffer */
   }
 
-  .sc2-section::before {
+  /* ── Sticky inner shell — what the user actually sees ── */
+  .sc2-sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    background: #0a0a0a;
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow: hidden;
+  }
+
+  /* Grain overlay */
+  .sc2-sticky::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -224,12 +281,12 @@ const CSS = `
     z-index: 0;
   }
 
+  /* ── Left column ── */
   .sc2-left {
     width: 40%;
     height: 100vh;
     position: relative;
     flex-shrink: 0;
-    /* ── CENTER LINE REMOVED ── */
     z-index: 1;
   }
 
@@ -240,7 +297,6 @@ const CSS = `
     display: flex;
     flex-direction: column;
     justify-content: center;
-    /* ── SHIFTED RIGHT: left padding increased from 52px → 90px ── */
     padding: 50px 52px 40px 90px;
   }
 
@@ -270,6 +326,7 @@ const CSS = `
     margin-bottom: 44px;
   }
 
+  /* ── Button — wipe hover ── */
   .sc2-btn {
     display: inline-flex;
     align-items: center;
@@ -311,6 +368,7 @@ const CSS = `
 
   .sc2-btn:hover .sc2-btn-text { color: #0a0a0a; }
 
+  /* ── Counter ── */
   .sc2-counter {
     display: flex;
     align-items: center;
@@ -340,6 +398,7 @@ const CSS = `
     color: rgba(255,255,255,0.18);
   }
 
+  /* ── Right column — overflow hidden, scrollTop set by JS ── */
   .sc2-right {
     width: 60%;
     height: 100vh;
@@ -347,6 +406,7 @@ const CSS = `
     z-index: 1;
   }
 
+  /* ── Cards list ── */
   .sc2-cards {
     display: flex;
     flex-direction: column;
@@ -354,6 +414,7 @@ const CSS = `
     padding: 32px 40px 40px 40px;
   }
 
+  /* ── Card ── */
   .sc2-card {
     display: block;
     position: relative;
@@ -364,8 +425,9 @@ const CSS = `
     aspect-ratio: 16 / 9;
     background: #1a1a1a;
     text-decoration: none;
-    transition: transform 0.48s cubic-bezier(0.34, 1.2, 0.64, 1),
-                box-shadow 0.48s cubic-bezier(0.34, 1.2, 0.64, 1);
+    transition:
+      transform  0.48s cubic-bezier(0.34, 1.2, 0.64, 1),
+      box-shadow 0.48s cubic-bezier(0.34, 1.2, 0.64, 1);
   }
 
   .sc2-card:hover {
@@ -390,7 +452,7 @@ const CSS = `
   .sc2-card-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.00) 50%);
+    background: linear-gradient(to top, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0) 50%);
     display: flex;
     align-items: flex-end;
     padding: 18px 22px;
@@ -409,6 +471,7 @@ const CSS = `
     color: rgba(255,255,255,0.70);
   }
 
+  /* ── Tooltip ── */
   .sc2-tip {
     position: absolute;
     pointer-events: none;
@@ -424,7 +487,9 @@ const CSS = `
     box-shadow: 0 8px 28px rgba(0,0,0,0.30);
     opacity: 0;
     transform: translate(-50%, -50%) scale(0.70);
-    transition: opacity 0.22s ease, transform 0.26s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition:
+      opacity   0.22s ease,
+      transform 0.26s cubic-bezier(0.34, 1.56, 0.64, 1);
     top: 50%; left: 50%;
     will-change: left, top, transform, opacity;
   }
@@ -434,10 +499,15 @@ const CSS = `
     transform: translate(-50%, -50%) scale(1);
   }
 
+  /* ── Responsive ── */
   @media (max-width: 768px) {
-    .sc2-section {
+    .sc2-sticky {
       flex-direction: column;
       height: auto;
+      position: relative; /* release sticky on mobile */
+    }
+    .sc2-wrapper {
+      height: auto !important;
     }
     .sc2-left {
       width: 100%;
@@ -451,7 +521,7 @@ const CSS = `
     .sc2-right {
       width: 100%;
       height: auto;
-      overflow: visible !important;
+      overflow: visible;
     }
     .sc2-cards { padding: 24px 20px 40px; }
   }
