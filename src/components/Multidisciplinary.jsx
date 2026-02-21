@@ -1,36 +1,34 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 
 const IMAGES = [
-  { id: 1, src: "/m1.png", label: "Aston Martin Valhalla",         link: "https://3d-car-model-design.netlify.app/" },
-  { id: 2, src: "/m2.png", label: "McLaren — Let's Start New Era",  link: "https://forzahorizon-wallpaper.netlify.app/" },
-  { id: 3, src: "/m3.png", label: "Nike — Just Do It",              link: "https://nike-shoe-design.netlify.app/" },
-  { id: 4, src: "/m4.png", label: "Never Settle",                   link: "https://never-settle-wallpaper.netlify.app/" },
-  { id: 5, src: "/m5.png", label: "Awaken",                         link: "https://gaming-wallpaper.netlify.app/" },
+  { id: 1, src: "/m1.png", label: "Aston Martin Valhalla",        link: "https://3d-car-model-design.netlify.app/" },
+  { id: 2, src: "/m2.png", label: "McLaren — Let's Start New Era", link: "https://forzahorizon-wallpaper.netlify.app/" },
+  { id: 3, src: "/m3.png", label: "Nike — Just Do It",             link: "https://nike-shoe-design.netlify.app/" },
+  { id: 4, src: "/m4.png", label: "Never Settle",                  link: "https://never-settle-wallpaper.netlify.app/" },
+  { id: 5, src: "/m5.png", label: "Awaken",                        link: "https://gaming-wallpaper.netlify.app/" },
 ];
 
-const TIP_LERP    = 0.11;
-const SCROLL_EASE = 0.072;
+// Lerp factor — lower = floatier/slower catch-up
+const LERP = 0.078;
 
-/* ─── easing helper ─────────────────────────────────────────────────── */
-// Not needed for RAF lerp, but used for nothing else here.
-
-/* ─── Card ──────────────────────────────────────────────────────────── */
+/* ─── Card ─────────────────────────────────────────────────────────── */
 function ShowcaseCard({ img }) {
   const cardRef    = useRef(null);
   const tipRef     = useRef(null);
-  const targetRef  = useRef({ x: 0, y: 0 });
+  const targetPos  = useRef({ x: 0, y: 0 });
   const currentPos = useRef({ x: 0, y: 0 });
   const rafRef     = useRef(null);
-  const activeRef  = useRef(false);
+  const active     = useRef(false);
 
   const startLoop = useCallback(() => {
     if (rafRef.current) return;
     const loop = () => {
-      if (!tipRef.current || !activeRef.current) { rafRef.current = null; return; }
-      currentPos.current.x += (targetRef.current.x - currentPos.current.x) * TIP_LERP;
-      currentPos.current.y += (targetRef.current.y - currentPos.current.y) * TIP_LERP;
-      tipRef.current.style.left = currentPos.current.x + "px";
-      tipRef.current.style.top  = currentPos.current.y + "px";
+      if (!active.current || !tipRef.current) { rafRef.current = null; return; }
+      currentPos.current.x += (targetPos.current.x - currentPos.current.x) * 0.12;
+      currentPos.current.y += (targetPos.current.y - currentPos.current.y) * 0.12;
+      // ✅ transform instead of left/top — no layout recalc
+      tipRef.current.style.transform =
+        `translate3d(calc(${currentPos.current.x}px - 50%), calc(${currentPos.current.y}px - 50%), 0) scale(1)`;
       rafRef.current = requestAnimationFrame(loop);
     };
     rafRef.current = requestAnimationFrame(loop);
@@ -44,21 +42,22 @@ function ShowcaseCard({ img }) {
   const onEnter = useCallback((e) => {
     const p = toLocal(e);
     currentPos.current = { ...p };
-    targetRef.current  = { ...p };
-    activeRef.current  = true;
-    if (tipRef.current) {
-      tipRef.current.style.left = p.x + "px";
-      tipRef.current.style.top  = p.y + "px";
-      requestAnimationFrame(() => tipRef.current && tipRef.current.classList.add("tip-visible"));
+    targetPos.current  = { ...p };
+    active.current     = true;
+    const tip = tipRef.current;
+    if (tip) {
+      tip.style.transform =
+        `translate3d(calc(${p.x}px - 50%), calc(${p.y}px - 50%), 0) scale(1)`;
+      requestAnimationFrame(() => tip && tip.classList.add("tip-on"));
     }
     startLoop();
   }, [toLocal, startLoop]);
 
-  const onMove  = useCallback((e) => { targetRef.current = toLocal(e); }, [toLocal]);
+  const onMove  = useCallback((e) => { targetPos.current = toLocal(e); }, [toLocal]);
 
   const onLeave = useCallback(() => {
-    activeRef.current = false;
-    tipRef.current && tipRef.current.classList.remove("tip-visible");
+    active.current = false;
+    tipRef.current?.classList.remove("tip-on");
     if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
   }, []);
 
@@ -91,118 +90,83 @@ function ShowcaseCard({ img }) {
 
 /* ─── Main ──────────────────────────────────────────────────────────── */
 export default function SplitShowcase() {
-  const wrapperRef    = useRef(null); // tall outer section (provides scroll budget)
-  const stickyRef     = useRef(null); // position:sticky inner shell
-  const rightRef      = useRef(null); // right panel (overflow:hidden)
-  const innerRef      = useRef(null); // inner cards div — measured for real height
+  const wrapperRef  = useRef(null);
+  const innerRef    = useRef(null);   // the cards column — moved via transform
+  const rightRef    = useRef(null);   // clip container (overflow:hidden)
 
-  const scrollCurrent = useRef(0);   // smoothly interpolated right-panel scroll
-  const rafRef        = useRef(null);
-  const lastTsRef     = useRef(null);
-  const extraRef      = useRef(0);   // scroll budget stored in a ref (no re-render loop)
+  const current     = useRef(0);      // interpolated Y offset (px, positive = scrolled up)
+  const target      = useRef(0);      // target Y offset from page scroll
+  const maxScroll   = useRef(0);      // max translateY magnitude
+  const rafRef      = useRef(null);
+  const lastTs      = useRef(null);
 
   const [wrapperHeight, setWrapperHeight] = useState("100vh");
 
-  /*
-    HOW IT WORKS — sticky + tall wrapper pattern
-    ─────────────────────────────────────────────
-    The outer wrapper is taller than 100vh by exactly the right panel's
-    overflowing content height. As the user scrolls normally through that
-    extra height, the sticky inner panel stays pinned at the top.
-
-    We map "how far into the extra height have we scrolled" → right panel
-    scrollTop, with smooth exponential-decay interpolation.
-
-    Result:
-    • No scroll locking.
-    • No wheel hijacking.
-    • Works perfectly in BOTH directions.
-    • The next section only appears after the wrapper has been fully scrolled
-      (i.e., after the user has scrolled through all the extra height =
-      after every card is visible).
-    • Reversing: scroll back up → progress reverses → cards scroll back up.
-    • Premium floaty lag because scrollCurrent lags behind the target.
-  */
-
-  /* ── Measure inner content → set wrapper height ── */
+  /* ── Measure: how much does the right panel overflow? ── */
   const measure = useCallback(() => {
     const inner = innerRef.current;
     const right = rightRef.current;
     if (!inner || !right) return;
-
-    const maxRightScroll = Math.max(0, inner.offsetHeight - right.clientHeight);
-    extraRef.current = maxRightScroll;
-    // Add a small buffer (half a vh) so the bottom card settles before release
-    setWrapperHeight(`calc(100vh + ${maxRightScroll + 40}px)`);
+    const overflow = Math.max(0, inner.offsetHeight - right.clientHeight);
+    maxScroll.current = overflow;
+    setWrapperHeight(`calc(100vh + ${overflow + 40}px)`);
   }, []);
 
   useEffect(() => {
-    // Measure after first paint so layout is settled
     const t = setTimeout(measure, 80);
-    window.addEventListener("resize", measure);
+    window.addEventListener("resize", measure, { passive: true });
     return () => { clearTimeout(t); window.removeEventListener("resize", measure); };
   }, [measure]);
 
-  /* ── RAF loop: map page scroll → right panel scrollTop ── */
+  /* ── RAF loop: map page scroll → transform translate3d on inner div ── */
   useEffect(() => {
     const wrapper = wrapperRef.current;
-    const right   = rightRef.current;
     const inner   = innerRef.current;
-    if (!wrapper || !right || !inner) return;
+    if (!wrapper || !inner) return;
 
     const tick = (ts) => {
-      const dt = lastTsRef.current == null
-        ? 16.67
-        : Math.min(ts - lastTsRef.current, 50);
-      lastTsRef.current = ts;
+      const dt = lastTs.current == null ? 16.67 : Math.min(ts - lastTs.current, 50);
+      lastTs.current = ts;
 
-      // How many px we've scrolled past the wrapper's top
-      const scrolledIn   = Math.max(0, -wrapper.getBoundingClientRect().top);
-      const budget       = extraRef.current;
-      const maxRight     = Math.max(0, inner.offsetHeight - right.clientHeight);
+      // How far into wrapper have we scrolled?
+      const scrolledIn = Math.max(0, -wrapper.getBoundingClientRect().top);
+      const budget     = maxScroll.current;
 
-      // Map [0, budget] → [0, maxRight]
-      const target = budget > 0
-        ? Math.min(maxRight, (scrolledIn / budget) * maxRight)
-        : 0;
+      // Map page scroll → target Y offset (clamped)
+      target.current = budget > 0 ? Math.min(budget, scrolledIn) : 0;
 
-      // Exponential decay — frame-rate independent
-      const diff   = target - scrollCurrent.current;
-      const factor = 1 - Math.exp(-dt * SCROLL_EASE);
+      // Frame-rate-independent lerp (exponential decay)
+      const diff   = target.current - current.current;
+      const factor = 1 - Math.exp(-dt * LERP);
 
       if (Math.abs(diff) < 0.04) {
-        scrollCurrent.current = target;
+        current.current = target.current;
       } else {
-        scrollCurrent.current += diff * factor;
+        current.current += diff * factor;
       }
 
-      right.scrollTop = scrollCurrent.current;
+      // ✅ Only transform — no scrollTop, no layout triggers, pure GPU
+      inner.style.transform = `translate3d(0, ${-current.current}px, 0)`;
+
       rafRef.current = requestAnimationFrame(tick);
     };
 
     rafRef.current = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(rafRef.current);
-      lastTsRef.current = null;
+      lastTs.current = null;
     };
-  }, [wrapperHeight]); // restart loop when height is measured
+  }, [wrapperHeight]); // restart after height measured
 
   return (
     <>
       <style>{CSS}</style>
-
-      {/*
-        OUTER WRAPPER — tall, gives the scroll budget.
-        Its height = 100vh + (cards overflow height + buffer).
-        This is what creates the "pinned" effect without any JS scroll locking.
-      */}
       <div
         ref={wrapperRef}
         className="sc2-wrapper"
         style={{ height: wrapperHeight }}
       >
-        {/* STICKY SHELL — always visible, pinned at top of wrapper */}
-        <div ref={stickyRef} className="sc2-sticky">
+        <div className="sc2-sticky">
 
           {/* LEFT */}
           <div className="sc2-left">
@@ -229,7 +193,7 @@ export default function SplitShowcase() {
             </div>
           </div>
 
-          {/* RIGHT — overflow hidden, scrollTop driven by RAF */}
+          {/* RIGHT — clip box; inner div floats via transform */}
           <div className="sc2-right" ref={rightRef}>
             <div className="sc2-cards" ref={innerRef}>
               {IMAGES.map((img) => (
@@ -244,21 +208,17 @@ export default function SplitShowcase() {
   );
 }
 
-/* ─── Styles ────────────────────────────────────────────────────────── */
+/* ─── Styles ─────────────────────────────────────────────────────────── */
 const CSS = `
-  /* Scope reset */
   .sc2-wrapper *, .sc2-wrapper *::before, .sc2-wrapper *::after {
     box-sizing: border-box; margin: 0; padding: 0;
   }
 
-  /* ── Tall outer wrapper — natural page scroll container ── */
   .sc2-wrapper {
     position: relative;
     width: 100%;
-    /* height set inline = 100vh + right panel overflow + buffer */
   }
 
-  /* ── Sticky inner shell — what the user actually sees ── */
   .sc2-sticky {
     position: sticky;
     top: 0;
@@ -270,29 +230,27 @@ const CSS = `
     overflow: hidden;
   }
 
-  /* Grain overlay */
+  /* grain */
   .sc2-sticky::before {
     content: '';
     position: absolute;
     inset: 0;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-    opacity: 0.030;
+    opacity: 0.03;
     pointer-events: none;
     z-index: 0;
   }
 
-  /* ── Left column ── */
+  /* ── Left ── */
   .sc2-left {
     width: 40%;
     height: 100vh;
-    position: relative;
     flex-shrink: 0;
+    position: relative;
     z-index: 1;
   }
 
   .sc2-left-inner {
-    position: sticky;
-    top: 0;
     height: 100vh;
     display: flex;
     flex-direction: column;
@@ -326,7 +284,7 @@ const CSS = `
     margin-bottom: 44px;
   }
 
-  /* ── Button — wipe hover ── */
+  /* Button */
   .sc2-btn {
     display: inline-flex;
     align-items: center;
@@ -352,7 +310,7 @@ const CSS = `
     border-radius: inherit;
   }
 
-  .sc2-btn:hover .sc2-btn-bg { transform: translateY(0%); }
+  .sc2-btn:hover .sc2-btn-bg { transform: translateY(0); }
 
   .sc2-btn-text {
     position: relative;
@@ -368,13 +326,8 @@ const CSS = `
 
   .sc2-btn:hover .sc2-btn-text { color: #0a0a0a; }
 
-  /* ── Counter ── */
-  .sc2-counter {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-
+  /* Counter */
+  .sc2-counter { display: flex; align-items: center; gap: 14px; }
   .sc2-counter-num {
     font-size: 36px;
     font-weight: 700;
@@ -382,14 +335,10 @@ const CSS = `
     color: rgba(255,255,255,0.12);
     line-height: 1;
   }
-
   .sc2-counter-divider {
-    display: block;
-    width: 32px;
-    height: 1px;
+    display: block; width: 32px; height: 1px;
     background: rgba(255,255,255,0.12);
   }
-
   .sc2-counter-label {
     font-size: 10px;
     font-weight: 500;
@@ -398,20 +347,24 @@ const CSS = `
     color: rgba(255,255,255,0.18);
   }
 
-  /* ── Right column — overflow hidden, scrollTop set by JS ── */
+  /* ── Right — pure clip box, NO overflow scrolling ── */
   .sc2-right {
     width: 60%;
     height: 100vh;
-    overflow: hidden;
+    overflow: hidden;           /* clips the inner div */
+    position: relative;
     z-index: 1;
   }
 
-  /* ── Cards list ── */
+  /* ── Cards inner — moved by transform only, never scrollTop ── */
   .sc2-cards {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    padding: 32px 40px 40px 40px;
+    padding: 32px 40px 40px;
+    will-change: transform;     /* ✅ GPU layer hint */
+    transform: translate3d(0, 0, 0); /* ✅ promote to compositor layer */
+    backface-visibility: hidden; /* ✅ prevent sub-pixel flicker */
   }
 
   /* ── Card ── */
@@ -425,15 +378,11 @@ const CSS = `
     aspect-ratio: 16 / 9;
     background: #1a1a1a;
     text-decoration: none;
-    transition:
-      transform  0.48s cubic-bezier(0.34, 1.2, 0.64, 1),
-      box-shadow 0.48s cubic-bezier(0.34, 1.2, 0.64, 1);
+    /* ✅ NO box-shadow on hover — that triggers paint */
+    transition: transform 0.48s cubic-bezier(0.34, 1.2, 0.64, 1);
   }
 
-  .sc2-card:hover {
-    transform: scale(1.03);
-    box-shadow: 0 24px 64px rgba(0,0,0,0.55), 0 4px 16px rgba(0,0,0,0.30);
-  }
+  .sc2-card:hover { transform: scale(1.03); }
 
   .sc2-card-img {
     width: 100%;
@@ -445,6 +394,7 @@ const CSS = `
     user-select: none;
     -webkit-user-drag: none;
     transition: transform 0.60s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform;
   }
 
   .sc2-card:hover .sc2-card-img { transform: scale(1.04); }
@@ -452,7 +402,7 @@ const CSS = `
   .sc2-card-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0) 50%);
+    background: linear-gradient(to top, rgba(0,0,0,0.62) 0%, transparent 50%);
     display: flex;
     align-items: flex-end;
     padding: 18px 22px;
@@ -471,9 +421,10 @@ const CSS = `
     color: rgba(255,255,255,0.70);
   }
 
-  /* ── Tooltip ── */
+  /* ── Tooltip — transform-only positioning ── */
   .sc2-tip {
     position: absolute;
+    top: 0; left: 0;           /* origin; real pos set via transform */
     pointer-events: none;
     z-index: 20;
     background: #f0ede8;
@@ -484,19 +435,18 @@ const CSS = `
     padding: 7px 16px;
     border-radius: 100px;
     white-space: nowrap;
-    box-shadow: 0 8px 28px rgba(0,0,0,0.30);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.28);
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.70);
-    transition:
-      opacity   0.22s ease,
-      transform 0.26s cubic-bezier(0.34, 1.56, 0.64, 1);
-    top: 50%; left: 50%;
-    will-change: left, top, transform, opacity;
+    /* ✅ initial: centered, shrunk */
+    transform: translate3d(calc(0px - 50%), calc(0px - 50%), 0) scale(0.72);
+    transition: opacity 0.20s ease, scale 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+    will-change: transform;
+    backface-visibility: hidden;
   }
 
-  .sc2-tip.tip-visible {
+  .sc2-tip.tip-on {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    scale: 1;
   }
 
   /* ── Responsive ── */
@@ -504,25 +454,16 @@ const CSS = `
     .sc2-sticky {
       flex-direction: column;
       height: auto;
-      position: relative; /* release sticky on mobile */
-    }
-    .sc2-wrapper {
-      height: auto !important;
-    }
-    .sc2-left {
-      width: 100%;
-      height: auto;
-    }
-    .sc2-left-inner {
       position: relative;
-      height: auto;
-      padding: 60px 28px 40px 40px;
     }
-    .sc2-right {
-      width: 100%;
-      height: auto;
-      overflow: visible;
+    .sc2-wrapper { height: auto !important; }
+    .sc2-left  { width: 100%; height: auto; }
+    .sc2-left-inner { height: auto; padding: 60px 28px 40px 40px; }
+    .sc2-right { width: 100%; height: auto; overflow: visible; }
+    .sc2-cards {
+      padding: 24px 20px 40px;
+      will-change: auto;
+      transform: none;
     }
-    .sc2-cards { padding: 24px 20px 40px; }
   }
 `;
