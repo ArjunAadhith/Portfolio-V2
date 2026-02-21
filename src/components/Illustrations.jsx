@@ -4,18 +4,15 @@ const ROW_1 = [
   { id: 1, src: "/i1.png", alt: "Bonsai tree with parrot" },
   { id: 2, src: "/i2.png", alt: "Cubist portrait" },
   { id: 3, src: "/i3.png", alt: "The Rooster geometric" },
-    { id: 3, src: "/i3.png", alt: "The Rooster geometric" },
-        { id: 3, src: "/i3.png", alt: "The Rooster geometric" },
-
-
+  { id: 3, src: "/i3.png", alt: "The Rooster geometric" },
+  { id: 3, src: "/i3.png", alt: "The Rooster geometric" },
 ];
 const ROW_2 = [
   { id: 4, src: "/i4.png", alt: "Colourful characters" },
   { id: 5, src: "/i5.png", alt: "People crowd" },
-    { id: 4, src: "/i4.png", alt: "Colourful characters" },
+  { id: 4, src: "/i4.png", alt: "Colourful characters" },
   { id: 4, src: "/i4.png", alt: "Colourful characters" },
   { id: 6, src: "/i6.png", alt: "Woman with phone" },
-  
 ];
 
 export default function Illustrations() {
@@ -25,7 +22,11 @@ export default function Illustrations() {
   const handleMouseMove = useCallback((e) => {
     const rect = sectionRef.current?.getBoundingClientRect();
     if (!rect) return;
-    setTip({ visible: true, x: e.clientX - rect.left, y: e.clientY - rect.top });
+    setTip({
+      visible: true,
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
   }, []);
 
   const handleMouseLeave = useCallback(() => {
@@ -56,14 +57,24 @@ export default function Illustrations() {
           <div className="il-row">
             {ROW_1.map((img) => (
               <div className="il-card" key={img.id}>
-                <img src={img.src} alt={img.alt} className="il-img" draggable={false} />
+                <img
+                  src={img.src}
+                  alt={img.alt}
+                  className="il-img"
+                  draggable={false}
+                />
               </div>
             ))}
           </div>
           <div className="il-row">
             {ROW_2.map((img) => (
               <div className="il-card" key={img.id}>
-                <img src={img.src} alt={img.alt} className="il-img" draggable={false} />
+                <img
+                  src={img.src}
+                  alt={img.alt}
+                  className="il-img"
+                  draggable={false}
+                />
               </div>
             ))}
           </div>
@@ -124,7 +135,7 @@ const CSS = `
   /* ── Card: no fixed width — grows to match image's natural ratio × row height ── */
   .il-card {
     flex-shrink: 0;
-    border-radius: 16px;
+    border-radius: 2px;
     overflow: hidden;
     background: #d0d0d0;
     line-height: 0;
