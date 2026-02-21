@@ -3,6 +3,7 @@ import About from "./components/About.jsx";
 import Skills from "./components/Skills.jsx";
 import Projects from "./components/Projects.jsx";
 import Mycreations from "./components/Mycreations.jsx";
+import Multidisciplinary from "./components/Multidisciplinary.jsx";
 import { useEffect } from "react";
 
 export default function App() {
@@ -62,6 +63,7 @@ export default function App() {
         <Skills />
         <Projects />
         <Mycreations />
+        <Multidisciplinary />
       </div>
 
     </div>
