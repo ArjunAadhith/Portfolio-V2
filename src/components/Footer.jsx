@@ -5,7 +5,7 @@ const ICONS = [
   { id:'ln',     src:'/f-icons/Linkedin.png',  link:'https://linkedin.com', xPct:0.216, w:160, h:160 },
   { id:'bolt',   src:'/f-icons/Thunder.png',   link:null,                   xPct:0.316, w:100,  h:100  },
   { id:'mail',   src:'/f-icons/Mail.png',      link:'mailto:you@email.com', xPct:0.220, w:160, h:160 },
-  { id:'smile',  src:'/f-icons/Smile.png',     link:null,                   xPct:0.375, w:100,  h:100  },
+  { id:'smile',  src:'/f-icons/Smile.png',     link:null,                   xPct:0.375, w:120,  h:120  },
   { id:'otw',    src:'/f-icons/OTW.png',       link:null,                   xPct:0.474, w:220, h:100  },
   { id:'gear',   src:'/f-icons/Setting.png',   link:null,                   xPct:0.530, w:120,  h:120  },
   { id:'github', src:'/f-icons/Git.png',       link:'https://github.com',   xPct:0.632, w:160,  h:160  },

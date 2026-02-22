@@ -1,3 +1,4 @@
+import Navbar from "./components/Navbar.jsx";
 import Hero from "./components/Hero.jsx";
 import About from "./components/About.jsx";
 import Skills from "./components/Skills.jsx";
@@ -35,6 +36,7 @@ export default function App() {
 
   return (
     <div style={{ background: "#E8E8E8" }}>
+      {/* <Navbar /> */}
 
       {/* Hero — sticky so it stays pinned while About slides over */}
       <div
