@@ -41,14 +41,12 @@ const CSS = `
   .aj {
     background: #ffffff;
     width: 100%;
-    min-height: 100vh;
-    padding: 40px 88px 80px;
+    padding: 60px 88px 60px;   /* equal top and bottom */
     font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont,
                  'Helvetica Neue', Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
 
-  /* ── "Academic Journey" label ── */
   .aj-label {
     font-size: 16px;
     font-weight: 500;
@@ -58,14 +56,12 @@ const CSS = `
     padding-left: 4px;
   }
 
-  /* ── Education block ── */
   .aj-block {
     display: flex;
     flex-direction: column;
     gap: 14px;
   }
 
-  /* ── Large bold degree title ── */
   .aj-title {
     font-size: 42px;
     font-weight: 700;
@@ -74,7 +70,6 @@ const CSS = `
     line-height: 1.2;
   }
 
-  /* ── Meta: college / date / grade ── */
   .aj-meta {
     display: flex;
     flex-direction: column;
@@ -89,23 +84,21 @@ const CSS = `
     line-height: 1.65;
   }
 
-  /* ── Horizontal rule ── */
   .aj-rule {
     border: none;
     border-top: 1px solid rgba(0, 0, 0, 0.15);
     margin: 52px 0;
   }
 
-  /* ── Responsive ── */
   @media (max-width: 768px) {
-    .aj          { padding: 36px 32px 64px; }
+    .aj          { padding: 36px 32px 36px; }
     .aj-label    { margin-bottom: 44px; }
     .aj-title    { font-size: 30px; }
     .aj-rule     { margin: 40px 0; }
   }
 
   @media (max-width: 480px) {
-    .aj       { padding: 32px 20px 56px; }
+    .aj       { padding: 32px 20px 32px; }
     .aj-title { font-size: 24px; }
   }
 `;

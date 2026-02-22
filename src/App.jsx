@@ -6,6 +6,7 @@ import Mycreations from "./components/Mycreations.jsx";
 import Multidisciplinary from "./components/Multidisciplinary.jsx";
 import Illustrations from "./components/Illustrations.jsx";
 import Education from "./components/Education.jsx";
+import Footer from "./components/Footer.jsx";
 import { useEffect } from "react";
 
 export default function App() {
@@ -68,6 +69,7 @@ export default function App() {
         <Multidisciplinary />
         <Illustrations />
         <Education />
+        <Footer />
       </div>
 
     </div>
