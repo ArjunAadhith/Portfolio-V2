@@ -128,10 +128,10 @@ export default function Showcase() {
       margin: 0 0 52px;
       font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
       font-size: clamp(32px, 4.2vw, 58px);
-      font-weight: 700;
+      font-weight: 500;
       letter-spacing: -0.038em;
       line-height: 1.05;
-      color: #666666;
+      color: #b4b4b4;
       flex-shrink: 0;
       padding: 0 80px;
     }

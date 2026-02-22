@@ -6,9 +6,7 @@ function NavIcon({ src, alt, label, href = "#" }) {
   const handleEnter = () => {
     const img = imgRef.current;
     if (!img) return;
-    // Remove leave class mid-flight so it doesn't conflict
     img.classList.remove("icon-leave");
-    // Force reflow so browser re-registers the class addition
     void img.offsetWidth;
     img.classList.add("icon-enter");
   };
@@ -22,14 +20,12 @@ function NavIcon({ src, alt, label, href = "#" }) {
   };
 
   return (
-    // No overflow:hidden here — that was clipping the tooltip
     <a
       href={href}
       className="nav-icon-wrap"
       onMouseEnter={handleEnter}
       onMouseLeave={handleLeave}
     >
-      {/* overflow:hidden only on the tight slot around the icon */}
       <span className="nav-icon-slot">
         <img
           ref={imgRef}
@@ -41,7 +37,6 @@ function NavIcon({ src, alt, label, href = "#" }) {
           style={{ display: "block", objectFit: "contain" }}
         />
       </span>
-      {/* Tooltip — outside slot so it's never clipped */}
       <span className="nav-label">{label}</span>
     </a>
   );
@@ -52,13 +47,7 @@ function SplitText({ line, delay = 0 }) {
   return (
     <>
       {words.map((word, i) => (
-        <span
-          key={i}
-          style={{
-            display: "inline-block",
-            verticalAlign: "bottom",
-          }}
-        >
+        <span key={i} style={{ display: "inline-block", verticalAlign: "bottom" }}>
           <span
             style={{
               display: "inline-block",
@@ -81,9 +70,6 @@ function Navbar() {
       <style>{`
         *, *::before, *::after { box-sizing: border-box; }
 
-        /* ─────────────────────────────────────────
-           HOVER IN  — icon exits UP, enters from BELOW
-        ───────────────────────────────────────── */
         @keyframes enterOut {
           from { transform: translateY(0);     opacity: 1; }
           to   { transform: translateY(-150%); opacity: 0; }
@@ -92,10 +78,6 @@ function Navbar() {
           from { transform: translateY(150%);  opacity: 0; }
           to   { transform: translateY(0);     opacity: 1; }
         }
-
-        /* ─────────────────────────────────────────
-           HOVER OUT — icon exits DOWN, enters from ABOVE
-        ───────────────────────────────────────── */
         @keyframes leaveOut {
           from { transform: translateY(0);     opacity: 1; }
           to   { transform: translateY(150%);  opacity: 0; }
@@ -110,26 +92,22 @@ function Navbar() {
             enterOut 0.20s cubic-bezier(0.55, 0, 0.45, 1) 0ms     forwards,
             enterIn  0.30s cubic-bezier(0.16, 1, 0.3,  1) 0.20s   forwards;
         }
-
         .icon-leave {
           animation:
             leaveOut 0.20s cubic-bezier(0.55, 0, 0.45, 1) 0ms     forwards,
             leaveIn  0.30s cubic-bezier(0.16, 1, 0.3,  1) 0.20s   forwards;
         }
 
-        /* ─── Navbar ─── */
         .navbar-wrapper {
           position: absolute;
           top: 38px;
-          left: 0;
-          right: 0;
+          left: 0; right: 0;
           display: flex;
           justify-content: center;
           align-items: center;
           gap: 10px;
           z-index: 50;
         }
-
         .nav-pill {
           display: flex;
           align-items: center;
@@ -140,115 +118,54 @@ function Navbar() {
           padding: 0 8px 0 14px;
           width: 480px;
         }
-
-        .logo-section {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          flex-shrink: 0;
-        }
-
-        .logo-img {
-          width: 30px;
-          height: 30px;
-          object-fit: contain;
-          border-radius: 4px;
-          display: block;
-        }
-
-        .logo-text {
-          display: flex;
-          flex-direction: column;
-          line-height: 1.3;
-        }
-
+        .logo-section { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .logo-img { width: 30px; height: 30px; object-fit: contain; border-radius: 4px; display: block; }
+        .logo-text { display: flex; flex-direction: column; line-height: 1.3; }
         .logo-text span {
-          font-size: 13.5px;
-          font-weight: 500;
-          color: #111111;
+          font-size: 13.5px; font-weight: 500; color: #111111;
           letter-spacing: 0.08em;
           font-family: -apple-system, "SF Pro Text", BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
           -webkit-font-smoothing: antialiased;
         }
-
         .nav-spacer { flex: 1; }
-
-        .nav-icons {
-          display: flex;
-          align-items: center;
-          gap: 0;
-        }
-
-        /* ── Icon wrap: NO overflow hidden (would clip tooltip) ── */
+        .nav-icons { display: flex; align-items: center; gap: 0; }
         .nav-icon-wrap {
           position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 46px;
-          height: 40px;
-          border-radius: 10px;
-          text-decoration: none;
-          cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          width: 46px; height: 40px;
+          border-radius: 10px; text-decoration: none; cursor: pointer;
         }
-
-        /* ── Slot: tight clip around icon only ── */
         .nav-icon-slot {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 22px;
-          height: 22px;
-          overflow: hidden;
+          display: flex; align-items: center; justify-content: center;
+          width: 22px; height: 22px; overflow: hidden;
         }
-
         .nav-icon-img {
           display: block;
           filter: invert(10%) sepia(0%) saturate(0%) brightness(100%) contrast(100%);
         }
-
-        /* ── Tooltip ── */
         .nav-label {
           position: absolute;
-          top: calc(100% + 8px);
-          left: 50%;
-          transform: translateX(-50%);
-          background: #232323;
-          color: #fff;
-          font-size: 11px;
-          font-weight: 500;
-          padding: 4px 10px;
-          border-radius: 7px;
-          white-space: nowrap;
-          pointer-events: none;
-          opacity: 0;
-          /* smooth tooltip fade */
-          transition: opacity 0.18s ease, transform 0.18s ease;
+          top: calc(100% + 8px); left: 50%;
           transform: translateX(-50%) translateY(4px);
+          background: #232323; color: #fff;
+          font-size: 11px; font-weight: 500;
+          padding: 4px 10px; border-radius: 7px;
+          white-space: nowrap; pointer-events: none; opacity: 0;
+          transition: opacity 0.18s ease, transform 0.18s ease;
           z-index: 999;
           font-family: -apple-system, "SF Pro Text", BlinkMacSystemFont, sans-serif;
         }
+        .nav-icon-wrap:hover .nav-label { opacity: 1; transform: translateX(-50%) translateY(0px); }
 
-        .nav-icon-wrap:hover .nav-label {
-          opacity: 1;
-          transform: translateX(-50%) translateY(0px);
-        }
-
-        /* ══════════════════════════════════
-           Resume pill — background rises up
-        ══════════════════════════════════ */
         .resume-pill {
           position: relative;
           height: 52px;
           background: #FFFFFF;
           border: 1.5px solid #D4D4D4;
           border-radius: 14px;
-          display: flex;
-          align-items: center;
+          display: flex; align-items: center;
           padding: 0 28px;
-          font-size: 15px;
-          font-weight: 500;
-          color: #111;
+          font-size: 15px; font-weight: 500; color: #111;
           letter-spacing: -0.01em;
           cursor: pointer;
           font-family: -apple-system, "SF Pro Text", BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
@@ -260,33 +177,18 @@ function Navbar() {
             color        0.40s cubic-bezier(0.16, 1, 0.3, 1),
             border-color 0.40s cubic-bezier(0.16, 1, 0.3, 1);
         }
-
-        /* Fill panel — starts hidden below */
         .resume-pill::before {
           content: "";
-          position: absolute;
-          inset: 0;
+          position: absolute; inset: 0;
           background: #111111;
           border-radius: inherit;
           transform: translateY(102%);
           transition: transform 0.46s cubic-bezier(0.16, 1, 0.3, 1);
           z-index: 0;
         }
-
-        /* Hover in: fill slides up */
-        .resume-pill:hover::before {
-          transform: translateY(0);
-        }
-
-        .resume-pill-text {
-          position: relative;
-          z-index: 1;
-        }
-
-        .resume-pill:hover {
-          color: #ffffff;
-          border-color: #111111;
-        }
+        .resume-pill:hover::before { transform: translateY(0); }
+        .resume-pill-text { position: relative; z-index: 1; }
+        .resume-pill:hover { color: #ffffff; border-color: #111111; }
       `}</style>
 
       <div className="navbar-wrapper">
@@ -305,7 +207,6 @@ function Navbar() {
             <NavIcon src="/Contact icon.png" alt="Contact"  label="Contact"  href="#contact" />
           </div>
         </div>
-
         <a className="resume-pill" href="#resume">
           <span className="resume-pill-text">Resume</span>
         </a>
@@ -359,16 +260,64 @@ export default function Hero() {
           from { opacity: 0; transform: translateY(110%); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        @keyframes shine {
-          0%   { background-position: -200% center; }
-          100% { background-position:  200% center; }
-        }
         @keyframes scrollEntry {
           from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
         }
 
+        /* available-badge — StarBorder, no text shine */
         .available-badge {
+          display: inline-block;
+          position: relative;
+          padding: 1.5px;
+          border-radius: 12px;
+          overflow: hidden;
+          cursor: default;
+        }
+        .available-badge::before {
+          content: "";
+          position: absolute;
+          width: 300%; height: 50%;
+          bottom: -12px; right: -250%;
+          border-radius: 50%;
+          background: radial-gradient(circle, #888888, transparent 10%);
+          opacity: 0;
+          animation: star-bottom 6s linear infinite alternate;
+          animation-play-state: paused;
+          transition: opacity 0.4s ease;
+          z-index: 0;
+          pointer-events: none;
+        }
+        .available-badge::after {
+          content: "";
+          position: absolute;
+          width: 300%; height: 50%;
+          top: -12px; left: -250%;
+          border-radius: 50%;
+          background: radial-gradient(circle, #888888, transparent 10%);
+          opacity: 0;
+          animation: star-top 6s linear infinite alternate;
+          animation-play-state: paused;
+          transition: opacity 0.4s ease;
+          z-index: 0;
+          pointer-events: none;
+        }
+        .available-badge:hover::before,
+        .available-badge:hover::after {
+          animation-play-state: running;
+          opacity: 0.8;
+        }
+        @keyframes star-bottom {
+          0%   { transform: translate(0%, 0%);    opacity: 1; }
+          100% { transform: translate(-100%, 0%); opacity: 0; }
+        }
+        @keyframes star-top {
+          0%   { transform: translate(0%, 0%);    opacity: 1; }
+          100% { transform: translate(100%, 0%);  opacity: 0; }
+        }
+        .available-badge-inner {
+          position: relative;
+          z-index: 1;
           display: inline-block;
           padding: 10px 24px;
           border: 1.5px solid #C2C2C2;
@@ -379,20 +328,10 @@ export default function Hero() {
           font-weight: 600;
           font-family: -apple-system, 'SF Pro Text', BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
           -webkit-font-smoothing: antialiased;
-          cursor: default;
           transition: border-color 0.3s ease;
-          overflow: hidden;
         }
+        .available-badge:hover .available-badge-inner { border-color: #888888; }
         .available-badge-text { display: inline-block; color: #111; }
-        .available-badge:hover { border-color: #ABABAB; }
-        .available-badge:hover .available-badge-text {
-          background: linear-gradient(105deg,#707070 0%,#b0b0b0 18%,#d8d8d8 72%,#b0b0b0 82%,#707070 100%);
-          background-size: 200% auto;
-          -webkit-background-clip: text;
-          background-clip: text;
-          -webkit-text-fill-color: transparent;
-          animation: shine 2.8s linear infinite;
-        }
 
         .hero-headline {
           margin: 0;
@@ -426,22 +365,60 @@ export default function Hero() {
         .scroll-btn-inner {
           display: inline-flex;
           align-items: center;
-          gap: 7px;
-          padding: 9px 22px;
+          gap: 8px;
+          padding: 9px 20px 9px 22px;
           font-size: 13.5px;
           font-weight: 400;
           color: #555;
           letter-spacing: -0.005em;
         }
-        .scroll-chevron {
-          display: inline-block;
-          width: 9px;
-          height: 9px;
-          border-right: 1.5px solid #888;
-          border-bottom: 1.5px solid #888;
-          transform: rotate(45deg) translateY(-1px);
+
+        /* ── CHANGED: scroll icon replaces single chevron ── */
+
+        /* Mouse-shaped scroll indicator */
+        .scroll-icon {
+          position: relative;
+          width: 16px;
+          height: 24px;
+          border: 1.5px solid #aaa;
+          border-radius: 8px;
           flex-shrink: 0;
+          transition: border-color 0.2s ease;
+          overflow: hidden;
         }
+
+        /* The scroll wheel dot inside the mouse */
+        .scroll-icon::before {
+          content: "";
+          position: absolute;
+          top: 4px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 2.5px;
+          height: 5px;
+          background: #aaa;
+          border-radius: 2px;
+          /* idle: static */
+          animation: none;
+          transition: background 0.2s ease;
+        }
+
+        /* On hover: dot scrolls down inside the mouse */
+        .scroll-btn:hover .scroll-icon {
+          border-color: #666;
+        }
+        .scroll-btn:hover .scroll-icon::before {
+          background: #666;
+          animation: scroll-dot 1.1s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+        }
+
+        @keyframes scroll-dot {
+          0%   { transform: translateX(-50%) translateY(0px);  opacity: 1; }
+          60%  { transform: translateX(-50%) translateY(8px);  opacity: 0.2; }
+          61%  { transform: translateX(-50%) translateY(-2px); opacity: 0; }
+          100% { transform: translateX(-50%) translateY(0px);  opacity: 1; }
+        }
+        /* ─────────────────────────────────────── */
       `}</style>
 
       <div
@@ -482,7 +459,9 @@ export default function Hero() {
           <div style={{ marginBottom: 20, overflow: "hidden" }}>
             <span style={{ display: "inline-block", animation: "wordUp 0.8s cubic-bezier(0.16,1,0.3,1) 100ms both" }}>
               <span className="available-badge">
-                <span className="available-badge-text">Available for Work</span>
+                <span className="available-badge-inner">
+                  <span className="available-badge-text">Available for Work</span>
+                </span>
               </span>
             </span>
           </div>
@@ -497,7 +476,7 @@ export default function Hero() {
           </h1>
         </div>
 
-        {/* Scroll Down */}
+        {/* Scroll Down — CHANGED: chevron → mouse scroll icon */}
         <div
           style={{
             position: "absolute",
@@ -513,11 +492,13 @@ export default function Hero() {
             <button className="scroll-btn">
               <span className="scroll-btn-inner">
                 Scroll Down
-                <span className="scroll-chevron" />
+                {/* Mouse-shaped scroll indicator */}
+                <span className="scroll-icon" />
               </span>
             </button>
           </div>
         </div>
+
       </div>
     </>
   );
