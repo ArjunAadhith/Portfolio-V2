@@ -88,7 +88,7 @@ export default function Skills() {
           display: flex;
           flex-direction: column;
           align-items: center;
-          padding: 72px 24px 80px;
+          padding: 58px 24px 20px;
           font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
           -webkit-font-smoothing: antialiased;
           overflow: hidden;
