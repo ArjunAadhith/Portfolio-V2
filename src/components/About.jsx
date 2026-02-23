@@ -11,7 +11,12 @@ const TITLES = [
 ];
 
 /* ── Typewriter hook ── */
-function useTypewriter(words, typingSpeed = 75, erasingSpeed = 40, pause = 1600) {
+function useTypewriter(
+  words,
+  typingSpeed = 75,
+  erasingSpeed = 40,
+  pause = 1600,
+) {
   const [displayed, setDisplayed] = useState(words[0]);
   const [wordIndex, setWordIndex] = useState(0);
   const [phase, setPhase] = useState("pausing");
@@ -22,7 +27,10 @@ function useTypewriter(words, typingSpeed = 75, erasingSpeed = 40, pause = 1600)
 
     if (phase === "typing") {
       if (displayed.length < current.length) {
-        timeout = setTimeout(() => setDisplayed(current.slice(0, displayed.length + 1)), typingSpeed);
+        timeout = setTimeout(
+          () => setDisplayed(current.slice(0, displayed.length + 1)),
+          typingSpeed,
+        );
       } else {
         timeout = setTimeout(() => setPhase("pausing"), pause);
       }
@@ -30,7 +38,10 @@ function useTypewriter(words, typingSpeed = 75, erasingSpeed = 40, pause = 1600)
       timeout = setTimeout(() => setPhase("erasing"), 200);
     } else if (phase === "erasing") {
       if (displayed.length > 0) {
-        timeout = setTimeout(() => setDisplayed(displayed.slice(0, -1)), erasingSpeed);
+        timeout = setTimeout(
+          () => setDisplayed(displayed.slice(0, -1)),
+          erasingSpeed,
+        );
       } else {
         const next = (wordIndex + 1) % words.length;
         setWordIndex(next);
@@ -103,7 +114,7 @@ export default function About() {
         // imgVisible: toggles both ways — pixel overlay reveal/re-cover
         setImgVisible(entry.isIntersecting);
       },
-      { threshold: 0.12 }
+      { threshold: 0.12 },
     );
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
@@ -448,16 +459,13 @@ export default function About() {
 
       <section ref={sectionRef} className="about-section" id="about">
         <div className="about-inner">
-
           {/* ── LEFT ── */}
           <div className="about-left">
             <h1 className="about-heading">
-
               {/* Line 1: I'm Arjun Aadhith, */}
               <span className="reveal-block">
                 <span className={`reveal-inner d1 ${visible ? "visible" : ""}`}>
                   <span className="heading-line1">
-
                     {/* "I'm " — italic, always static */}
                     <span className="him">I'm&nbsp;</span>
 
@@ -489,7 +497,6 @@ export default function About() {
                       {/* Static comma — never shuffled, always fully visible */}
                       <span className="hname-comma">,</span>
                     </span>
-
                   </span>
                 </span>
               </span>
@@ -498,11 +505,11 @@ export default function About() {
               <span className="reveal-block">
                 <span className={`reveal-inner d2 ${visible ? "visible" : ""}`}>
                   <span className="typewriter-line">
-                    {typedTitle}<span className="tw-cursor" />
+                    {typedTitle}
+                    <span className="tw-cursor" />
                   </span>
                 </span>
               </span>
-
             </h1>
 
             {/*
@@ -511,7 +518,9 @@ export default function About() {
               ScrollReveal then drives per-word blur/opacity via scroll.
             */}
             <div className="reveal-block">
-              <div className={`reveal-inner d3 about-para-wrap ${visible ? "visible" : ""}`}>
+              <div
+                className={`reveal-inner d3 about-para-wrap ${visible ? "visible" : ""}`}
+              >
                 <ScrollReveal
                   enableBlur={true}
                   baseOpacity={0.1}
@@ -520,23 +529,30 @@ export default function About() {
                   rotationEnd="bottom bottom"
                   wordAnimationEnd="bottom bottom"
                 >
-                  Hello! I'm a creative professional specializing in UI/UX design,
-                  graphic design, product design, visual design, illustration, and
-                  logo design, with a strong foundation in development. I transform
-                  ideas into user-centered, visually refined, and functional digital
-                  experiences that solve real problems with clarity and intent.
+                  Hello! I'm a creative professional specializing in UI/UX
+                  design, graphic design, product design, visual design,
+                  illustration, and logo design, with a strong foundation in
+                  development. I transform ideas into user-centered, visually
+                  refined, and functional digital experiences that solve real
+                  problems with clarity and intent.
                 </ScrollReveal>
               </div>
             </div>
 
             {/* Buttons */}
-            <div className={`about-btns reveal-inner d4 ${visible ? "visible" : ""}`}>
-
+            <div
+              className={`about-btns reveal-inner d4 ${visible ? "visible" : ""}`}
+            >
               <a href="#more" className="btn-pill">
                 <span className="btn-pill-inner">Read More</span>
               </a>
 
-              <a href="/resume.pdf" download className="btn-pill">
+              <a
+                href="/resume/Arjun Aadhith's resume.pdf"
+                download="Arjun Aadhith's resume.pdf"
+                className="btn-pill"
+              >
+                {" "}
                 <span className="btn-pill-inner">
                   Resume
                   <svg
@@ -557,7 +573,6 @@ export default function About() {
                   </svg>
                 </span>
               </a>
-
             </div>
           </div>
 
@@ -572,7 +587,6 @@ export default function About() {
               />
             </div>
           </div>
-
         </div>
       </section>
     </>
