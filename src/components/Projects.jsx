@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
 const CARDS = [
-  { id: 1, image: "/Paradize.png", link: "https://paradize-ecom.netlify.app/" },
-  { id: 2, image: "/Rideease.png", link: "https://rideease-car.netlify.app/" },
-  { id: 3, image: "/flixora.png",  link: "https://flixora-streaming-platform.netlify.app/" },
-  { id: 4, image: "/codefest.png", link: "https://codefest-2k25.netlify.app/" },
+  { id: 1, image: "/front-end/Paradize.png", link: "https://paradize-ecom.netlify.app/" },
+  { id: 2, image: "/front-end/Rideease.png", link: "https://rideease-car.netlify.app/" },
+  { id: 3, image: "/front-end/flixora.png",  link: "https://flixora-streaming-platform.netlify.app/" },
+  { id: 4, image: "/front-end/codefest.png", link: "https://codefest-2k25.netlify.app/" },
 ];
 
 const N = CARDS.length;

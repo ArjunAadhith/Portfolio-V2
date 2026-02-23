@@ -1,11 +1,11 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 
 const IMAGES = [
-  { id: 1, src: "/m1.png", label: "Aston Martin Valhalla",        link: "https://3d-car-model-design.netlify.app/" },
-  { id: 2, src: "/m2.png", label: "McLaren — Let's Start New Era", link: "https://forzahorizon-wallpaper.netlify.app/" },
-  { id: 3, src: "/m3.png", label: "Nike — Just Do It",             link: "https://nike-shoe-design.netlify.app/" },
-  { id: 4, src: "/m4.png", label: "Never Settle",                  link: "https://never-settle-wallpaper.netlify.app/" },
-  { id: 5, src: "/m5.png", label: "Awaken",                        link: "https://gaming-wallpaper.netlify.app/" },
+  { id: 1, src: "/multidisciplinary/m1.png", label: "Aston Martin Valhalla",        link: "https://3d-car-model-design.netlify.app/" },
+  { id: 2, src: "/multidisciplinary/m2.png", label: "McLaren — Let's Start New Era", link: "https://forzahorizon-wallpaper.netlify.app/" },
+  { id: 3, src: "/multidisciplinary/m3.png", label: "Nike — Just Do It",             link: "https://nike-shoe-design.netlify.app/" },
+  { id: 4, src: "/multidisciplinary/m4.png", label: "Never Settle",                  link: "https://never-settle-wallpaper.netlify.app/" },
+  { id: 5, src: "/multidisciplinary/m5.png", label: "Awaken",                        link: "https://gaming-wallpaper.netlify.app/" },
 ];
 
 // Lerp factor — lower = floatier/slower catch-up

@@ -36,7 +36,7 @@ export default function App() {
 
   return (
     <div style={{ background: "#E8E8E8" }}>
-      {/* <Navbar /> */}
+      <Navbar />
 
       {/* Hero — sticky so it stays pinned while About slides over */}
       <div

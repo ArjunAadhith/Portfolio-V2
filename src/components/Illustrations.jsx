@@ -1,18 +1,16 @@
 import { useState, useCallback, useRef } from "react";
 
 const ROW_1 = [
-  { id: 1, src: "/i1.png", alt: "Bonsai tree with parrot" },
-  { id: 2, src: "/i2.png", alt: "Cubist portrait" },
-  { id: 3, src: "/i3.png", alt: "The Rooster geometric" },
-  { id: 3, src: "/i3.png", alt: "The Rooster geometric" },
-  { id: 3, src: "/i3.png", alt: "The Rooster geometric" },
+  { id: 1, src: "/illustration/i1.png", alt: "Bonsai tree with parrot" },
+  { id: 2, src: "/illustration/i2.png", alt: "Cubist portrait" },
+  { id: 3, src: "/illustration/i3.png", alt: "The Rooster geometric" },
+  { id: 4, src: "/illustration/i4.png", alt: "Colourful characters" },
 ];
 const ROW_2 = [
-  { id: 4, src: "/i4.png", alt: "Colourful characters" },
-  { id: 5, src: "/i5.png", alt: "People crowd" },
-  { id: 4, src: "/i4.png", alt: "Colourful characters" },
-  { id: 4, src: "/i4.png", alt: "Colourful characters" },
-  { id: 6, src: "/i6.png", alt: "Woman with phone" },
+  { id: 5, src: "/illustration/i4.png", alt: "Colourful characters" },
+  { id: 6, src: "/illustration/i5.png", alt: "People crowd" },
+  { id: 7, src: "/illustration/i4.png", alt: "Colourful characters" },
+  { id: 8, src: "/illustration/i6.png", alt: "Woman with phone" },
 ];
 
 export default function Illustrations() {
