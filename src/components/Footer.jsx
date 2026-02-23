@@ -2,13 +2,13 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 
 const ICONS = [
   { id:'star',   src:'/f-icons/Star.png',      link:null,                   xPct:0.082, w:100,  h:100  },
-  { id:'ln',     src:'/f-icons/Linkedin.png',  link:'https://linkedin.com', xPct:0.216, w:160, h:160 },
+  { id:'ln',     src:'/f-icons/Linkedin.png',  link:'https://www.linkedin.com/in/arjunaadhith5/', xPct:0.216, w:160, h:160 },
   { id:'bolt',   src:'/f-icons/Thunder.png',   link:null,                   xPct:0.316, w:100,  h:100  },
-  { id:'mail',   src:'/f-icons/Mail.png',      link:'mailto:you@email.com', xPct:0.220, w:160, h:160 },
+  { id:'mail',   src:'/f-icons/Mail.png',      link:'https://mail.google.com/mail/u/3/#inbox?compose=DmwnWstzWPGTbGNcDDvHphJRdnjVmrkLqnNbXxXGMkvpvBnJMcqddfGPMThXHjVPMPVfwWjnQKqQ', xPct:0.220, w:160, h:160 },
   { id:'smile',  src:'/f-icons/Smile.png',     link:null,                   xPct:0.375, w:120,  h:120  },
   { id:'otw',    src:'/f-icons/OTW.png',       link:null,                   xPct:0.474, w:220, h:100  },
   { id:'gear',   src:'/f-icons/Setting.png',   link:null,                   xPct:0.530, w:120,  h:120  },
-  { id:'github', src:'/f-icons/Git.png',       link:'https://github.com',   xPct:0.632, w:160,  h:160  },
+  { id:'github', src:'/f-icons/Git.png',       link:'https://github.com/ArjunAadhith',   xPct:0.632, w:160,  h:160  },
   { id:'arrow',  src:'/f-icons/Arrow.png',     link:null,                   xPct:0.716, w:100,  h:100  },
   { id:'arrow2', src:'/f-icons/Cursor.png',    link:null,                   xPct:0.760, w:80,  h:80  },
   { id:'dragme', src:'/f-icons/Drag me.png',   link:null,                   xPct:0.874, w:156, h:60  },
