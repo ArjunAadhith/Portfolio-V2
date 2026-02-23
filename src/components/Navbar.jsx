@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 function NavIcon({ src, alt, label, href = "#" }) {
   const imgRef = useRef(null);
@@ -77,94 +78,76 @@ function ResumeModal({ isOpen, onClose }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   SCROLL THRESHOLD — pixels of scroll needed before hiding.
-   10px = responsive but not jittery.
-───────────────────────────────────────────────────────────── */
+const getScrollY = () =>
+  window.scrollY ||
+  document.documentElement.scrollTop ||
+  document.body.scrollTop ||
+  0;
+
 const SCROLL_THRESHOLD = 10;
 
 export default function Navbar() {
-  const navRef      = useRef(null);
+  const navRef = useRef(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  /* ── Page load entrance ── */
   useEffect(() => {
     const el = navRef.current;
     if (!el) return;
 
-    /* Start above viewport, no transition */
-    el.style.transition = "none";
-    el.style.transform  = "translateY(-100%)";
+    let lastScrollY = getScrollY();
+    let isHidden    = false;
+    let ticking     = false;
 
-    /* One rAF to commit the above style, then enable transition + slide in */
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        el.style.transition = "transform 0.6s ease-out";
-        el.style.transform  = "translateY(0)";
-      });
-    });
-  }, []);
-
-  /* ── Scroll hide / show ── */
-  useEffect(() => {
-    const el = navRef.current;
-    if (!el) return;
-
-    let lastScrollY  = window.scrollY;
-    let isHidden     = false;        // track current state to prevent redundant writes
-    let rafId        = null;
-    let pendingY     = window.scrollY;
-
-    const applyScroll = () => {
-      rafId = null;
-      const currentY = pendingY;
+    const update = () => {
+      ticking = false;
+      const currentY = getScrollY();
       const diff     = currentY - lastScrollY;
 
-      /* ── Hide: scrolling DOWN, past top 80px, diff > threshold ── */
-      if (diff > SCROLL_THRESHOLD && currentY > 80 && !isHidden) {
+      if (currentY <= 0) {
+        if (isHidden) {
+          isHidden = false;
+          el.classList.remove("nav-hidden");
+        }
+      } else if (diff > SCROLL_THRESHOLD && !isHidden) {
         isHidden = true;
-        el.style.transition    = "transform 0.4s ease";
-        el.style.transform     = "translateY(-100%)";
-        el.style.pointerEvents = "none";
-
-      /* ── Show: scrolling UP, any meaningful upward movement ── */
-      } else if (diff < -SCROLL_THRESHOLD && isHidden) {
+        el.classList.add("nav-hidden");
+      } else if (diff < 0 && isHidden) {
         isHidden = false;
-        el.style.transition    = "transform 0.4s ease";
-        el.style.transform     = "translateY(0)";
-        el.style.pointerEvents = "auto";
+        el.classList.remove("nav-hidden");
       }
 
-      lastScrollY = currentY;
+      lastScrollY = currentY <= 0 ? 0 : currentY;
     };
 
     const onScroll = () => {
-      pendingY = window.scrollY;
-      /* Cancel any pending frame and schedule a fresh one */
-      if (rafId !== null) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(applyScroll);
+      if (!ticking) {
+        requestAnimationFrame(update);
+        ticking = true;
+      }
     };
 
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (rafId !== null) cancelAnimationFrame(rafId);
-    };
+    document.addEventListener("scroll", onScroll, { passive: true, capture: true });
+    return () => document.removeEventListener("scroll", onScroll, { capture: true });
   }, []);
 
-  return (
+  const navContent = (
     <>
       <style>{CSS}</style>
-
       <div ref={navRef} className="navbar-wrapper">
         <div className="nav-pill">
+
+          {/* Logo with shine effect on hover */}
           <div className="logo-section">
             <img className="logo-img" src="/src/assets/Nav logo icon.png" alt="Arjun Aadhith" />
             <div className="logo-text">
-              <span className="logo-name logo-name-animated">Arjun</span>
-              <span className="logo-name">Aadhith</span>
+              <span className="logo-name-shine">
+                <span className="logo-name-text">Arjun</span>
+                <span className="logo-name-text">Aadhith</span>
+                <span className="shine-beam" />
+              </span>
             </div>
           </div>
+
           <div className="nav-spacer" />
           <div className="nav-icons">
             <NavIcon src="/Home icon.png"    alt="Home"     label="Home"     href="#home" />
@@ -177,10 +160,11 @@ export default function Navbar() {
           <span className="resume-pill-text">Resume</span>
         </button>
       </div>
-
       <ResumeModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
     </>
   );
+
+  return createPortal(navContent, document.body);
 }
 
 const CSS = `
@@ -213,19 +197,29 @@ const CSS = `
       leaveIn  0.30s cubic-bezier(0.16, 1, 0.3,  1) 0.20s forwards;
   }
 
+  /* ── Navbar wrapper: slow, smooth rise and hide ── */
   .navbar-wrapper {
     position: fixed;
-    top: 38px;
-    left: 0; right: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding-top: 38px;
+    padding-bottom: 12px;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
-    z-index: 1000;
-    will-change: transform;
-    /* transition set entirely by JS — no CSS default here */
+    z-index: 99999;
+    transform: translateY(0);
+    /* Slow ease-in-out: hides and shows with a gentle, deliberate motion */
+    transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .navbar-wrapper.nav-hidden {
+    /* Large enough value to push entire wrapper (padding 38 + pill 52 + buffer) off screen */
+    transform: translateY(-120px);
   }
 
+  /* ── Nav pill ── */
   .nav-pill {
     display: flex; align-items: center;
     height: 52px;
@@ -236,21 +230,71 @@ const CSS = `
     width: 480px;
   }
 
-  .logo-section { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-  .logo-img { width: 30px; height: 30px; object-fit: contain; border-radius: 4px; display: block; }
-  .logo-text { display: flex; flex-direction: column; line-height: 1.3; }
+  /* ── Logo section ── */
+  .logo-section {
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    cursor: default;
+  }
+  .logo-img {
+    width: 30px; height: 30px; object-fit: contain;
+    border-radius: 4px; display: block;
+  }
 
-  .logo-name {
-    font-size: 13.5px; font-weight: 500; color: #111111;
+  /* 
+    Shine container: clips the beam to the text area only.
+    position:relative + overflow:hidden traps the beam inside. 
+  */
+  .logo-name-shine {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+    overflow: hidden;
+    border-radius: 2px;
+  }
+
+  .logo-name-text {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #111111;
     letter-spacing: 0.08em;
     font-family: -apple-system, "SF Pro Text", BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
+    position: relative;
+    z-index: 1;
   }
-  .logo-name-animated {
-    display: inline-block;
-    transition: letter-spacing 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /*
+    Shine beam: a narrow bright diagonal stripe, positioned off the left edge.
+    On hover it slides from left to right across the text.
+  */
+  .shine-beam {
+    position: absolute;
+    top: -20%;
+    left: -80%;
+    width: 45%;
+    height: 140%;
+    background: linear-gradient(
+      105deg,
+      transparent 20%,
+      rgba(255, 255, 255, 0.0) 30%,
+      rgba(255, 255, 255, 0.75) 50%,
+      rgba(255, 255, 255, 0.0) 70%,
+      transparent 80%
+    );
+    transform: skewX(-15deg);
+    pointer-events: none;
+    z-index: 2;
+    /* Sits off-screen left by default — no transition so it resets instantly */
+    transition: none;
   }
-  .logo-section:hover .logo-name-animated { letter-spacing: 0.20em; }
+
+  /* On hover: slide the beam right across the text over 0.55s */
+  .logo-section:hover .shine-beam {
+    left: 120%;
+    transition: left 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 
   .nav-spacer { flex: 1; }
   .nav-icons  { display: flex; align-items: center; gap: 0; }
@@ -285,6 +329,7 @@ const CSS = `
   }
   .nav-icon-wrap:hover .nav-label { opacity: 1; transform: translateX(-50%) translateY(0px); }
 
+  /* ── Resume pill ── */
   .resume-pill {
     position: relative;
     height: 52px;
@@ -301,7 +346,8 @@ const CSS = `
     -webkit-font-smoothing: antialiased;
     white-space: nowrap;
     outline: none;
-    transition: color 0.40s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.40s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: color 0.40s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.40s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .resume-pill::before {
     content: "";
@@ -316,9 +362,9 @@ const CSS = `
   .resume-pill-text { position: relative; z-index: 1; }
   .resume-pill:hover { color: #ffffff; border-color: #111111; }
 
-  /* ══ Modal ══ */
+  /* ── Modal ── */
   .rm-backdrop {
-    position: fixed; inset: 0; z-index: 9999;
+    position: fixed; inset: 0; z-index: 999999;
     background: rgba(0,0,0,0.52);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -334,8 +380,7 @@ const CSS = `
     border-radius: 18px;
     width: min(780px, 100%);
     height: 90vh;
-    display: flex;
-    flex-direction: column;
+    display: flex; flex-direction: column;
     overflow: hidden;
     transform: scale(0.94) translateY(10px);
     transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
@@ -364,29 +409,18 @@ const CSS = `
   .rm-close:hover { background: #E6E6E6; color: #111; }
 
   .rm-body {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    background: #F4F4F4;
-    padding: 0;
-    display: block;
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+    background: #F4F4F4; padding: 0; display: block;
   }
   .rm-img {
-    display: block;
-    width: 100%;
-    height: auto;
-    border-radius: 0;
-    pointer-events: none;
-    user-select: none;
-    -webkit-user-drag: none;
+    display: block; width: 100%; height: auto;
+    pointer-events: none; user-select: none; -webkit-user-drag: none;
   }
 
   .rm-footer {
-    flex-shrink: 0;
-    padding: 14px 20px;
+    flex-shrink: 0; padding: 14px 20px;
     border-top: 1px solid #EFEFEF;
-    display: flex;
-    justify-content: center;
+    display: flex; justify-content: center;
     background: #ffffff;
   }
   .rm-download {
@@ -394,8 +428,7 @@ const CSS = `
     height: 40px; padding: 0 32px;
     background: #111111; color: #ffffff;
     border: none; border-radius: 10px;
-    font-size: 14px; font-weight: 500;
-    cursor: pointer;
+    font-size: 14px; font-weight: 500; cursor: pointer;
     font-family: -apple-system, "SF Pro Text", BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     transition: background 0.18s ease, transform 0.15s ease;
