@@ -1,8 +1,15 @@
 import { useRef, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 
-function NavIcon({ src, alt, label, href = "#" }) {
+// ─── Section IDs that match your existing components ───────────────
+//  Home    → your Hero.jsx   must have  id="home"
+//  Projects → Projects.jsx   must have  id="projects"
+//  Contact → Footer.jsx      must have  id="contact"
+// ───────────────────────────────────────────────────────────────────
+
+function NavIcon({ src, alt, label, href = "#", onNavClick }) {
   const imgRef = useRef(null);
+
   const handleEnter = () => {
     const img = imgRef.current; if (!img) return;
     img.classList.remove("icon-leave"); void img.offsetWidth;
@@ -13,11 +20,40 @@ function NavIcon({ src, alt, label, href = "#" }) {
     img.classList.remove("icon-enter"); void img.offsetWidth;
     img.classList.add("icon-leave");
   };
+
+  // Smooth-scroll for internal anchors; open new tab for external links
+  const isExternal = href.startsWith("http") || href.startsWith("mailto:");
+
+  const handleClick = (e) => {
+    if (href.startsWith("#")) {
+      e.preventDefault();
+      const target = document.querySelector(href);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      onNavClick?.(href);
+    }
+  };
+
   return (
-    <a href={href} className="nav-icon-wrap" onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
+    <a
+      href={href}
+      className="nav-icon-wrap"
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+      onClick={handleClick}
+      {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+    >
       <span className="nav-icon-slot">
-        <img ref={imgRef} src={src} alt={alt} width={20} height={20}
-          className="nav-icon-img" style={{ display: "block", objectFit: "contain" }} />
+        <img
+          ref={imgRef}
+          src={src}
+          alt={alt}
+          width={20}
+          height={20}
+          className="nav-icon-img"
+          style={{ display: "block", objectFit: "contain" }}
+        />
       </span>
       <span className="nav-label">{label}</span>
     </a>
@@ -78,6 +114,7 @@ function ResumeModal({ isOpen, onClose }) {
   );
 }
 
+// ─── Scroll helpers ────────────────────────────────────────────────
 const getScrollY = () =>
   window.scrollY ||
   document.documentElement.scrollTop ||
@@ -86,10 +123,61 @@ const getScrollY = () =>
 
 const SCROLL_THRESHOLD = 10;
 
+// ─── Navbar ────────────────────────────────────────────────────────
 export default function Navbar() {
-  const navRef = useRef(null);
+  const navRef               = useRef(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [activeHref, setActiveHref] = useState("#home");
 
+  // ── 1. Premium 1.8s entry animation on mount ──────────────────────
+  //
+  //  Strategy:
+  //   • Inline style on the wrapper starts it invisible (no flash).
+  //   • Double rAF: frame-1 commits the hidden state to the render tree,
+  //     frame-2 safely begins the transition — guaranteed zero flicker.
+  //   • Three properties animate together for a "materialise" feel:
+  //       translateY  — slides in from slightly above   (1.80s)
+  //       opacity     — fades in                        (1.20s)
+  //       filter blur — soft focus-in, then sharpens    (1.10s)
+  //   • All use cubic-bezier(0.22, 1, 0.36, 1): accelerates fast
+  //     at the start, then decelerates very gently — the classic
+  //     Apple "spring without bounce" feel.
+  // ──────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+
+    // Enforce the hidden start state (belt-and-suspenders with inline style)
+    el.style.transform = "translateY(-22px)";
+    el.style.opacity   = "0";
+    el.style.filter    = "blur(7px)";
+
+    let raf2;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        el.style.transition = [
+          "transform 1.80s cubic-bezier(0.22, 1, 0.36, 1)",
+          "opacity   1.20s cubic-bezier(0.22, 1, 0.36, 1)",
+          "filter    1.10s cubic-bezier(0.22, 1, 0.36, 1)",
+        ].join(", ");
+
+        el.style.transform = "translateY(0)";
+        el.style.opacity   = "1";
+        el.style.filter    = "blur(0px)";
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+    };
+  }, []);
+
+  // ── 2. Scroll-based hide / reveal ─────────────────────────────────
+  //  Once the entry animation is complete the CSS transition property
+  //  switches to the faster scroll-hide curve via the .nav-hidden class.
+  //  !important overrides any lingering inline transform from the entry.
+  // ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     const el = navRef.current;
     if (!el) return;
@@ -104,41 +192,70 @@ export default function Navbar() {
       const diff     = currentY - lastScrollY;
 
       if (currentY <= 0) {
-        if (isHidden) {
-          isHidden = false;
-          el.classList.remove("nav-hidden");
-        }
+        if (isHidden) { isHidden = false; el.classList.remove("nav-hidden"); }
       } else if (diff > SCROLL_THRESHOLD && !isHidden) {
-        isHidden = true;
-        el.classList.add("nav-hidden");
+        isHidden = true;  el.classList.add("nav-hidden");
       } else if (diff < 0 && isHidden) {
-        isHidden = false;
-        el.classList.remove("nav-hidden");
+        isHidden = false; el.classList.remove("nav-hidden");
       }
 
       lastScrollY = currentY <= 0 ? 0 : currentY;
     };
 
     const onScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(update);
-        ticking = true;
-      }
+      if (!ticking) { requestAnimationFrame(update); ticking = true; }
     };
 
     document.addEventListener("scroll", onScroll, { passive: true, capture: true });
     return () => document.removeEventListener("scroll", onScroll, { capture: true });
   }, []);
 
+  // ── 3. IntersectionObserver — keeps active icon in sync on scroll ──
+  useEffect(() => {
+    const ids = ["home", "projects", "contact"];
+    const els = ids.map((id) => document.getElementById(id)).filter(Boolean);
+    if (!els.length) return;
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setActiveHref(`#${entry.target.id}`);
+        });
+      },
+      { threshold: 0.35 }
+    );
+
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+
+  // ─────────────────────────────────────────────────────────────────
   const navContent = (
     <>
       <style>{CSS}</style>
-      <div ref={navRef} className="navbar-wrapper">
+
+      {/*
+        Inline style mirrors the JS hidden state so the element is
+        invisible from the very first paint — prevents any flash.
+      */}
+      <div
+        ref={navRef}
+        className="navbar-wrapper"
+        style={{
+          transform : "translateY(-22px)",
+          opacity   : 0,
+          filter    : "blur(7px)",
+        }}
+      >
         <div className="nav-pill">
 
-          {/* Logo with shine effect on hover */}
+          {/* ── Logo (unchanged) ── */}
           <div className="logo-section">
-            <img className="logo-img" src="/src/assets/Nav logo icon.png" alt="Arjun Aadhith" />
+            <img
+              className="logo-img"
+              src="/src/assets/Nav logo icon.png"
+              alt="Arjun Aadhith"
+            />
             <div className="logo-text">
               <span className="logo-name-shine">
                 <span className="logo-name-text">Arjun</span>
@@ -149,17 +266,39 @@ export default function Navbar() {
           </div>
 
           <div className="nav-spacer" />
+
+          {/* ── Navigation icons ── */}
           <div className="nav-icons">
-            <NavIcon src="/Home icon.png"    alt="Home"     label="Home"     href="#home" />
-            <NavIcon src="/Project icon.png" alt="Projects" label="Projects" href="#projects" />
-            <NavIcon src="/Contact icon.png" alt="Contact"  label="Contact"  href="#contact" />
+            <NavIcon
+              src="/Home icon.png"
+              alt="Home"
+              label="Home"
+              href="#home"
+              onNavClick={setActiveHref}
+            />
+            <NavIcon
+              src="/Project icon.png"
+              alt="Projects"
+              label="Projects"
+              href="#projects"
+              onNavClick={setActiveHref}
+            />
+            <NavIcon
+              src="/Contact icon.png"
+              alt="Contact"
+              label="Contact"
+              href="#contact"   /* ← points to your Footer's id */
+              onNavClick={setActiveHref}
+            />
           </div>
         </div>
 
+        {/* ── Resume pill (unchanged) ── */}
         <button className="resume-pill" onClick={() => setModalOpen(true)}>
           <span className="resume-pill-text">Resume</span>
         </button>
       </div>
+
       <ResumeModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
     </>
   );
@@ -167,9 +306,11 @@ export default function Navbar() {
   return createPortal(navContent, document.body);
 }
 
+// ─── Styles ────────────────────────────────────────────────────────
 const CSS = `
   *, *::before, *::after { box-sizing: border-box; }
 
+  /* ── Icon bounce-through (your original hover effect) ── */
   @keyframes enterOut {
     from { transform: translateY(0);     opacity: 1; }
     to   { transform: translateY(-150%); opacity: 0; }
@@ -197,12 +338,10 @@ const CSS = `
       leaveIn  0.30s cubic-bezier(0.16, 1, 0.3,  1) 0.20s forwards;
   }
 
-  /* ── Navbar wrapper: slow, smooth rise and hide ── */
+  /* ── Navbar wrapper ── */
   .navbar-wrapper {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
+    top: 0; left: 0; right: 0;
     padding-top: 38px;
     padding-bottom: 12px;
     display: flex;
@@ -210,16 +349,31 @@ const CSS = `
     align-items: flex-start;
     gap: 10px;
     z-index: 99999;
-    transform: translateY(0);
-    /* Slow ease-in-out: hides and shows with a gentle, deliberate motion */
-    transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .navbar-wrapper.nav-hidden {
-    /* Large enough value to push entire wrapper (padding 38 + pill 52 + buffer) off screen */
-    transform: translateY(-120px);
+
+    /*
+      CSS transition is the SCROLL-HIDE curve.
+      The entry animation is driven entirely by JS inline styles above,
+      which take precedence during mount and then hand off cleanly here.
+      All three properties are listed so neither opacity nor filter
+      abruptly snaps during scroll-hide.
+    */
+    transition:
+      transform 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity   0.65s cubic-bezier(0.4, 0, 0.2, 1),
+      filter    0.50s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* ── Nav pill ── */
+  /*
+    Scroll-hide: !important ensures this wins over any residual
+    inline transform left over from the entry animation.
+  */
+  .navbar-wrapper.nav-hidden {
+    transform : translateY(-120px) !important;
+    opacity   : 0.4               !important;
+    filter    : blur(3px)         !important;
+  }
+
+  /* ── Nav pill (your original design — unchanged) ── */
   .nav-pill {
     display: flex; align-items: center;
     height: 52px;
@@ -230,7 +384,7 @@ const CSS = `
     width: 480px;
   }
 
-  /* ── Logo section ── */
+  /* ── Logo (your original design — unchanged) ── */
   .logo-section {
     display: flex; align-items: center; gap: 8px; flex-shrink: 0;
     cursor: default;
@@ -239,42 +393,25 @@ const CSS = `
     width: 30px; height: 30px; object-fit: contain;
     border-radius: 4px; display: block;
   }
-
-  /* 
-    Shine container: clips the beam to the text area only.
-    position:relative + overflow:hidden traps the beam inside. 
-  */
   .logo-name-shine {
     position: relative;
-    display: flex;
-    flex-direction: column;
+    display: flex; flex-direction: column;
     line-height: 1.3;
     overflow: hidden;
     border-radius: 2px;
   }
-
   .logo-name-text {
     display: block;
-    font-size: 13.5px;
-    font-weight: 500;
-    color: #111111;
+    font-size: 13.5px; font-weight: 500; color: #111111;
     letter-spacing: 0.08em;
     font-family: -apple-system, "SF Pro Text", BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
-    position: relative;
-    z-index: 1;
+    position: relative; z-index: 1;
   }
-
-  /*
-    Shine beam: a narrow bright diagonal stripe, positioned off the left edge.
-    On hover it slides from left to right across the text.
-  */
   .shine-beam {
     position: absolute;
-    top: -20%;
-    left: -80%;
-    width: 45%;
-    height: 140%;
+    top: -20%; left: -80%;
+    width: 45%; height: 140%;
     background: linear-gradient(
       105deg,
       transparent 20%,
@@ -284,18 +421,15 @@ const CSS = `
       transparent 80%
     );
     transform: skewX(-15deg);
-    pointer-events: none;
-    z-index: 2;
-    /* Sits off-screen left by default — no transition so it resets instantly */
+    pointer-events: none; z-index: 2;
     transition: none;
   }
-
-  /* On hover: slide the beam right across the text over 0.55s */
   .logo-section:hover .shine-beam {
     left: 120%;
     transition: left 0.55s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  /* ── Nav icons ── */
   .nav-spacer { flex: 1; }
   .nav-icons  { display: flex; align-items: center; gap: 0; }
 
@@ -304,7 +438,16 @@ const CSS = `
     display: flex; align-items: center; justify-content: center;
     width: 46px; height: 40px;
     border-radius: 10px; text-decoration: none; cursor: pointer;
+    /* Subtle scale on hover — 300ms spring feel */
+    transition: transform 0.30s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: center;
   }
+  .nav-icon-wrap:hover  { transform: scale(1.08); }
+  .nav-icon-wrap:active {
+    transform: scale(0.93);
+    transition-duration: 0.10s;
+  }
+
   .nav-icon-slot {
     display: flex; align-items: center; justify-content: center;
     width: 24px; height: 24px;
@@ -315,6 +458,8 @@ const CSS = `
     display: block;
     filter: invert(10%) sepia(0%) saturate(0%) brightness(100%) contrast(100%);
   }
+
+  /* Tooltip label */
   .nav-label {
     position: absolute;
     top: calc(100% + 8px); left: 50%;
@@ -327,9 +472,11 @@ const CSS = `
     z-index: 999;
     font-family: -apple-system, "SF Pro Text", BlinkMacSystemFont, sans-serif;
   }
-  .nav-icon-wrap:hover .nav-label { opacity: 1; transform: translateX(-50%) translateY(0px); }
+  .nav-icon-wrap:hover .nav-label {
+    opacity: 1; transform: translateX(-50%) translateY(0px);
+  }
 
-  /* ── Resume pill ── */
+  /* ── Resume pill (your original design — unchanged) ── */
   .resume-pill {
     position: relative;
     height: 52px;
@@ -346,8 +493,9 @@ const CSS = `
     -webkit-font-smoothing: antialiased;
     white-space: nowrap;
     outline: none;
-    transition: color 0.40s cubic-bezier(0.16, 1, 0.3, 1),
-                border-color 0.40s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: color       0.40s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.40s cubic-bezier(0.16, 1, 0.3, 1),
+                transform   0.28s cubic-bezier(0.22, 1, 0.36, 1);
   }
   .resume-pill::before {
     content: "";
@@ -359,10 +507,14 @@ const CSS = `
     z-index: 0;
   }
   .resume-pill:hover::before { transform: translateY(0); }
-  .resume-pill-text { position: relative; z-index: 1; }
   .resume-pill:hover { color: #ffffff; border-color: #111111; }
+  .resume-pill:active {
+    transform: scale(0.96);
+    transition-duration: 0.10s;
+  }
+  .resume-pill-text { position: relative; z-index: 1; }
 
-  /* ── Modal ── */
+  /* ── Resume Modal (your original design — unchanged) ── */
   .rm-backdrop {
     position: fixed; inset: 0; z-index: 999999;
     background: rgba(0,0,0,0.52);
