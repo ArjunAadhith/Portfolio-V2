@@ -1,26 +1,3 @@
-/**
- * ╔══════════════════════════════════════════════════════════════════════════╗
- * ║  MoreAbout.jsx  —  Production-ready About panel                          ║
- * ╠══════════════════════════════════════════════════════════════════════════╣
- * ║                                                                          ║
- * ║  QUICK INTEGRATION                                                       ║
- * ║  ─────────────────                                                       ║
- * ║  // App.jsx or parent:                                                   ║
- * ║  const [aboutOpen, setAboutOpen] = useState(false);                     ║
- * ║                                                                          ║
- * ║  <Navbar                                                                 ║
- * ║    onNavClick={() => setAboutOpen(false)}  ← ANY icon closes About      ║
- * ║    onAboutClick={() => setAboutOpen(true)}                               ║
- * ║  />                                                                      ║
- * ║  <MoreAbout isOpen={aboutOpen} onClose={() => setAboutOpen(false)} />   ║
- * ║                                                                          ║
- * ║  // Navbar also listens to a DOM event (no prop drilling needed):        ║
- * ║  // window.addEventListener("portfolio:nav", e => setHide(!e.detail.v)) ║
- * ║                                                                          ║
- * ║  DEPENDENCY:  framer-motion  (npm i framer-motion)                      ║
- * ╚══════════════════════════════════════════════════════════════════════════╝
- */
-
 import { useEffect, useRef, useCallback, memo } from "react";
 import {
   motion,
@@ -29,21 +6,7 @@ import {
   useSpring,
 } from "framer-motion";
 
-/* ════════════════════════════════════════════════════════════════════════════
-   ① REUSABLE  —  <RevealText />
-   ────────────────────────────────────────────────────────────────────────────
-   Animates any children into view every time they enter the viewport.
-   ✓ Re-triggers on scroll-up AND scroll-down  (viewport.once = false)
-   ✓ opacity 0 → 1   translateY 40 → 0   0.8s easeOut
-   ✓ memo() prevents re-renders from parent state changes
 
-   Props
-   ─────
-   delay    s      extra delay before starting         default 0
-   y        px     initial Y offset                    default 40
-   duration s      animation length                    default 0.8
-   as       tag    HTML element to render              default "div"
-   ══════════════════════════════════════════════════════════════════════════ */
 export const RevealText = memo(function RevealText({
   children,
   delay    = 0,
@@ -78,25 +41,7 @@ export const RevealText = memo(function RevealText({
   );
 });
 
-/* ════════════════════════════════════════════════════════════════════════════
-   ② REUSABLE  —  <ParallaxSection />
-   ────────────────────────────────────────────────────────────────────────────
-   Adds a smooth parallax translateY to its BACKGROUND as the user scrolls.
-   The background moves at ~35% of scroll speed — content stays static.
 
-   How it works:
-   • useScroll tracks the section's scroll progress inside the scroller div
-   • useTransform maps 0→1 progress to a Y translation range
-   • useSpring smooths the value — eliminates jitter on fast scroll
-
-   Props
-   ─────
-   scroller  ref    the .ma-page scrolling container ref
-   imageSrc  str    background image URL (optional)
-   bgColor   str    fallback colour                default "#0E0E0E"
-   height    str    CSS height of the band         default "auto"
-   overlay   0–1   dark overlay opacity            default 0.55
-   ══════════════════════════════════════════════════════════════════════════ */
 export const ParallaxSection = memo(function ParallaxSection({
   scroller,
   imageSrc,
@@ -176,18 +121,7 @@ export const ParallaxSection = memo(function ParallaxSection({
   );
 });
 
-/* ════════════════════════════════════════════════════════════════════════════
-   ③ REUSABLE  —  <ParallaxImage />
-   ────────────────────────────────────────────────────────────────────────────
-   Applies parallax directly to an <img> element.
-   The image moves SLOWER than scroll so it appears to drift behind content.
 
-   Props
-   ─────
-   scroller  ref    the scrolling container ref
-   src       str    image src
-   alt       str    alt text
-   ══════════════════════════════════════════════════════════════════════════ */
 export const ParallaxImage = memo(function ParallaxImage({
   scroller,
   src,
