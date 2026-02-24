@@ -1,30 +1,40 @@
+/**
+ * Navbar.jsx — updated to work seamlessly with the MoreAbout panel.
+ *
+ * Changes from original
+ * ─────────────────────
+ * 1. NavIcon onClick  →  dispatches "portfolio:closeAbout" so MoreAbout closes
+ *    on ANY nav icon click regardless of z-index stacking.
+ *
+ * 2. z-index boost  →  when MoreAbout opens it fires "portfolio:nav"
+ *    with { visible: false }.  Navbar switches to z-index 200001 (above
+ *    MoreAbout's 100000) so icons are clickable even while the panel is open.
+ *    When MoreAbout closes the z-index reverts to 100.
+ *
+ * 3. Scroll-hide inside MoreAbout  →  MoreAbout's inner div dispatches
+ *    "portfolio:aboutScroll" with { direction, scrollTop }.
+ *    Navbar listens to this event and hides / shows exactly like it does
+ *    for normal page scroll — including the threshold guard.
+ */
+
 import { useRef, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 
-// ─── Finds whichever element is actually scrolling the page ────────
-// window.scrollTo sometimes does nothing if html/body has
-// overflow:auto or height:100% — this detects the real container.
+// ─── Scroll helpers ───────────────────────────────────────────────
 function getScrollContainer() {
   const html = document.documentElement;
   const body = document.body;
-
-  // If already scrolled, we know who's doing it
   if (html.scrollTop > 0) return html;
   if (body.scrollTop > 0) return body;
-
-  // At scroll position 0: poke each candidate to find who accepts it
   html.scrollTop = 1;
   if (html.scrollTop === 1) { html.scrollTop = 0; return html; }
-
   body.scrollTop = 1;
   if (body.scrollTop === 1) { body.scrollTop = 0; return body; }
-
   return window;
 }
 
 function smoothScrollTo(top) {
-  const container = getScrollContainer();
-  container.scrollTo({ top, behavior: "smooth" });
+  getScrollContainer().scrollTo({ top, behavior: "smooth" });
 }
 
 function getScrollY() {
@@ -35,6 +45,8 @@ function getScrollY() {
     0
   );
 }
+
+const SCROLL_THRESHOLD = 10;
 
 // ─── NavIcon ──────────────────────────────────────────────────────
 function NavIcon({ src, alt, label, href = "#", onNavClick }) {
@@ -54,20 +66,26 @@ function NavIcon({ src, alt, label, href = "#", onNavClick }) {
   const isExternal = href.startsWith("http") || href.startsWith("mailto:");
 
   const handleClick = (e) => {
+    /*
+     * STEP 1 — always close MoreAbout first.
+     * MoreAbout listens for this event and calls onClose().
+     * This works even when the navbar is visually above the panel
+     * because it's a DOM event, not a click through z-index.
+     */
+    window.dispatchEvent(new CustomEvent("portfolio:closeAbout"));
+
     if (href.startsWith("#")) {
       e.preventDefault();
 
       if (href === "#home") {
-        // #home is position:sticky — always just scroll to absolute top
         smoothScrollTo(0);
       } else {
         const id = href.slice(1);
         const el = document.getElementById(id);
         if (el) {
-          const container = getScrollContainer();
-          const containerScrollTop =
-            container === window ? window.scrollY : container.scrollTop;
-          const y = containerScrollTop + el.getBoundingClientRect().top - 90;
+          const container   = getScrollContainer();
+          const scrollTop   = container === window ? window.scrollY : container.scrollTop;
+          const y           = scrollTop + el.getBoundingClientRect().top - 90;
           smoothScrollTo(y);
         }
       }
@@ -156,13 +174,18 @@ function ResumeModal({ isOpen, onClose }) {
   );
 }
 
-const SCROLL_THRESHOLD = 10;
-
 // ─── Navbar ────────────────────────────────────────────────────────
 export default function Navbar() {
   const navRef                      = useRef(null);
   const [modalOpen, setModalOpen]   = useState(false);
   const [activeHref, setActiveHref] = useState("#home");
+
+  /*
+   * aboveAbout — true while MoreAbout panel is open.
+   * Switches .navbar-wrapper to z-index 200001 so icons are
+   * always visible and clickable above the MoreAbout overlay.
+   */
+  const [aboveAbout, setAboveAbout] = useState(false);
 
   // ── Entry animation ──────────────────────────────────────────────
   useEffect(() => {
@@ -187,34 +210,85 @@ export default function Navbar() {
     return () => { cancelAnimationFrame(raf1); if (raf2) cancelAnimationFrame(raf2); };
   }, []);
 
-  // ── Scroll-based hide / reveal ───────────────────────────────────
+  // ── Listen for MoreAbout open/close — raise/lower z-index ────────
+  useEffect(() => {
+    /*
+     * MoreAbout dispatches "portfolio:nav" with { visible: false }
+     * when it opens, and { visible: true } when it closes.
+     * We flip aboveAbout accordingly.
+     */
+    const fn = (e) => setAboveAbout(!e.detail.visible);
+    window.addEventListener("portfolio:nav", fn);
+    return () => window.removeEventListener("portfolio:nav", fn);
+  }, []);
+
+  // ── Scroll-based hide / reveal  (normal page scroll) ─────────────
   useEffect(() => {
     const el = navRef.current;
     if (!el) return;
     let lastScrollY = getScrollY();
     let isHidden    = false;
     let ticking     = false;
-    const update = () => {
+
+    const update = (currentY) => {
       ticking = false;
-      const currentY = getScrollY();
-      const diff     = currentY - lastScrollY;
+      const diff = currentY - lastScrollY;
       if (currentY <= 0) {
         if (isHidden) { isHidden = false; el.classList.remove("nav-hidden"); }
       } else if (diff > SCROLL_THRESHOLD && !isHidden) {
         isHidden = true; el.classList.add("nav-hidden");
-      } else if (diff < 0 && isHidden) {
+      } else if (diff < -SCROLL_THRESHOLD && isHidden) {
         isHidden = false; el.classList.remove("nav-hidden");
       }
-      lastScrollY = currentY <= 0 ? 0 : currentY;
+      lastScrollY = Math.max(0, currentY);
     };
-    const onScroll = () => { if (!ticking) { requestAnimationFrame(update); ticking = true; } };
-    // Listen on both window and document to catch all scroll containers
-    window.addEventListener("scroll", onScroll, { passive: true, capture: true });
-    document.addEventListener("scroll", onScroll, { passive: true, capture: true });
+
+    const onWindowScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(() => update(getScrollY()));
+      }
+    };
+
+    window.addEventListener("scroll",   onWindowScroll, { passive: true, capture: true });
+    document.addEventListener("scroll", onWindowScroll, { passive: true, capture: true });
     return () => {
-      window.removeEventListener("scroll", onScroll, { capture: true });
-      document.removeEventListener("scroll", onScroll, { capture: true });
+      window.removeEventListener("scroll",   onWindowScroll, { capture: true });
+      document.removeEventListener("scroll", onWindowScroll, { capture: true });
     };
+  }, []);
+
+  // ── Scroll-based hide / reveal  (inside MoreAbout panel) ─────────
+  useEffect(() => {
+    /*
+     * MoreAbout's fixed div has overflow-y:auto.
+     * Scrolling inside it never fires window/document scroll events.
+     * MoreAbout forwards its scroll via "portfolio:aboutScroll":
+     *   { direction: "up" | "down", scrollTop: number }
+     *
+     * We mirror the exact same hide / show logic here.
+     */
+    const el = navRef.current;
+    if (!el) return;
+    let isHidden    = false;
+    let lastScrollTop = 0;
+
+    const fn = (e) => {
+      const { direction, scrollTop } = e.detail;
+
+      if (scrollTop <= 10) {
+        // At the very top — always show
+        if (isHidden) { isHidden = false; el.classList.remove("nav-hidden"); }
+      } else if (direction === "down" && !isHidden) {
+        isHidden = true; el.classList.add("nav-hidden");
+      } else if (direction === "up" && isHidden) {
+        isHidden = false; el.classList.remove("nav-hidden");
+      }
+      lastScrollTop = scrollTop;
+    };
+
+    window.addEventListener("portfolio:aboutScroll", fn);
+    return () => window.removeEventListener("portfolio:aboutScroll", fn);
   }, []);
 
   // ── IntersectionObserver — active icon sync ──────────────────────
@@ -223,7 +297,11 @@ export default function Navbar() {
     const els = ids.map((id) => document.getElementById(id)).filter(Boolean);
     if (!els.length) return;
     const io = new IntersectionObserver(
-      (entries) => { entries.forEach((entry) => { if (entry.isIntersecting) setActiveHref(`#${entry.target.id}`); }); },
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setActiveHref(`#${entry.target.id}`);
+        });
+      },
       { threshold: 0.25 }
     );
     els.forEach((el) => io.observe(el));
@@ -235,7 +313,12 @@ export default function Navbar() {
       <style>{CSS}</style>
       <div
         ref={navRef}
-        className="navbar-wrapper"
+        /*
+         * nav-above-about class switches z-index from 100 → 200001.
+         * 200001 > MoreAbout's z-index (100000) so the navbar floats
+         * visibly above the panel and icons are always clickable.
+         */
+        className={`navbar-wrapper${aboveAbout ? " nav-above-about" : ""}`}
         style={{ transform: "translateY(-22px)", opacity: 0, filter: "blur(7px)" }}
       >
         <div className="nav-pill">
@@ -276,23 +359,35 @@ const CSS = `
   @keyframes leaveIn  { from{transform:translateY(-150%);opacity:0} to{transform:translateY(0);opacity:1} }
 
   .icon-enter {
-    animation: enterOut 0.20s cubic-bezier(0.55,0,0.45,1) 0ms forwards,
-               enterIn  0.30s cubic-bezier(0.16,1,0.3,1) 0.20s forwards;
+    animation: enterOut 0.20s cubic-bezier(0.55,0,0.45,1) 0ms    forwards,
+               enterIn  0.30s cubic-bezier(0.16,1,0.3,1)  0.20s  forwards;
   }
   .icon-leave {
-    animation: leaveOut 0.20s cubic-bezier(0.55,0,0.45,1) 0ms forwards,
-               leaveIn  0.30s cubic-bezier(0.16,1,0.3,1) 0.20s forwards;
+    animation: leaveOut 0.20s cubic-bezier(0.55,0,0.45,1) 0ms    forwards,
+               leaveIn  0.30s cubic-bezier(0.16,1,0.3,1)  0.20s  forwards;
   }
 
+  /* ── Wrapper — default z-index 100, boosted to 200001 over MoreAbout ── */
   .navbar-wrapper {
     position: fixed; top: 0; left: 0; right: 0;
     padding-top: 38px; padding-bottom: 12px;
     display: flex; justify-content: center; align-items: flex-start; gap: 10px;
-    z-index: 99999;
-    transition: transform 0.65s cubic-bezier(0.4,0,0.2,1),
-                opacity   0.65s cubic-bezier(0.4,0,0.2,1),
-                filter    0.50s cubic-bezier(0.4,0,0.2,1);
+    z-index: 100;
+    transition:
+      transform   0.65s cubic-bezier(0.4,0,0.2,1),
+      opacity     0.65s cubic-bezier(0.4,0,0.2,1),
+      filter      0.50s cubic-bezier(0.4,0,0.2,1),
+      z-index     0s   linear;   /* instant z-index switch — no flash */
   }
+
+  /*
+   * Applied when MoreAbout is open.
+   * z-index 200001 > MoreAbout's 100000 — navbar floats above the panel.
+   */
+  .navbar-wrapper.nav-above-about {
+    z-index: 200001 !important;
+  }
+
   .navbar-wrapper.nav-hidden {
     transform : translateY(-120px) !important;
     opacity   : 0.4               !important;
@@ -307,21 +402,28 @@ const CSS = `
 
   .logo-section { display:flex; align-items:center; gap:8px; flex-shrink:0; cursor:default; }
   .logo-img { width:30px; height:30px; object-fit:contain; border-radius:4px; display:block; }
-  .logo-name-shine { position:relative; display:flex; flex-direction:column; line-height:1.3; overflow:hidden; border-radius:2px; }
+  .logo-name-shine {
+    position:relative; display:flex; flex-direction:column;
+    line-height:1.3; overflow:hidden; border-radius:2px;
+  }
   .logo-name-text {
-    display:block; font-size:13.5px; font-weight:500; color:#111111; letter-spacing:0.08em;
+    display:block; font-size:13.5px; font-weight:500; color:#111111;
+    letter-spacing:0.08em;
     font-family:-apple-system,"SF Pro Text",BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
     -webkit-font-smoothing:antialiased; position:relative; z-index:1;
   }
   .shine-beam {
     position:absolute; top:-20%; left:-80%; width:45%; height:140%;
-    background:linear-gradient(105deg,transparent 20%,rgba(255,255,255,0) 30%,rgba(255,255,255,0.75) 50%,rgba(255,255,255,0) 70%,transparent 80%);
+    background:linear-gradient(
+      105deg, transparent 20%, rgba(255,255,255,0) 30%,
+      rgba(255,255,255,0.75) 50%, rgba(255,255,255,0) 70%, transparent 80%
+    );
     transform:skewX(-15deg); pointer-events:none; z-index:2; transition:none;
   }
   .logo-section:hover .shine-beam { left:120%; transition:left 0.55s cubic-bezier(0.4,0,0.2,1); }
 
   .nav-spacer { flex:1; }
-  .nav-icons { display:flex; align-items:center; gap:0; }
+  .nav-icons  { display:flex; align-items:center; gap:0; }
 
   .nav-icon-wrap {
     position:relative; display:flex; align-items:center; justify-content:center;
@@ -335,14 +437,18 @@ const CSS = `
     display:flex; align-items:center; justify-content:center;
     width:24px; height:24px; overflow:hidden; clip-path:inset(-200% 0 -200% 0);
   }
-  .nav-icon-img { display:block; filter:invert(10%) sepia(0%) saturate(0%) brightness(100%) contrast(100%); }
+  .nav-icon-img {
+    display:block;
+    filter:invert(10%) sepia(0%) saturate(0%) brightness(100%) contrast(100%);
+  }
 
   .nav-label {
     position:absolute; top:calc(100% + 8px); left:50%;
     transform:translateX(-50%) translateY(4px);
     background:#232323; color:#fff; font-size:11px; font-weight:500;
-    padding:4px 10px; border-radius:7px; white-space:nowrap; pointer-events:none; opacity:0;
-    transition:opacity 0.18s ease,transform 0.18s ease; z-index:999;
+    padding:4px 10px; border-radius:7px; white-space:nowrap;
+    pointer-events:none; opacity:0;
+    transition:opacity 0.18s ease, transform 0.18s ease; z-index:100;
     font-family:-apple-system,"SF Pro Text",BlinkMacSystemFont,sans-serif;
   }
   .nav-icon-wrap:hover .nav-label { opacity:1; transform:translateX(-50%) translateY(0px); }
@@ -354,21 +460,25 @@ const CSS = `
     font-size:15px; font-weight:500; color:#111; letter-spacing:-0.01em; cursor:pointer;
     font-family:-apple-system,"SF Pro Text",BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
     overflow:hidden; -webkit-font-smoothing:antialiased; white-space:nowrap; outline:none;
-    transition:color 0.40s cubic-bezier(0.16,1,0.3,1),
-               border-color 0.40s cubic-bezier(0.16,1,0.3,1),
-               transform 0.28s cubic-bezier(0.22,1,0.36,1);
+    transition:
+      color        0.40s cubic-bezier(0.16,1,0.3,1),
+      border-color 0.40s cubic-bezier(0.16,1,0.3,1),
+      transform    0.28s cubic-bezier(0.22,1,0.36,1);
   }
   .resume-pill::before {
     content:""; position:absolute; inset:0; background:#111111; border-radius:inherit;
-    transform:translateY(102%); transition:transform 0.46s cubic-bezier(0.16,1,0.3,1); z-index:0;
+    transform:translateY(102%);
+    transition:transform 0.46s cubic-bezier(0.16,1,0.3,1); z-index:0;
   }
   .resume-pill:hover::before { transform:translateY(0); }
-  .resume-pill:hover { color:#ffffff; border-color:#111111; }
+  .resume-pill:hover  { color:#ffffff; border-color:#111111; }
   .resume-pill:active { transform:scale(0.96); transition-duration:0.10s; }
-  .resume-pill-text { position:relative; z-index:1; }
+  .resume-pill-text   { position:relative; z-index:1; }
 
+  /* ── Resume modal ────────────────────────────────────────────────── */
   .rm-backdrop {
-    position:fixed; inset:0; z-index:999999; background:rgba(0,0,0,0.52);
+    position:fixed; inset:0; z-index:200002; /* above nav-above-about */
+    background:rgba(0,0,0,0.52);
     backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
     display:flex; align-items:center; justify-content:center; padding:24px;
     opacity:0; pointer-events:none; transition:opacity 0.28s ease;
@@ -378,7 +488,8 @@ const CSS = `
   .rm-modal {
     background:#ffffff; border-radius:18px; width:min(780px,100%); height:90vh;
     display:flex; flex-direction:column; overflow:hidden;
-    transform:scale(0.94) translateY(10px); transition:transform 0.38s cubic-bezier(0.16,1,0.3,1);
+    transform:scale(0.94) translateY(10px);
+    transition:transform 0.38s cubic-bezier(0.16,1,0.3,1);
   }
   .rm-backdrop.rm-open .rm-modal { transform:scale(1) translateY(0); }
 
@@ -388,26 +499,35 @@ const CSS = `
   }
   .rm-title {
     font-size:14px; font-weight:600; color:#111;
-    font-family:-apple-system,"SF Pro Text",BlinkMacSystemFont,sans-serif; letter-spacing:-0.01em;
+    font-family:-apple-system,"SF Pro Text",BlinkMacSystemFont,sans-serif;
+    letter-spacing:-0.01em;
   }
   .rm-close {
-    display:flex; align-items:center; justify-content:center; width:30px; height:30px;
-    background:#F2F2F2; border:none; border-radius:8px; cursor:pointer; color:#666;
-    transition:background 0.18s ease,color 0.18s ease; outline:none; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    width:30px; height:30px; background:#F2F2F2; border:none; border-radius:8px;
+    cursor:pointer; color:#666; transition:background 0.18s ease, color 0.18s ease;
+    outline:none; flex-shrink:0;
   }
   .rm-close:hover { background:#E6E6E6; color:#111; }
-  .rm-body { flex:1; overflow-y:auto; overflow-x:hidden; background:#F4F4F4; padding:0; display:block; }
-  .rm-img { display:block; width:100%; height:auto; pointer-events:none; user-select:none; -webkit-user-drag:none; }
+  .rm-body {
+    flex:1; overflow-y:auto; overflow-x:hidden; background:#F4F4F4;
+    padding:0; display:block;
+  }
+  .rm-img {
+    display:block; width:100%; height:auto;
+    pointer-events:none; user-select:none; -webkit-user-drag:none;
+  }
   .rm-footer {
     flex-shrink:0; padding:14px 20px; border-top:1px solid #EFEFEF;
     display:flex; justify-content:center; background:#ffffff;
   }
   .rm-download {
-    display:inline-flex; align-items:center; gap:8px; height:40px; padding:0 32px;
-    background:#111111; color:#ffffff; border:none; border-radius:10px;
-    font-size:14px; font-weight:500; cursor:pointer;
+    display:inline-flex; align-items:center; gap:8px;
+    height:40px; padding:0 32px; background:#111111; color:#ffffff;
+    border:none; border-radius:10px; font-size:14px; font-weight:500; cursor:pointer;
     font-family:-apple-system,"SF Pro Text",BlinkMacSystemFont,sans-serif;
-    -webkit-font-smoothing:antialiased; transition:background 0.18s ease,transform 0.15s ease; outline:none;
+    -webkit-font-smoothing:antialiased;
+    transition:background 0.18s ease, transform 0.15s ease; outline:none;
   }
   .rm-download:hover  { background:#333333; }
   .rm-download:active { transform:scale(0.97); }
