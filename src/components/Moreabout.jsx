@@ -1,9 +1,10 @@
-import { useEffect, useRef, useCallback, memo } from "react";
+import { useEffect, useRef, useCallback, memo, useState } from "react";
 import {
   motion,
   useScroll,
   useTransform,
   useSpring,
+  AnimatePresence,
 } from "framer-motion";
 
 
@@ -22,17 +23,15 @@ export const RevealText = memo(function RevealText({
     <Tag
       className={className}
       style={style}
-      /* ── initial hidden state ── */
       initial={{ opacity: 0, y }}
-      /* ── visible state — applied on every viewport entry ── */
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{
-        once: false,                  // ← re-triggers every time element enters
-        margin: "-8% 0px -8% 0px",   // fires when 8% of element is visible
+        once: false,
+        margin: "-8% 0px -8% 0px",
       }}
       transition={{
         duration,
-        ease: [0.22, 1, 0.36, 1],    // custom cubic-bezier — premium easeOut
+        ease: [0.22, 1, 0.36, 1],
         delay,
       }}
     >
@@ -53,17 +52,13 @@ export const ParallaxSection = memo(function ParallaxSection({
 }) {
   const ref = useRef(null);
 
-  /* Track how far this section has scrolled through the viewport */
   const { scrollYProgress } = useScroll({
     target:    ref,
-    container: scroller,              // scoped to .ma-page, NOT window
+    container: scroller,
     offset: ["start end", "end start"],
   });
 
-  /* Background shifts −12% → +12% relative to the section's scroll progress */
   const rawY = useTransform(scrollYProgress, [0, 1], ["-12%", "12%"]);
-
-  /* Spring removes micro-jitter caused by fast trackpad / wheel bursts */
   const smoothY = useSpring(rawY, { stiffness: 70, damping: 18, mass: 0.6 });
 
   return (
@@ -72,7 +67,6 @@ export const ParallaxSection = memo(function ParallaxSection({
       className={`ps-root ${className}`}
       style={{ position: "relative", overflow: "hidden", height }}
     >
-      {/* ── Parallax background — oversized so shift never reveals edges ── */}
       <motion.div
         aria-hidden="true"
         style={{
@@ -86,11 +80,10 @@ export const ParallaxSection = memo(function ParallaxSection({
           backgroundColor:    bgColor,
           backgroundSize:     "cover",
           backgroundPosition: "center",
-          willChange:         "transform",   // GPU compositing layer
+          willChange:         "transform",
         }}
       />
 
-      {/* ── Overlay — keeps text legible over any image ── */}
       {overlay > 0 && (
         <div
           aria-hidden="true"
@@ -103,7 +96,6 @@ export const ParallaxSection = memo(function ParallaxSection({
         />
       )}
 
-      {/* ── Content on top of background and overlay ── */}
       <div
         style={{
           position:       "relative",
@@ -137,12 +129,10 @@ export const ParallaxImage = memo(function ParallaxImage({
     offset: ["start end", "end start"],
   });
 
-  /* Image shifts −8% → +8% — subtle but clearly visible parallax on an img */
   const rawY   = useTransform(scrollYProgress, [0, 1], ["-8%", "8%"]);
   const smoothY = useSpring(rawY, { stiffness: 70, damping: 18, mass: 0.6 });
 
   return (
-    /* Clip wrapper prevents the shifted image from overflowing its container */
     <div
       ref={ref}
       style={{ overflow: "hidden", borderRadius: "inherit", ...style }}
@@ -155,7 +145,6 @@ export const ParallaxImage = memo(function ParallaxImage({
           y:          smoothY,
           display:    "block",
           width:      "100%",
-          /* Extra height so the Y drift doesn't show white edges */
           height:     "116%",
           objectFit:  "cover",
           willChange: "transform",
@@ -167,14 +156,10 @@ export const ParallaxImage = memo(function ParallaxImage({
 
 /* ════════════════════════════════════════════════════════════════════════════
    SECTION 1  —  HERO
-   ────────────────────────────────────────────────────────────────────────────
-   • Mount animation: staggered entrance (fires fresh on every panel open)
-   • Parallax:        hero content drifts upward as user scrolls away
    ══════════════════════════════════════════════════════════════════════════ */
 const MAHome = memo(function MAHome({ onScrollDown, scroller }) {
   const ref = useRef(null);
 
-  /* Hero CONTENT parallax — drifts up at 22% of scroll speed */
   const { scrollYProgress } = useScroll({
     target:    ref,
     container: scroller,
@@ -183,7 +168,6 @@ const MAHome = memo(function MAHome({ onScrollDown, scroller }) {
   const rawY   = useTransform(scrollYProgress, [0, 1], ["0%", "22%"]);
   const innerY = useSpring(rawY, { stiffness: 70, damping: 18, mass: 0.6 });
 
-  /* Stagger variants — fires once per remount (every panel open) */
   const ctnr = {
     hidden: {},
     show:   { transition: { staggerChildren: 0.11, delayChildren: 0.28 } },
@@ -229,16 +213,11 @@ const MAHome = memo(function MAHome({ onScrollDown, scroller }) {
 
 /* ════════════════════════════════════════════════════════════════════════════
    SECTION 2  —  ABOUT
-   ────────────────────────────────────────────────────────────────────────────
-   • All text blocks:   RevealText  (re-triggers every viewport pass)
-   • Image:             ParallaxImage (existing /About pic.png, with parallax)
-   • Quote band:        ParallaxSection
    ══════════════════════════════════════════════════════════════════════════ */
 const MAAbout = memo(function MAAbout({ scroller }) {
   return (
     <section className="ma-about">
 
-      {/* ── Text + image block ── */}
       <div className="ma-section-inner">
 
         <RevealText>
@@ -265,12 +244,6 @@ const MAAbout = memo(function MAAbout({ scroller }) {
           </p>
         </RevealText>
 
-        {/*
-          ── EXISTING IMAGE — kept as required, with parallax applied ──────
-          ParallaxImage wraps the img tag and applies a smooth Y drift.
-          The clip wrapper (overflow:hidden) prevents the shifted image
-          from spilling outside the rounded card.
-        */}
         <RevealText delay={0.1}>
           <div className="ma-img-card">
             <ParallaxImage
@@ -300,10 +273,6 @@ const MAAbout = memo(function MAAbout({ scroller }) {
 
       </div>
 
-      {/*
-        ── Parallax quote band ─────────────────────────────────────────────
-        Background moves at 35% of scroll speed (ParallaxSection default).
-      */}
       <ParallaxSection
         scroller={scroller}
         bgColor="#111111"
@@ -323,77 +292,227 @@ const MAAbout = memo(function MAAbout({ scroller }) {
 });
 
 /* ════════════════════════════════════════════════════════════════════════════
-   SECTION 3  —  EXPERIENCE
+   SECTION 3  —  EXPERIENCE  (luxury split-card redesign)
    ════════════════════════════════════════════════════════════════════════════ */
+
 const JOBS = [
   {
-    role: "Senior UI/UX Designer", company: "Freelance",
-    period: "2022 — Present", type: "Full-time",
-    desc: "Designing end-to-end digital products for startups and established brands. Work spans mobile apps, web platforms, and brand identity systems.",
-    tags: ["Figma", "React", "Prototyping", "Design Systems"],
+    logo: "https://upload.wikimedia.org/wikipedia/commons/6/67/Zoho-logo-web.jpg",
+    logoBg: "#fff",
+    fallback: "ZO",
+    role: "UI/UX & Visual Designer",
+    company: "ZOHO Corporation",
+    periodFull: "Jul — Dec 2025",
+    type: "Internship",
+    index: "01",
+    tags: ["Figma", "UI/UX", "Design Systems", "Visual Design"],
+    desc: "Designed intuitive user interfaces and cohesive visual experiences for Zoho's enterprise product suite. Translated complex workflows into elegant, user-centered interfaces in close collaboration with product and engineering teams.",
   },
   {
-    role: "Product Designer", company: "Studio Project",
-    period: "2021 — 2022", type: "Contract",
-    desc: "Led the visual and interaction design of a SaaS dashboard used by 10k+ users. Built a complete component library from scratch.",
-    tags: ["UI Design", "User Research", "Figma", "Handoff"],
+    logo: "https://unifiedmentor.com/assets/ContactLogoLight-BbrcWEja.svg",
+    logoBg: "#fff",
+    fallback: "UM",
+    role: "Full Stack Web Development",
+    company: "Unified Mentors",
+    periodFull: "Feb — May 2025",
+    type: "Internship",
+    index: "02",
+    tags: ["React", "Node.js", "MongoDB", "REST API"],
+    desc: "Built and shipped full-stack web applications using the MERN stack. Architected responsive front-end experiences and robust back-end services, from database design to deployment.",
   },
   {
-    role: "Graphic Designer", company: "Creative Agency",
-    period: "2020 — 2021", type: "Part-time",
-    desc: "Created visual identities, marketing materials, and social content for clients across industries. End-to-end brand development.",
-    tags: ["Illustrator", "Photoshop", "Brand Identity", "Print"],
+    logo: "https://i.tracxn.com/logo/company/gbtechcorp_com_628ffc7b-a30f-4d07-a390-4195467004e3",
+    logoBg: "#fff",
+    fallback: "GB",
+    role: "Java Full Stack Development",
+    company: "GB Tech Corp",
+    periodFull: "Feb — Mar 2025",
+    type: "Internship",
+    index: "03",
+    tags: ["Java", "Spring Boot", "MySQL", "Angular"],
+    desc: "Developed enterprise-grade Java applications using Spring Boot and Angular within an agile team. Delivered RESTful APIs, database schemas, and front-end modules at production quality.",
   },
   {
-    role: "Illustration & Visual Art", company: "Self-directed",
-    period: "2019 — Present", type: "Ongoing",
-    desc: "Personal practice in digital illustration, character design, and visual storytelling. Regular global commissions.",
-    tags: ["Illustration", "Procreate", "Character Design", "Art Direction"],
+    logo: "https://nsic.co.in/images/newNS.png",
+    logoBg: "#fff",
+    fallback: "NS",
+    role: "Frontend Web Development",
+    company: "NSIC — Govt. of India",
+    periodFull: "Feb — Mar 2024",
+    type: "Internship",
+    index: "04",
+    tags: ["HTML", "CSS", "JavaScript", "Responsive Design"],
+    desc: "Engineered responsive, accessible web interfaces for national digital initiatives. Delivered cross-browser compatible, performance-optimised code adhering to government-grade accessibility standards.",
   },
 ];
+
+/* Logo image with fallback to initials */
+const CompanyLogo = memo(function CompanyLogo({ src, fallback, logoBg }) {
+  const [err, setErr] = useState(false);
+  return (
+    <div className="exp-logo-wrap" style={{ background: logoBg }}>
+      {!err
+        ? <img src={src} alt={fallback} className="exp-logo-img" onError={() => setErr(true)} />
+        : <span className="exp-logo-fallback">{fallback}</span>
+      }
+    </div>
+  );
+});
+
+/* Single experience card — "split panel" style */
+const ExperienceCard = memo(function ExperienceCard({ job, i }) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <motion.div
+      className="exp-card"
+      onHoverStart={() => setHovered(true)}
+      onHoverEnd={() => setHovered(false)}
+      initial={{ opacity: 0, y: 32 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: false, margin: "-6% 0px -6% 0px" }}
+      transition={{ duration: 0.72, ease: [0.22, 1, 0.36, 1], delay: i * 0.08 }}
+    >
+      {/* ── Top header panel ── */}
+      <motion.div
+        className="exp-card-header"
+        animate={{ backgroundColor: hovered ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.03)" }}
+        transition={{ duration: 0.35 }}
+      >
+        {/* Index */}
+        <span className="exp-card-index">{job.index}</span>
+
+        {/* Logo */}
+        <CompanyLogo src={job.logo} fallback={job.fallback} logoBg={job.logoBg} />
+
+        {/* Company + period */}
+        <div className="exp-card-header-right">
+          <span className="exp-card-company">{job.company}</span>
+          <span className="exp-card-period">{job.periodFull}</span>
+        </div>
+
+        {/* Type badge */}
+        <span className="exp-card-type">{job.type}</span>
+      </motion.div>
+
+      {/* ── Bottom body panel — role always visible ── */}
+      <div className="exp-card-body">
+        <div className="exp-card-body-top">
+          <span className="exp-card-role">{job.role}</span>
+          {/* Arrow rotates on hover */}
+          <motion.div
+            className="exp-card-arrow"
+            animate={{ rotate: hovered ? 90 : 0, opacity: hovered ? 1 : 0.3 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 3v10M4 9l4 4 4-4" stroke="currentColor"
+                strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </motion.div>
+        </div>
+
+        {/* Hover-reveal description + tags */}
+        <AnimatePresence>
+          {hovered && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+              style={{ overflow: "hidden" }}
+            >
+              <p className="exp-card-desc">{job.desc}</p>
+              <div className="exp-card-tags">
+                {job.tags.map((t) => (
+                  <span key={t} className="exp-card-tag">{t}</span>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+    </motion.div>
+  );
+});
 
 const MAExperience = memo(function MAExperience({ scroller }) {
   return (
     <section className="ma-exp">
-      <div className="ma-section-inner">
+      <div className="ma-exp-wrapper">
 
-        <RevealText>
-          <p className="ma-section-label">Experience</p>
-        </RevealText>
+        <div className="exp-layout">
 
-        <RevealText delay={0.06}>
-          <h2 className="ma-exp-heading">
-            Where I've worked &amp;<br />what I've built.
-          </h2>
-        </RevealText>
+          {/* ── LEFT — luxury sticky editorial block ── */}
+          <div className="exp-left-col">
 
-        <div className="ma-timeline">
-          {JOBS.map((job, i) => (
-            /*
-              Each card uses RevealText with a staggered delay.
-              viewport.once=false means it re-animates every scroll pass.
-            */
-            <RevealText key={job.role} delay={i * 0.06} className="ma-timeline-item">
-              <div className="ma-timeline-left">
-                <div className="ma-timeline-period">{job.period}</div>
-                <div className="ma-timeline-type">{job.type}</div>
-              </div>
-              <div className="ma-timeline-dot" />
-              <div className="ma-timeline-right">
-                <div className="ma-timeline-role">{job.role}</div>
-                <div className="ma-timeline-company">{job.company}</div>
-                <p className="ma-timeline-desc">{job.desc}</p>
-                <div className="ma-timeline-tags">
-                  {job.tags.map((t) => <span key={t} className="ma-tag">{t}</span>)}
+            <RevealText>
+              <span className="exp-eyebrow">
+                <span className="exp-eyebrow-line" />
+                Selected Experience
+              </span>
+            </RevealText>
+
+            <RevealText delay={0.06}>
+              <div className="exp-left-numeral" aria-hidden="true">IV</div>
+            </RevealText>
+
+            <RevealText delay={0.1}>
+              <h2 className="exp-headline">
+                Craft.<br />
+                <em className="exp-headline-em">Precision.</em><br />
+                Legacy.
+              </h2>
+            </RevealText>
+
+            <RevealText delay={0.16}>
+              <p className="exp-left-quote">
+                "Every role I've held has been a deliberate step — not just
+                employment, but the refinement of a standard I hold myself to."
+              </p>
+            </RevealText>
+
+            <RevealText delay={0.22}>
+              <div className="exp-left-stat">
+                <div className="exp-stat-item">
+                  <span className="exp-stat-num">4</span>
+                  <span className="exp-stat-label">Companies</span>
+                </div>
+                <div className="exp-stat-divider" />
+                <div className="exp-stat-item">
+                  <span className="exp-stat-num">2+</span>
+                  <span className="exp-stat-label">Years Active</span>
+                </div>
+                <div className="exp-stat-divider" />
+                <div className="exp-stat-item">
+                  <span className="exp-stat-num">∞</span>
+                  <span className="exp-stat-label">Problems Solved</span>
                 </div>
               </div>
             </RevealText>
-          ))}
+
+            <RevealText delay={0.26}>
+              <p className="exp-hover-hint">
+                <span className="exp-hint-dot" />
+                Hover to reveal each story
+              </p>
+            </RevealText>
+
+          </div>
+
+          {/* ── RIGHT — cards ── */}
+          <div className="exp-right-col">
+            {JOBS.map((job, i) => (
+              <ExperienceCard key={job.index} job={job} i={i} />
+            ))}
+          </div>
+
         </div>
 
       </div>
 
-      {/* Parallax divider strip between experience and footer */}
+      {/* Parallax divider strip */}
       <ParallaxSection
         scroller={scroller}
         bgColor="#080808"
@@ -401,7 +520,7 @@ const MAExperience = memo(function MAExperience({ scroller }) {
         overlay={0}
         className="ma-exp-strip"
       >
-        <RevealText style={{ width: "100%", maxWidth: 860, padding: "0 48px" }}>
+        <RevealText style={{ width: "100%", maxWidth: 1100, padding: "0 72px" }}>
           <p className="ma-strip-text">Every project is a new problem worth solving.</p>
         </RevealText>
       </ParallaxSection>
@@ -463,69 +582,27 @@ const MAFooter = memo(function MAFooter() {
 
 /* ════════════════════════════════════════════════════════════════════════════
    ROOT EXPORT  —  MoreAbout
-   ────────────────────────────────────────────────────────────────────────────
-
-   CLOSE LOGIC
-   ───────────
-   This component has NO internal close button.
-   Closing is 100% controlled by the parent via   isOpen / onClose.
-
-   To close from your Navbar on ANY icon click:
-     <NavIcon onClick={() => { setAboutOpen(false); navigateTo("home"); }} />
-
-   The component also fires a DOM event so Navbar can hide itself:
-     window.dispatchEvent(new CustomEvent("portfolio:nav", { detail:{ v:!isOpen }}))
-   Listen in Navbar:
-     window.addEventListener("portfolio:nav", e => setNavHidden(!e.detail.v))
-
    ══════════════════════════════════════════════════════════════════════════ */
 export default function MoreAbout({ isOpen, onClose }) {
   const pageRef = useRef(null);
 
-  /* ── 1. Dispatch navbar hide/show event ──────────────────────────────── */
   useEffect(() => {
-    /*
-      Tells the Navbar whether to show or hide itself.
-      In your Navbar component, listen like this:
-        useEffect(() => {
-          const fn = (e) => setNavVisible(e.detail.visible);
-          window.addEventListener("portfolio:nav", fn);
-          return () => window.removeEventListener("portfolio:nav", fn);
-        }, []);
-    */
     window.dispatchEvent(
       new CustomEvent("portfolio:nav", { detail: { visible: !isOpen } })
     );
   }, [isOpen]);
 
-  /* ── 2. Listen for close command from Navbar ──────────────────────────
-     WHY THIS IS NEEDED:
-     The panel sits at z-index:100000 and covers the full screen, so the
-     Navbar is visually hidden behind it. To close from any nav icon, your
-     Navbar dispatches "portfolio:closeAbout" and this effect calls onClose().
-
-     In EVERY Navbar icon's onClick handler, add ONE line:
-       window.dispatchEvent(new CustomEvent("portfolio:closeAbout"));
-
-     Example Navbar icon:
-       <button onClick={() => {
-         window.dispatchEvent(new CustomEvent("portfolio:closeAbout"));
-         navigate("/projects");
-       }}>Projects</button>
-  ────────────────────────────────────────────────────────────────────── */
   useEffect(() => {
     const fn = () => onClose();
     window.addEventListener("portfolio:closeAbout", fn);
     return () => window.removeEventListener("portfolio:closeAbout", fn);
   }, [onClose]);
 
-  /* ── 2. Lock body scroll while panel is open ─────────────────────────── */
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
 
-  /* ── 3. Escape key → close (mirrors navbar click) ────────────────────── */
   useEffect(() => {
     if (!isOpen) return;
     const fn = (e) => { if (e.key === "Escape") onClose(); };
@@ -533,17 +610,10 @@ export default function MoreAbout({ isOpen, onClose }) {
     return () => window.removeEventListener("keydown", fn);
   }, [isOpen, onClose]);
 
-  /* ── 4. Instant scroll-to-top before each open — zero flicker ─────────── */
   useEffect(() => {
     if (isOpen && pageRef.current) pageRef.current.scrollTop = 0;
   }, [isOpen]);
 
-  /* ── 5. Forward MoreAbout's internal scroll to Navbar ────────────────────
-     The .ma-page div is position:fixed with overflow-y:auto.
-     Scrolling inside it NEVER fires window/document scroll events, so the
-     Navbar's existing scroll listener is blind to it.
-     We dispatch "portfolio:aboutScroll" so Navbar can hide/show correctly.
-  ────────────────────────────────────────────────────────────────────────── */
   useEffect(() => {
     const el = pageRef.current;
     if (!el) return;
@@ -566,9 +636,8 @@ export default function MoreAbout({ isOpen, onClose }) {
     };
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
-  }, [isOpen]); // re-attach when panel opens (pageRef.current changes)
+  }, [isOpen]);
 
-  /* ── Scroll hero → next section ─────────────────────────────────────── */
   const scrollDown = useCallback(() => {
     pageRef.current?.scrollTo({ top: window.innerHeight, behavior: "smooth" });
   }, []);
@@ -577,15 +646,6 @@ export default function MoreAbout({ isOpen, onClose }) {
     <>
       <style>{CSS}</style>
 
-      {/*
-        ── Framer Motion drives the slide transition ─────────────────────────
-        Closed:  y = "100%"  (panel is completely off-screen below)
-        Open:    y = "0%"    (panel fills the entire viewport)
-
-        key={String(isOpen)}
-          Forces full child remount on each open → hero entrance animation
-          always fires fresh → all RevealText elements start from hidden state.
-      */}
       <motion.div
         className="ma-page"
         ref={pageRef}
@@ -594,8 +654,6 @@ export default function MoreAbout({ isOpen, onClose }) {
         aria-hidden={!isOpen}
         style={{ pointerEvents: isOpen ? "auto" : "none" }}
       >
-        {/* NO floating button — close is handled exclusively by Navbar */}
-
         <div key={String(isOpen)} style={{ display: "contents" }}>
           <MAHome       onScrollDown={scrollDown} scroller={pageRef} />
           <MAAbout      scroller={pageRef} />
@@ -620,10 +678,9 @@ const CSS = `
                  "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     scroll-behavior: smooth;
-    /* translateY managed by Framer Motion — no CSS transition here */
   }
 
-  /* ── Hero — exactly 100 vh ────────────────────────────────────────────── */
+  /* ── Hero ─────────────────────────────────────────────────────────────── */
   .ma-home {
     position: relative; height: 100vh;
     display: flex; align-items: center;
@@ -683,14 +740,9 @@ const CSS = `
     color: rgba(255,255,255,0.58); margin: 0;
     font-weight: 400; letter-spacing: -0.01em;
   }
-
-  /* ── Image card — existing image with parallax ────────────────────────── */
   .ma-img-card {
     width: 100%; border-radius: 20px; overflow: hidden;
-    /* ParallaxImage handles its own overflow clip */
   }
-
-  /* ── Parallax quote band ──────────────────────────────────────────────── */
   .ma-about-band { border-top: 1px solid rgba(255,255,255,0.05); }
   .ma-band-quote {
     font-size: clamp(18px, 2.8vw, 30px); font-weight: 600;
@@ -703,63 +755,242 @@ const CSS = `
     display: block;
   }
 
-  /* ── Experience ───────────────────────────────────────────────────────── */
-  .ma-exp { background: #0E0E0E; border-top: 1px solid rgba(255,255,255,0.06); }
-  .ma-exp .ma-section-inner { gap: 0; }
-  .ma-section-label {
-    font-size: 11px; font-weight: 600; letter-spacing: 0.14em;
-    text-transform: uppercase; color: rgba(255,255,255,0.28);
-    margin: 0 0 16px;
+  /* ════════════════════════════════════════════════════════════════════════
+     EXPERIENCE — luxury split-card layout
+     ════════════════════════════════════════════════════════════════════════ */
+  .ma-exp {
+    background: #0A0A0A;
+    border-top: 1px solid rgba(255,255,255,0.06);
   }
-  .ma-exp-heading {
-    font-size: clamp(26px, 3.5vw, 46px); font-weight: 700; color: #fff;
-    letter-spacing: -0.03em; margin: 0 0 72px; line-height: 1.15;
+  .ma-exp-wrapper {
+    max-width: 1240px; margin: 0 auto;
+    padding: 130px 72px 110px;
+  }
+
+  /* ── Grid: 42% left / 58% right ── */
+  .exp-layout {
+    display: grid;
+    grid-template-columns: 42fr 58fr;
+    gap: 0 100px;
+    align-items: start;
+  }
+
+  /* ════ LEFT COLUMN ════ */
+  .exp-left-col {
+    position: sticky;
+    top: 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* Eyebrow with inline rule */
+  .exp-eyebrow {
+    display: flex; align-items: center; gap: 14px;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(255,255,255,0.22);
+    margin-bottom: 36px;
+  }
+  .exp-eyebrow-line {
+    display: inline-block; width: 28px; height: 1px;
+    background: rgba(255,255,255,0.22); flex-shrink: 0;
+  }
+
+  /* Roman numeral — decorative large watermark */
+  .exp-left-numeral {
+    font-size: clamp(80px, 10vw, 130px); font-weight: 900;
+    color: rgba(255,255,255,0.04);
+    letter-spacing: -0.04em; line-height: 1;
+    font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont, sans-serif;
+    margin-bottom: -20px;
+    user-select: none;
+  }
+
+  /* Main headline — editorial luxury style */
+  .exp-headline {
+    font-size: clamp(48px, 5.6vw, 76px); font-weight: 900; color: #fff;
+    letter-spacing: -0.05em; line-height: 1.01; margin: 0 0 36px;
     font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont, sans-serif;
   }
-  .ma-timeline { display: flex; flex-direction: column; position: relative; }
-  .ma-timeline::before {
-    content: ""; position: absolute; left: 180px; top: 0; bottom: 0;
-    width: 1px; background: rgba(255,255,255,0.07);
+  .exp-headline-em {
+    color: rgba(255,255,255,0.22);
+    font-style: italic;
+    font-weight: 700;
   }
-  .ma-timeline-item {
-    display: grid; grid-template-columns: 180px 1px 1fr;
-    gap: 0 40px; padding-bottom: 56px;
+
+  /* Pull quote */
+  .exp-left-quote {
+    font-size: 14px; line-height: 1.85;
+    color: rgba(255,255,255,0.38); margin: 0 0 40px;
+    font-style: italic; font-weight: 400;
+    letter-spacing: 0.01em;
+    border-left: 1px solid rgba(255,255,255,0.14);
+    padding-left: 20px;
+    max-width: 320px;
   }
-  .ma-timeline-item:last-child { padding-bottom: 0; }
-  .ma-timeline-left { text-align: right; padding-top: 4px; }
-  .ma-timeline-period {
-    font-size: 13px; color: rgba(255,255,255,0.35);
-    font-weight: 500; letter-spacing: -0.01em; margin-bottom: 4px;
+
+  /* Stats row */
+  .exp-left-stat {
+    display: flex; align-items: center; gap: 20px;
+    margin-bottom: 36px;
   }
-  .ma-timeline-type {
-    font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
-    text-transform: uppercase; color: rgba(255,255,255,0.16);
+  .exp-stat-item {
+    display: flex; flex-direction: column; gap: 4px;
   }
-  .ma-timeline-dot {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.1);
-    align-self: start; margin-top: 6px; position: relative;
-    left: -3px; flex-shrink: 0;
-  }
-  .ma-timeline-role {
-    font-size: 19px; font-weight: 600; color: #fff;
-    letter-spacing: -0.02em; margin-bottom: 4px;
+  .exp-stat-num {
+    font-size: 22px; font-weight: 800; color: #fff;
+    letter-spacing: -0.04em; line-height: 1;
     font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont, sans-serif;
   }
-  .ma-timeline-company {
-    font-size: 14px; color: rgba(255,255,255,0.32);
-    margin-bottom: 14px; font-weight: 400;
+  .exp-stat-label {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(255,255,255,0.22);
   }
-  .ma-timeline-desc {
-    font-size: 15px; color: rgba(255,255,255,0.48); line-height: 1.72;
-    margin: 0 0 20px; font-weight: 400; max-width: 540px;
+  .exp-stat-divider {
+    width: 1px; height: 32px;
+    background: rgba(255,255,255,0.1);
+    flex-shrink: 0;
   }
-  .ma-timeline-tags { display: flex; flex-wrap: wrap; gap: 8px; }
-  .ma-tag {
-    font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.38);
-    background: rgba(255,255,255,0.055); border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 100px; padding: 4px 12px; letter-spacing: 0.01em;
+
+  /* Hover hint */
+  .exp-hover-hint {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(255,255,255,0.18); margin: 0;
   }
+  .exp-hint-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(255,255,255,0.32);
+    animation: exp-pulse 2.4s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes exp-pulse {
+    0%, 100% { opacity: 0.2; transform: scale(1); }
+    50%       { opacity: 1;   transform: scale(1.6); }
+  }
+
+  /* ════ RIGHT COLUMN — split cards ════ */
+  .exp-right-col {
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  /* Card shell */
+  .exp-card {
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    overflow: hidden;
+    cursor: default;
+  }
+
+  /* ── Header panel (top half of card) ── */
+  .exp-card-header {
+    display: grid;
+    grid-template-columns: 36px 52px 1fr auto;
+    gap: 0 14px;
+    align-items: center;
+    padding: 18px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+
+  /* Index number */
+  .exp-card-index {
+    font-size: 11px; font-weight: 700;
+    color: rgba(255,255,255,0.2);
+    letter-spacing: 0.06em;
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Logo image wrapper */
+  .exp-logo-wrap {
+    width: 52px; height: 52px;
+    border-radius: 13px;
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; flex-shrink: 0;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1);
+  }
+  .exp-logo-img {
+    width: 70%; height: 70%;
+    object-fit: contain; display: block;
+  }
+  .exp-logo-fallback {
+    font-size: 13px; font-weight: 900;
+    color: #111; letter-spacing: 0.04em;
+    font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont, sans-serif;
+  }
+
+  /* Company name + period */
+  .exp-card-header-right {
+    display: flex; flex-direction: column; gap: 5px; min-width: 0;
+  }
+  .exp-card-company {
+    font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.85);
+    letter-spacing: -0.02em; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .exp-card-period {
+    font-size: 12px; color: rgba(255,255,255,0.32);
+    font-weight: 500; letter-spacing: 0; 
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Type badge */
+  .exp-card-type {
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 100px; padding: 4px 10px;
+    white-space: nowrap; flex-shrink: 0;
+  }
+
+  /* ── Body panel (always-visible bottom half) ── */
+  .exp-card-body {
+    padding: 18px 20px 20px;
+  }
+  .exp-card-body-top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px;
+  }
+  .exp-card-role {
+    font-size: clamp(15px, 1.6vw, 18px); font-weight: 700; color: #fff;
+    letter-spacing: -0.03em; line-height: 1.25;
+    font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont, sans-serif;
+  }
+  .exp-card-arrow {
+    width: 30px; height: 30px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 50%;
+    margin-top: 2px;
+  }
+
+  /* Hover-reveal description */
+  .exp-card-desc {
+    font-size: 13.5px; line-height: 1.8;
+    color: rgba(255,255,255,0.48); margin: 16px 0 14px;
+    font-weight: 400; letter-spacing: -0.005em;
+  }
+  .exp-card-tags {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .exp-card-tag {
+    font-size: 10px; font-weight: 700;
+    color: rgba(255,255,255,0.35);
+    background: rgba(255,255,255,0.055);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 6px; padding: 4px 10px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+
+  /* ── Parallax strip ── */
   .ma-exp-strip { border-top: 1px solid rgba(255,255,255,0.04); }
   .ma-strip-text {
     font-size: clamp(13px, 1.6vw, 17px); color: rgba(255,255,255,0.22);
@@ -805,14 +1036,25 @@ const CSS = `
   }
 
   /* ── Responsive ───────────────────────────────────────────────────────── */
+  @media (max-width: 1000px) {
+    .exp-layout {
+      grid-template-columns: 1fr;
+      gap: 60px 0;
+    }
+    .exp-left-col { position: static; }
+    .exp-left-quote { max-width: 100%; }
+  }
+
   @media (max-width: 768px) {
     .ma-home          { padding: 0 24px; }
     .ma-section-inner { padding: 80px 24px; }
-    .ma-timeline::before { display: none; }
-    .ma-timeline-item { grid-template-columns: 1fr; gap: 8px; }
-    .ma-timeline-left { text-align: left; }
-    .ma-timeline-dot  { display: none; }
     .ma-footer-inner  { padding: 80px 24px 60px; }
     .ma-band-quote    { padding-left: 20px; }
+    .ma-exp-wrapper   { padding: 72px 24px 60px; }
+
+    .exp-card-header  { grid-template-columns: 28px 44px 1fr; gap: 0 10px; }
+    .exp-card-type    { display: none; }
+    .exp-logo-wrap    { width: 44px; height: 44px; border-radius: 11px; }
+    .exp-card-role    { font-size: 15px; }
   }
 `;
