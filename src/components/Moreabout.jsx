@@ -7,15 +7,14 @@ import {
   AnimatePresence,
 } from "framer-motion";
 
-
 export const RevealText = memo(function RevealText({
   children,
-  delay    = 0,
-  y        = 40,
+  delay = 0,
+  y = 40,
   duration = 0.8,
-  as       = "div",
+  as = "div",
   className = "",
-  style     = {},
+  style = {},
 }) {
   const Tag = motion[as] ?? motion.div;
 
@@ -40,20 +39,19 @@ export const RevealText = memo(function RevealText({
   );
 });
 
-
 export const ParallaxSection = memo(function ParallaxSection({
   scroller,
   imageSrc,
-  bgColor  = "#0E0E0E",
+  bgColor = "#0E0E0E",
   children,
   className = "",
-  height    = "auto",
-  overlay   = 0.55,
+  height = "auto",
+  overlay = 0.55,
 }) {
   const ref = useRef(null);
 
   const { scrollYProgress } = useScroll({
-    target:    ref,
+    target: ref,
     container: scroller,
     offset: ["start end", "end start"],
   });
@@ -70,17 +68,17 @@ export const ParallaxSection = memo(function ParallaxSection({
       <motion.div
         aria-hidden="true"
         style={{
-          y:                  smoothY,
-          position:           "absolute",
-          top:                "-15%",
-          left:               0,
-          right:              0,
-          bottom:             "-15%",
-          backgroundImage:    imageSrc ? `url(${imageSrc})` : undefined,
-          backgroundColor:    bgColor,
-          backgroundSize:     "cover",
+          y: smoothY,
+          position: "absolute",
+          top: "-15%",
+          left: 0,
+          right: 0,
+          bottom: "-15%",
+          backgroundImage: imageSrc ? `url(${imageSrc})` : undefined,
+          backgroundColor: bgColor,
+          backgroundSize: "cover",
           backgroundPosition: "center",
-          willChange:         "transform",
+          willChange: "transform",
         }}
       />
 
@@ -88,23 +86,23 @@ export const ParallaxSection = memo(function ParallaxSection({
         <div
           aria-hidden="true"
           style={{
-            position:   "absolute",
-            inset:      0,
+            position: "absolute",
+            inset: 0,
             background: `rgba(14,14,14,${overlay})`,
-            zIndex:     1,
+            zIndex: 1,
           }}
         />
       )}
 
       <div
         style={{
-          position:       "relative",
-          zIndex:         2,
-          height:         "100%",
-          display:        "flex",
-          alignItems:     "center",
+          position: "relative",
+          zIndex: 2,
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
           justifyContent: "center",
-          width:          "100%",
+          width: "100%",
         }}
       >
         {children}
@@ -113,23 +111,22 @@ export const ParallaxSection = memo(function ParallaxSection({
   );
 });
 
-
 export const ParallaxImage = memo(function ParallaxImage({
   scroller,
   src,
   alt,
   className = "",
-  style     = {},
+  style = {},
 }) {
   const ref = useRef(null);
 
   const { scrollYProgress } = useScroll({
-    target:    ref,
+    target: ref,
     container: scroller,
     offset: ["start end", "end start"],
   });
 
-  const rawY   = useTransform(scrollYProgress, [0, 1], ["-8%", "8%"]);
+  const rawY = useTransform(scrollYProgress, [0, 1], ["-8%", "8%"]);
   const smoothY = useSpring(rawY, { stiffness: 70, damping: 18, mass: 0.6 });
 
   return (
@@ -142,11 +139,11 @@ export const ParallaxImage = memo(function ParallaxImage({
         src={src}
         alt={alt}
         style={{
-          y:          smoothY,
-          display:    "block",
-          width:      "100%",
-          height:     "116%",
-          objectFit:  "cover",
+          y: smoothY,
+          display: "block",
+          width: "100%",
+          height: "116%",
+          objectFit: "cover",
           willChange: "transform",
         }}
       />
@@ -161,27 +158,30 @@ const MAHome = memo(function MAHome({ onScrollDown, scroller }) {
   const ref = useRef(null);
 
   const { scrollYProgress } = useScroll({
-    target:    ref,
+    target: ref,
     container: scroller,
     offset: ["start start", "end start"],
   });
-  const rawY   = useTransform(scrollYProgress, [0, 1], ["0%", "22%"]);
+  const rawY = useTransform(scrollYProgress, [0, 1], ["0%", "22%"]);
   const innerY = useSpring(rawY, { stiffness: 70, damping: 18, mass: 0.6 });
 
   const ctnr = {
     hidden: {},
-    show:   { transition: { staggerChildren: 0.11, delayChildren: 0.28 } },
+    show: { transition: { staggerChildren: 0.11, delayChildren: 0.28 } },
   };
   const itm = {
     hidden: { opacity: 0, y: 32 },
-    show:   { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] },
+    },
   };
 
   return (
     <section ref={ref} className="ma-home">
       <motion.div className="ma-home-inner" style={{ y: innerY }}>
         <motion.div variants={ctnr} initial="hidden" animate="show">
-
           <motion.div variants={itm} className="ma-home-tag">
             About Me &amp; My Interests
           </motion.div>
@@ -195,18 +195,28 @@ const MAHome = memo(function MAHome({ onScrollDown, scroller }) {
             UI/UX · Graphic · Product · Visual Design · Development
           </motion.p>
 
-          <motion.button variants={itm} className="ma-home-scroll" onClick={onScrollDown}>
+          <motion.button
+            variants={itm}
+            className="ma-home-scroll"
+            onClick={onScrollDown}
+          >
             <span>Scroll</span>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 3v10M4 9l4 4 4-4" stroke="currentColor"
-                strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d="M8 3v10M4 9l4 4 4-4"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </motion.button>
-
         </motion.div>
       </motion.div>
 
-      <div className="ma-home-bg-name" aria-hidden="true">AA</div>
+      <div className="ma-home-bg-name" aria-hidden="true">
+        AA
+      </div>
     </section>
   );
 });
@@ -217,9 +227,7 @@ const MAHome = memo(function MAHome({ onScrollDown, scroller }) {
 const MAAbout = memo(function MAAbout({ scroller }) {
   return (
     <section className="ma-about">
-
       <div className="ma-section-inner">
-
         <RevealText>
           <h2 className="ma-about-heading">
             Designing experiences
@@ -270,7 +278,6 @@ const MAAbout = memo(function MAAbout({ scroller }) {
             intuitive, elegant, and meaningful.
           </p>
         </RevealText>
-
       </div>
 
       <ParallaxSection
@@ -286,7 +293,6 @@ const MAAbout = memo(function MAAbout({ scroller }) {
           </blockquote>
         </RevealText>
       </ParallaxSection>
-
     </section>
   );
 });
@@ -351,10 +357,16 @@ const CompanyLogo = memo(function CompanyLogo({ src, fallback, logoBg }) {
   const [err, setErr] = useState(false);
   return (
     <div className="exp-logo-wrap" style={{ background: logoBg }}>
-      {!err
-        ? <img src={src} alt={fallback} className="exp-logo-img" onError={() => setErr(true)} />
-        : <span className="exp-logo-fallback">{fallback}</span>
-      }
+      {!err ? (
+        <img
+          src={src}
+          alt={fallback}
+          className="exp-logo-img"
+          onError={() => setErr(true)}
+        />
+      ) : (
+        <span className="exp-logo-fallback">{fallback}</span>
+      )}
     </div>
   );
 });
@@ -376,14 +388,22 @@ const ExperienceCard = memo(function ExperienceCard({ job, i }) {
       {/* ── Top header panel ── */}
       <motion.div
         className="exp-card-header"
-        animate={{ backgroundColor: hovered ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.03)" }}
+        animate={{
+          backgroundColor: hovered
+            ? "rgba(255,255,255,0.07)"
+            : "rgba(255,255,255,0.03)",
+        }}
         transition={{ duration: 0.35 }}
       >
         {/* Index */}
         <span className="exp-card-index">{job.index}</span>
 
         {/* Logo */}
-        <CompanyLogo src={job.logo} fallback={job.fallback} logoBg={job.logoBg} />
+        <CompanyLogo
+          src={job.logo}
+          fallback={job.fallback}
+          logoBg={job.logoBg}
+        />
 
         {/* Company + period */}
         <div className="exp-card-header-right">
@@ -406,8 +426,13 @@ const ExperienceCard = memo(function ExperienceCard({ job, i }) {
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 3v10M4 9l4 4 4-4" stroke="currentColor"
-                strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              <path
+                d="M8 3v10M4 9l4 4 4-4"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </motion.div>
         </div>
@@ -425,14 +450,15 @@ const ExperienceCard = memo(function ExperienceCard({ job, i }) {
               <p className="exp-card-desc">{job.desc}</p>
               <div className="exp-card-tags">
                 {job.tags.map((t) => (
-                  <span key={t} className="exp-card-tag">{t}</span>
+                  <span key={t} className="exp-card-tag">
+                    {t}
+                  </span>
                 ))}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-
     </motion.div>
   );
 });
@@ -441,12 +467,9 @@ const MAExperience = memo(function MAExperience({ scroller }) {
   return (
     <section className="ma-exp">
       <div className="ma-exp-wrapper">
-
         <div className="exp-layout">
-
           {/* ── LEFT — luxury sticky editorial block ── */}
           <div className="exp-left-col">
-
             <RevealText>
               <span className="exp-eyebrow">
                 <span className="exp-eyebrow-line" />
@@ -455,13 +478,17 @@ const MAExperience = memo(function MAExperience({ scroller }) {
             </RevealText>
 
             <RevealText delay={0.06}>
-              <div className="exp-left-numeral" aria-hidden="true">IV</div>
+              <div className="exp-left-numeral" aria-hidden="true">
+                IV
+              </div>
             </RevealText>
 
             <RevealText delay={0.1}>
               <h2 className="exp-headline">
-                Craft.<br />
-                <em className="exp-headline-em">Precision.</em><br />
+                Craft.
+                <br />
+                <em className="exp-headline-em">Precision.</em>
+                <br />
                 Legacy.
               </h2>
             </RevealText>
@@ -498,7 +525,6 @@ const MAExperience = memo(function MAExperience({ scroller }) {
                 Hover to reveal each story
               </p>
             </RevealText>
-
           </div>
 
           {/* ── RIGHT — cards ── */}
@@ -507,9 +533,7 @@ const MAExperience = memo(function MAExperience({ scroller }) {
               <ExperienceCard key={job.index} job={job} i={i} />
             ))}
           </div>
-
         </div>
-
       </div>
 
       {/* Parallax divider strip */}
@@ -520,36 +544,224 @@ const MAExperience = memo(function MAExperience({ scroller }) {
         overlay={0}
         className="ma-exp-strip"
       >
-        <RevealText style={{ width: "100%", maxWidth: 1100, padding: "0 72px" }}>
-          <p className="ma-strip-text">Every project is a new problem worth solving.</p>
+        <RevealText
+          style={{ width: "100%", maxWidth: 1100, padding: "0 72px" }}
+        >
+          <p className="ma-strip-text">
+            Every project is a new problem worth solving.
+          </p>
         </RevealText>
       </ParallaxSection>
-
     </section>
   );
 });
 
 /* ════════════════════════════════════════════════════════════════════════════
-   SECTION 4  —  FOOTER
+   SECTION 4  —  BEYOND DESIGN (hover image trail)
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Placeholder image pool — replace src values with your own images */
+const BEYOND_IMAGES = [
+  { src: "/Hobbies/Anime.jpg", w: 220, h: 280 },
+  { src: "/Hobbies/draw.jpg", w: 190, h: 250 },
+  { src: "/Hobbies/edit.jpg", w: 240, h: 180 },
+  { src: "/Hobbies/guitar.jpg", w: 200, h: 260 },
+  { src: "/Hobbies/Play.jpg", w: 230, h: 190 },
+  { src: "/Hobbies/song.jpg", w: 190, h: 260 },
+  { src: "/Hobbies/calisthenics.jpg", w: 240, h: 200 },
+  { src: "/Hobbies/cycle.jpg", w: 200, h: 270 },
+];
+
+const ROTATIONS = [-12, 8, -6, 14, -9, 11, -4, 7, -13, 5];
+
+const MABeyondDesign = memo(function MABeyondDesign() {
+  const sectionRef = useRef(null);
+  const [imgs, setImgs] = useState([]);
+  const counterRef = useRef(0);
+  const lastPos = useRef({ x: -999, y: -999 });
+  const lastTime = useRef(0);
+  const imgIndexRef = useRef(0);
+
+  const handleMouseMove = useCallback((e) => {
+    const now = Date.now();
+    if (now - lastTime.current < 160) return;
+
+    const rect = sectionRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const dx = x - lastPos.current.x;
+    const dy = y - lastPos.current.y;
+    if (Math.sqrt(dx * dx + dy * dy) < 90) return;
+
+    lastPos.current = { x, y };
+    lastTime.current = now;
+
+    const id = counterRef.current++;
+    const idx = imgIndexRef.current % BEYOND_IMAGES.length;
+    imgIndexRef.current++;
+    const cfg = BEYOND_IMAGES[idx];
+    const rot = ROTATIONS[id % ROTATIONS.length];
+
+    setImgs((prev) => [...prev.slice(-9), { id, x, y, ...cfg, rot }]);
+
+    setTimeout(() => {
+      setImgs((prev) => prev.filter((i) => i.id !== id));
+    }, 1800);
+  }, []);
+
+  return (
+    <section
+      className="ma-beyond"
+      ref={sectionRef}
+      onMouseMove={handleMouseMove}
+    >
+      {/* Animated image trail */}
+      <AnimatePresence>
+        {imgs.map((img, stackIndex) => (
+          <motion.div
+            key={img.id}
+            className="ma-beyond-img"
+            style={{
+              left: img.x,
+              top: img.y,
+              width: img.w,
+              height: img.h,
+              zIndex: stackIndex + 1,
+            }}
+            initial={{
+              opacity: 0,
+              scale: 0.55,
+              rotate: img.rot - 8,
+              x: "-50%",
+              y: "-50%",
+            }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              rotate: img.rot,
+              x: "-50%",
+              y: "-50%",
+            }}
+            exit={{
+              opacity: 0,
+              scale: 0.88,
+              y: "-60%",
+              transition: { duration: 0.5, ease: "easeIn" },
+            }}
+            transition={{
+              duration: 0.48,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+          >
+            <img src={img.src} alt="" draggable={false} />
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
+      {/* Central headline */}
+      <div className="ma-beyond-center" aria-label="Beyond Design">
+        <RevealText>
+          <h2 className="ma-beyond-headline">
+            <span className="ma-beyond-line">Beyond</span>
+            <span className="ma-beyond-line ma-beyond-stroke">Design</span>
+          </h2>
+        </RevealText>
+
+        <RevealText delay={0.14}>
+          <p className="ma-beyond-hint">
+            <span className="ma-beyond-hint-dot" />
+            Move your cursor to explore
+          </p>
+        </RevealText>
+      </div>
+
+      {/* Subtle grain overlay */}
+      <div className="ma-beyond-grain" aria-hidden="true" />
+    </section>
+  );
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SECTION 5  —  CONTENT PARAGRAPHS (after Beyond Design)
+   ════════════════════════════════════════════════════════════════════════════ */
+const MABeyondContent = memo(function MABeyondContent() {
+  return (
+    <section className="ma-beyond-content-sec">
+      <div className="ma-beyond-content-inner">
+        <RevealText>
+          <span className="ma-bc-eyebrow">
+            <span className="ma-bc-eyebrow-line" />
+            The Philosophy
+          </span>
+        </RevealText>
+
+        <RevealText delay={0.08}>
+          <p className="ma-bc-para">
+            Beyond my profession, I find deep connection and balance in the
+            things I genuinely love. Playing the guitar gives me a sense of
+            rhythm and emotional clarity. I enjoy spending time in solitude,
+            cycling long distances, exploring new places, and expressing myself
+            through drawing. These moments are not just hobbies — they are
+            personal spaces where I reset, reflect, and recharge.
+          </p>
+        </RevealText>
+
+        <RevealText delay={0.1}>
+          <p className="ma-bc-para">
+            I also enjoy gaming, listening to music, and constantly learning new
+            skills. Learning excites me, but applying what I learn in real-time
+            gives me even greater satisfaction. Whether it’s experimenting with
+            new ideas or refining small details, I value growth through
+            practical execution.
+          </p>
+        </RevealText>
+
+        <RevealText delay={0.12}>
+          <p className="ma-bc-para">
+            All these experiences contribute directly to my creative thinking.
+            They help me manage stress, think independently, and approach
+            problems with a fresh perspective. This balance between passion and
+            practice is what continuously fuels my creativity and drives me to
+            create with intention and originality.
+          </p>
+        </RevealText>
+      </div>
+    </section>
+  );
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SECTION 6  —  FOOTER  (same as landing page)
    ════════════════════════════════════════════════════════════════════════════ */
 const MAFooter = memo(function MAFooter() {
   return (
     <footer className="ma-footer">
       <div className="ma-footer-inner">
-
         <div className="ma-footer-cta">
           <RevealText>
             <p className="ma-footer-sup">Let's build something great</p>
           </RevealText>
           <RevealText delay={0.08}>
-            <h2 className="ma-footer-headline">Ready to work<br />together?</h2>
+            <h2 className="ma-footer-headline">
+              Ready to work
+              <br />
+              together?
+            </h2>
           </RevealText>
           <RevealText delay={0.15}>
             <a href="mailto:arjunaadhith@email.com" className="ma-footer-btn">
               Get in touch
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor"
-                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M3 8h10M9 4l4 4-4 4"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </a>
           </RevealText>
@@ -559,12 +771,17 @@ const MAFooter = memo(function MAFooter() {
           <div className="ma-footer-links">
             {[
               { label: "LinkedIn ↗", href: "https://linkedin.com" },
-              { label: "GitHub ↗",   href: "https://github.com" },
+              { label: "GitHub ↗", href: "https://github.com" },
               { label: "Dribbble ↗", href: "https://dribbble.com" },
-              { label: "Email ↗",    href: "mailto:arjunaadhith@email.com" },
+              { label: "Email ↗", href: "mailto:arjunaadhith@email.com" },
             ].map(({ label, href }) => (
-              <a key={label} href={href} target="_blank"
-                rel="noopener noreferrer" className="ma-footer-link">
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ma-footer-link"
+              >
                 {label}
               </a>
             ))}
@@ -572,9 +789,10 @@ const MAFooter = memo(function MAFooter() {
         </RevealText>
 
         <RevealText delay={0.05}>
-          <p className="ma-footer-copy">© 2025 Arjun Aadhith. All rights reserved.</p>
+          <p className="ma-footer-copy">
+            © 2025 Arjun Aadhith. All rights reserved.
+          </p>
         </RevealText>
-
       </div>
     </footer>
   );
@@ -588,7 +806,7 @@ export default function MoreAbout({ isOpen, onClose }) {
 
   useEffect(() => {
     window.dispatchEvent(
-      new CustomEvent("portfolio:nav", { detail: { visible: !isOpen } })
+      new CustomEvent("portfolio:nav", { detail: { visible: !isOpen } }),
     );
   }, [isOpen]);
 
@@ -600,12 +818,16 @@ export default function MoreAbout({ isOpen, onClose }) {
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
-    const fn = (e) => { if (e.key === "Escape") onClose(); };
+    const fn = (e) => {
+      if (e.key === "Escape") onClose();
+    };
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
   }, [isOpen, onClose]);
@@ -617,20 +839,20 @@ export default function MoreAbout({ isOpen, onClose }) {
   useEffect(() => {
     const el = pageRef.current;
     if (!el) return;
-    let lastY   = 0;
+    let lastY = 0;
     let ticking = false;
     const onScroll = () => {
       if (ticking) return;
       ticking = true;
       requestAnimationFrame(() => {
-        const currentY  = el.scrollTop;
+        const currentY = el.scrollTop;
         const direction = currentY > lastY ? "down" : "up";
         window.dispatchEvent(
           new CustomEvent("portfolio:aboutScroll", {
             detail: { direction, scrollTop: currentY },
-          })
+          }),
         );
-        lastY   = currentY;
+        lastY = currentY;
         ticking = false;
       });
     };
@@ -655,9 +877,11 @@ export default function MoreAbout({ isOpen, onClose }) {
         style={{ pointerEvents: isOpen ? "auto" : "none" }}
       >
         <div key={String(isOpen)} style={{ display: "contents" }}>
-          <MAHome       onScrollDown={scrollDown} scroller={pageRef} />
-          <MAAbout      scroller={pageRef} />
+          <MAHome onScrollDown={scrollDown} scroller={pageRef} />
+          <MAAbout scroller={pageRef} />
           <MAExperience scroller={pageRef} />
+          <MABeyondDesign />
+          <MABeyondContent />
           <MAFooter />
         </div>
       </motion.div>
@@ -999,6 +1223,157 @@ const CSS = `
     border-left: 1px solid rgba(255,255,255,0.12); padding-left: 20px;
   }
 
+  /* ════════════════════════════════════════════════════════════════════════
+     BEYOND DESIGN — hover image trail
+     ════════════════════════════════════════════════════════════════════════ */
+  .ma-beyond {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    min-height: 600px;
+    background: #000;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    cursor: crosshair;
+    user-select: none;
+  }
+
+  /* Floating images spawned at cursor */
+  .ma-beyond-img {
+    position: absolute;
+    pointer-events: none;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow:
+      0 20px 60px rgba(0,0,0,0.7),
+      0 4px 16px rgba(0,0,0,0.5),
+      0 0 0 1px rgba(255,255,255,0.06);
+    transform-origin: center center;
+    will-change: transform, opacity;
+  }
+  .ma-beyond-img img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+    -webkit-user-drag: none;
+  }
+
+  /* Central text block */
+  .ma-beyond-center {
+    position: relative;
+    z-index: 20;
+    text-align: center;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+  }
+
+  .ma-beyond-headline {
+    font-size: clamp(72px, 13vw, 180px);
+    font-weight: 900;
+    letter-spacing: -0.055em;
+    line-height: 0.92;
+    font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  /* "Beyond" — warm ivory / premium off-white */
+  .ma-beyond-line {
+    display: block;
+    color: #EDE8E0;
+    letter-spacing: -0.055em;
+  }
+
+  /* "Design" — outlined / stroke treatment for contrast and drama */
+  .ma-beyond-stroke {
+    color: transparent;
+    -webkit-text-stroke: 2px rgba(237, 232, 224, 0.55);
+    letter-spacing: -0.045em;
+  }
+
+  /* Hint text */
+  .ma-beyond-hint {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(255,255,255,0.2); margin: 0;
+  }
+  .ma-beyond-hint-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(237,232,224,0.5);
+    animation: bd-pulse 2.8s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes bd-pulse {
+    0%, 100% { opacity: 0.2; transform: scale(1); }
+    50%       { opacity: 1;   transform: scale(1.7); }
+  }
+
+  /* Subtle grain */
+  .ma-beyond-grain {
+    position: absolute; inset: 0; z-index: 10; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    opacity: 0.4;
+    mix-blend-mode: overlay;
+  }
+
+  /* ════════════════════════════════════════════════════════════════════════
+     BEYOND DESIGN — content paragraphs
+     ════════════════════════════════════════════════════════════════════════ */
+  .ma-beyond-content-sec {
+    background: #000;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .ma-beyond-content-inner {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 110px 48px 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* Eyebrow */
+  .ma-bc-eyebrow {
+    display: flex; align-items: center; gap: 14px;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(255,255,255,0.2);
+    margin-bottom: 56px;
+  }
+  .ma-bc-eyebrow-line {
+    display: inline-block; width: 28px; height: 1px;
+    background: rgba(255,255,255,0.2); flex-shrink: 0;
+  }
+
+  /* Paragraphs */
+  .ma-bc-para {
+    font-size: clamp(17px, 1.9vw, 21px);
+    line-height: 1.9;
+    color: rgba(237, 232, 224, 0.52);
+    margin: 0 0 44px;
+    font-weight: 400;
+    letter-spacing: -0.008em;
+  }
+  .ma-bc-para:first-of-type {
+    color: rgba(237, 232, 224, 0.72);
+    font-size: clamp(19px, 2.1vw, 24px);
+    font-weight: 500;
+  }
+  .ma-bc-para:last-of-type { margin-bottom: 0; }
+
   /* ── Footer ───────────────────────────────────────────────────────────── */
   .ma-footer { background: #141414; border-top: 1px solid rgba(255,255,255,0.06); }
   .ma-footer-inner { max-width: 1100px; margin: 0 auto; padding: 120px 48px 80px; }
@@ -1051,10 +1426,17 @@ const CSS = `
     .ma-footer-inner  { padding: 80px 24px 60px; }
     .ma-band-quote    { padding-left: 20px; }
     .ma-exp-wrapper   { padding: 72px 24px 60px; }
+    .ma-beyond-content-inner { padding: 80px 24px 90px; }
 
     .exp-card-header  { grid-template-columns: 28px 44px 1fr; gap: 0 10px; }
     .exp-card-type    { display: none; }
     .exp-logo-wrap    { width: 44px; height: 44px; border-radius: 11px; }
     .exp-card-role    { font-size: 15px; }
+
+    .ma-beyond        { height: 80vh; min-height: 480px; }
+  }
+
+  @media (max-width: 480px) {
+    .ma-beyond-stroke { -webkit-text-stroke-width: 1.5px; }
   }
 `;
