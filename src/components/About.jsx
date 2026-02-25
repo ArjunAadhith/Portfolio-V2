@@ -1,11 +1,3 @@
-// ─── CHANGES from your original About.jsx ─────────────────────────
-// 1. Added:  import MoreAbout from "./MoreAbout";
-// 2. Added:  const [moreOpen, setMoreOpen] = useState(false);
-// 3. Changed: <a href="#more"> to <button onClick={() => setMoreOpen(true)}>
-// 4. Added:  <MoreAbout isOpen={moreOpen} onClose={() => setMoreOpen(false)} />
-// Everything else is exactly the same as your current About.jsx
-// ──────────────────────────────────────────────────────────────────
-
 import { useEffect, useRef, useState, useMemo } from "react";
 import Shuffle from "./Shuffle";
 import ScrollReveal from "./ScrollReveal";

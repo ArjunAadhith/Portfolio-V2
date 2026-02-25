@@ -570,7 +570,7 @@ const MABeyondContent = memo(function MABeyondContent() {
         <RevealText>
           <span className="ma-bc-eyebrow">
             <span className="ma-bc-eyebrow-line" />
-            The Philosophy
+            My Hobbies
           </span>
         </RevealText>
 
