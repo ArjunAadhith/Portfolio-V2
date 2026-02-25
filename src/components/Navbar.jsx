@@ -304,7 +304,7 @@ export default function Navbar() {
       >
         <div className="nav-pill">
           <div className="logo-section">
-            <img className="logo-img" src="/src/assets/Nav logo icon.png" alt="Arjun Aadhith" />
+            <img className="logo-img" src="/Nav logo icon.png" alt="Arjun Aadhith" />
             <div className="logo-text">
               <span className="logo-name-shine">
                 <span className="logo-name-text">Arjun</span>

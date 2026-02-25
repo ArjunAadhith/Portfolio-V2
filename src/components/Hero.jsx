@@ -233,7 +233,7 @@ export default function Hero() {
         <div style={{ position: "absolute", top: "14%", right: "5.5%", zIndex: 10, pointerEvents: "none" }}>
           <div ref={ghostEl} style={{ willChange: "transform" }}>
             <img
-              src="/src/assets/ghost.png"
+              src="/ghost.png"
               alt="Red ghost character"
               style={{ width: 255, height: 255, objectFit: "contain", display: "block" }}
             />
