@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import Shuffle from "./Shuffle";
 import ScrollReveal from "./ScrollReveal";
-import MoreAbout from "./MoreAbout";               // ← ADD THIS
+import MoreAbout from "./Moreabout.jsx";               // ← ADD THIS
 
 const TITLES = [
   "UI/UX Designer",
