@@ -1,22 +1,3 @@
-/**
- * Navbar.jsx — updated to work seamlessly with the MoreAbout panel.
- *
- * Changes from original
- * ─────────────────────
- * 1. NavIcon onClick  →  dispatches "portfolio:closeAbout" so MoreAbout closes
- *    on ANY nav icon click regardless of z-index stacking.
- *
- * 2. z-index boost  →  when MoreAbout opens it fires "portfolio:nav"
- *    with { visible: false }.  Navbar switches to z-index 200001 (above
- *    MoreAbout's 100000) so icons are clickable even while the panel is open.
- *    When MoreAbout closes the z-index reverts to 100.
- *
- * 3. Scroll-hide inside MoreAbout  →  MoreAbout's inner div dispatches
- *    "portfolio:aboutScroll" with { direction, scrollTop }.
- *    Navbar listens to this event and hides / shows exactly like it does
- *    for normal page scroll — including the threshold guard.
- */
-
 import { useRef, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 
