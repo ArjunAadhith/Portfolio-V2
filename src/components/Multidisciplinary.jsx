@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from "react";
+import ShowcasePage from "./ShowcasePage"; // ← ADD (1): import
 
 const IMAGES = [
   { id: 1, src: "/multidisciplinary/m1.png", label: "Aston Martin Valhalla",        link: "https://3d-car-model-design.netlify.app/" },
@@ -26,7 +27,6 @@ function ShowcaseCard({ img }) {
       if (!active.current || !tipRef.current) { rafRef.current = null; return; }
       currentPos.current.x += (targetPos.current.x - currentPos.current.x) * 0.12;
       currentPos.current.y += (targetPos.current.y - currentPos.current.y) * 0.12;
-      // ✅ transform instead of left/top — no layout recalc
       tipRef.current.style.transform =
         `translate3d(calc(${currentPos.current.x}px - 50%), calc(${currentPos.current.y}px - 50%), 0) scale(1)`;
       rafRef.current = requestAnimationFrame(loop);
@@ -91,16 +91,19 @@ function ShowcaseCard({ img }) {
 /* ─── Main ──────────────────────────────────────────────────────────── */
 export default function SplitShowcase() {
   const wrapperRef  = useRef(null);
-  const innerRef    = useRef(null);   // the cards column — moved via transform
-  const rightRef    = useRef(null);   // clip container (overflow:hidden)
+  const innerRef    = useRef(null);
+  const rightRef    = useRef(null);
 
-  const current     = useRef(0);      // interpolated Y offset (px, positive = scrolled up)
-  const target      = useRef(0);      // target Y offset from page scroll
-  const maxScroll   = useRef(0);      // max translateY magnitude
+  const current     = useRef(0);
+  const target      = useRef(0);
+  const maxScroll   = useRef(0);
   const rafRef      = useRef(null);
   const lastTs      = useRef(null);
 
   const [wrapperHeight, setWrapperHeight] = useState("100vh");
+
+  // ← ADD (2): mirrors `const [moreOpen, setMoreOpen] = useState(false)` in About.jsx
+  const [showcaseOpen, setShowcaseOpen] = useState(false);
 
   /* ── Measure: how much does the right panel overflow? ── */
   const measure = useCallback(() => {
@@ -128,14 +131,11 @@ export default function SplitShowcase() {
       const dt = lastTs.current == null ? 16.67 : Math.min(ts - lastTs.current, 50);
       lastTs.current = ts;
 
-      // How far into wrapper have we scrolled?
       const scrolledIn = Math.max(0, -wrapper.getBoundingClientRect().top);
       const budget     = maxScroll.current;
 
-      // Map page scroll → target Y offset (clamped)
       target.current = budget > 0 ? Math.min(budget, scrolledIn) : 0;
 
-      // Frame-rate-independent lerp (exponential decay)
       const diff   = target.current - current.current;
       const factor = 1 - Math.exp(-dt * LERP);
 
@@ -145,7 +145,6 @@ export default function SplitShowcase() {
         current.current += diff * factor;
       }
 
-      // ✅ Only transform — no scrollTop, no layout triggers, pure GPU
       inner.style.transform = `translate3d(0, ${-current.current}px, 0)`;
 
       rafRef.current = requestAnimationFrame(tick);
@@ -156,11 +155,21 @@ export default function SplitShowcase() {
       cancelAnimationFrame(rafRef.current);
       lastTs.current = null;
     };
-  }, [wrapperHeight]); // restart after height measured
+  }, [wrapperHeight]);
 
   return (
     <>
       <style>{CSS}</style>
+
+      {/* ← ADD (3): always mounted above the section, never conditionally rendered.
+           Mirrors About.jsx exactly:
+             <MoreAbout isOpen={moreOpen} onClose={() => setMoreOpen(false)} />
+      */}
+      <ShowcasePage
+        isOpen={showcaseOpen}
+        onClose={() => setShowcaseOpen(false)}
+      />
+
       <div
         ref={wrapperRef}
         className="sc2-wrapper"
@@ -181,10 +190,20 @@ export default function SplitShowcase() {
                 motion, and digital experiences
                 crafted with intention.
               </p>
-              <a href="/explore" className="sc2-btn">
+
+              {/* ← CHANGED: was <a href="/explore" className="sc2-btn">
+                   Now a <button> with onClick — mirrors About.jsx:
+                     <button className="btn-pill" onClick={() => setMoreOpen(true)}>
+                   Removing href prevents the browser scroll-to-top.
+              */}
+              <button
+                className="sc2-btn"
+                onClick={() => setShowcaseOpen(true)}
+              >
                 <span className="sc2-btn-bg" />
                 <span className="sc2-btn-text">Explore More</span>
-              </a>
+              </button>
+
               <div className="sc2-counter">
                 <span className="sc2-counter-num">05+</span>
                 <span className="sc2-counter-divider" />
@@ -208,7 +227,8 @@ export default function SplitShowcase() {
   );
 }
 
-/* ─── Styles ─────────────────────────────────────────────────────────── */
+/* ─── Styles (your original — only the .sc2-btn text-decoration removed
+     since it's now a <button> not an <a>) ─────────────────────────── */
 const CSS = `
   .sc2-wrapper *, .sc2-wrapper *::before, .sc2-wrapper *::after {
     box-sizing: border-box; margin: 0; padding: 0;
@@ -284,7 +304,7 @@ const CSS = `
     margin-bottom: 44px;
   }
 
-  /* Button */
+  /* Button — visually identical, now a <button> element */
   .sc2-btn {
     display: inline-flex;
     align-items: center;
@@ -295,10 +315,10 @@ const CSS = `
     padding: 12px 28px;
     border: 1px solid rgba(255,255,255,0.22);
     border-radius: 100px;
-    text-decoration: none;
     cursor: pointer;
     background: transparent;
     margin-bottom: 56px;
+    font-family: inherit;
   }
 
   .sc2-btn-bg {
@@ -351,7 +371,7 @@ const CSS = `
   .sc2-right {
     width: 60%;
     height: 100vh;
-    overflow: hidden;           /* clips the inner div */
+    overflow: hidden;
     position: relative;
     z-index: 1;
   }
@@ -362,9 +382,9 @@ const CSS = `
     flex-direction: column;
     gap: 16px;
     padding: 32px 40px 40px;
-    will-change: transform;     /* ✅ GPU layer hint */
-    transform: translate3d(0, 0, 0); /* ✅ promote to compositor layer */
-    backface-visibility: hidden; /* ✅ prevent sub-pixel flicker */
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
   }
 
   /* ── Card ── */
@@ -378,7 +398,6 @@ const CSS = `
     aspect-ratio: 16 / 9;
     background: #1a1a1a;
     text-decoration: none;
-    /* ✅ NO box-shadow on hover — that triggers paint */
     transition: transform 0.48s cubic-bezier(0.34, 1.2, 0.64, 1);
   }
 
@@ -424,7 +443,7 @@ const CSS = `
   /* ── Tooltip — transform-only positioning ── */
   .sc2-tip {
     position: absolute;
-    top: 0; left: 0;           /* origin; real pos set via transform */
+    top: 0; left: 0;
     pointer-events: none;
     z-index: 20;
     background: #f0ede8;
@@ -437,7 +456,6 @@ const CSS = `
     white-space: nowrap;
     box-shadow: 0 6px 20px rgba(0,0,0,0.28);
     opacity: 0;
-    /* ✅ initial: centered, shrunk */
     transform: translate3d(calc(0px - 50%), calc(0px - 50%), 0) scale(0.72);
     transition: opacity 0.20s ease, scale 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
     will-change: transform;
