@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from "react";
-import ShowcasePage from "./ShowcasePage"; // ← ADD (1): import
+import ShowcasePage from "./Showcasepage.jsx"; // ← ADD (1): import
 
 const IMAGES = [
   { id: 1, src: "/multidisciplinary/m1.png", label: "Aston Martin Valhalla",        link: "https://3d-car-model-design.netlify.app/" },

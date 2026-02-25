@@ -1,15 +1,3 @@
-/**
- * ShowcasePage.jsx
- *
- * Mirrors MoreAbout.jsx 1-to-1. Every effect, every event name,
- * every transition value is identical. Only the content differs.
- *
- * Navbar compatibility (zero changes to Navbar.jsx needed):
- *   portfolio:nav          → already handled (raises z-index)
- *   portfolio:aboutScroll  → already handled (hide/show on scroll)
- *   portfolio:closeAbout   → already handled (nav icon click closes panel)
- */
-
 import { useEffect, useRef, useState, useCallback, memo } from "react";
 import {
   motion,
@@ -19,54 +7,141 @@ import {
   AnimatePresence,
 } from "framer-motion";
 
-/* ══════════════════════════════════════════════════════════
-   DATA
-   ══════════════════════════════════════════════════════════ */
-const CATEGORIES = ["All", "Graphic Design", "Logos", "Game", "Wallpapers", "Others"];
-
 const ALL_PROJECTS = [
-  { id: 1,  src: "/multidisciplinary/m1.png", title: "Aston Martin Modern Design",    category: "Graphic Design", label: "3D Model"             },
-  { id: 2,  src: "/multidisciplinary/m3.png", title: "Creative Visual Design",        category: "Graphic Design", label: "Graphic Design"       },
-  { id: 3,  src: "/multidisciplinary/m3.png", title: "Conceptual Poster Design",      category: "Graphic Design", label: "Graphic Design"       },
-  { id: 4,  src: "/multidisciplinary/m3.png", title: "Abstract Motion Poster",        category: "Graphic Design", label: "Graphic Design"       },
-  { id: 5,  src: "/multidisciplinary/m1.png", title: "RideEase Brand Identity",       category: "Logos",          label: "Logo Design"          },
-  { id: 6,  src: "/multidisciplinary/m1.png", title: "Organic Farmer Groups",         category: "Logos",          label: "Logo Design"          },
-  { id: 7,  src: "/multidisciplinary/m1.png", title: "Minimal Logo Suite",            category: "Logos",          label: "Logo Design"          },
-  { id: 8,  src: "/multidisciplinary/m5.png", title: "Awaken — Cinematic Artwork",    category: "Game",           label: "Game Art"             },
-  { id: 9,  src: "/multidisciplinary/m5.png", title: "Retro Game Cover Design",       category: "Game",           label: "Game Art"             },
-  { id: 10, src: "/multidisciplinary/m5.png", title: "Space Explorer Game UI",        category: "Game",           label: "Game UI"              },
-  { id: 11, src: "/multidisciplinary/m2.png", title: "McLaren — Let's Start New Era", category: "Wallpapers",     label: "Wallpaper"            },
-  { id: 12, src: "/multidisciplinary/m4.png", title: "Never Settle",                  category: "Wallpapers",     label: "Wallpaper"            },
-  { id: 13, src: "/multidisciplinary/m2.png", title: "Neon City Nights",              category: "Wallpapers",     label: "Wallpaper"            },
-  { id: 14, src: "/multidisciplinary/m1.png", title: "QR Code Generator",             category: "Others",         label: "Frontend Development" },
-  { id: 15, src: "/multidisciplinary/m1.png", title: "Account Creation UI Flow",      category: "Others",         label: "UI Design"            },
-  { id: 16, src: "/multidisciplinary/m1.png", title: "Calculator App",                category: "Others",         label: "Frontend Development" },
+  // ── Graphic Design ──────────────────────────────────────
+  {
+    id: 1,
+    src: "/multidisciplinary/m1.png",
+    title: "Aston Martin Modern Design",
+    category: "3D Model",
+    label: "3D Model",
+    link: "https://3d-car-model-design.netlify.app/",
+  },
+  {
+    id: 2,
+    src: "/multidisciplinary/m2.png",
+    title: "Forza Horizon Winter Drive",
+    category: "Wallpapers",
+    label: "Wallpaper",
+    link: "https://forzahorizon-wallpaper.netlify.app/",
+  },
+  {
+    id: 3,
+    src: "/multidisciplinary/m4.png",
+    title: "Storm of Determination",
+    category: "Wallpapers",
+    label: "Wallpaper",
+    link: "https://never-settle-wallpaper.netlify.app/",
+  },
+  {
+    id: 4,
+    src: "/multidisciplinary/m3.png",
+    title: "Creative Visual Design",
+    category: "Graphic Design",
+    label: "Graphic Design",
+    link: "https://nike-shoe-design.netlify.app/",
+  },
+  {
+    id: 5,
+    src: "/multidisciplinary/rideease.png",
+    title: "Brand Identity",
+    category: "Logos",
+    label: "Logo Design",
+    link: "https://rideease-logo.netlify.app/",
+  },
+  {
+    id: 6,
+    src: "/multidisciplinary/m5.png",
+    title: "Cinematic Fantasy Artwork",
+    category: "Wallpapers",
+    label: "Wallpaper",
+    link: "https://gaming-wallpaper.netlify.app/",
+  },
+  {
+    id: 7,
+    src: "/multidisciplinary/THL.jpg",
+    title: "Organic Brand Identity",
+    category: "Logos",
+    label: "Logo Design",
+    link: "https://thl-logo.netlify.app/",
+  },
+  {
+    id: 8,
+    src: "/multidisciplinary/qr.png",
+    title: "QR Code Generator",
+    category: "Others",
+    label: "Frontend Development",
+    link: "https://qr-code-gens.netlify.app/",
+  },
+  {
+    id: 9,
+    src: "/multidisciplinary/form.png",
+    title: "Account Form Validation UI",
+    category: "Others",
+    label: "Frontend Development",
+    link: "https://formvalidation-ui.netlify.app/",
+  },
+  {
+    id: 10,
+    src: "/multidisciplinary/cals.png",
+    title: "Neumorphic Calculator Interface",
+    category: "Others",
+    label: "UI Development",
+    link: "https://neumorphic-calcs.netlify.app/",
+  },
+  {
+    id: 11,
+    src: "/multidisciplinary/car game.png",
+    title: "Highway Rush Game",
+    category: "Game",
+    label: "Game Development",
+    link: "https://mini-car-game.netlify.app/",
+  }
 ];
 
-const INITIAL_LIMIT = 6; // 3 rows × 2 cols — matches "first 3 rows" requirement
+/* ── Dynamic category list — derives itself from ALL_PROJECTS automatically ── */
+const CATEGORY_ORDER = ["Graphic Design", "Logos", "3D Model", "Game", "Wallpapers", "Others"];
+const _seen = new Set();
+const _dynamic = [];
+// First add in preferred order if they exist in data
+CATEGORY_ORDER.forEach((c) => {
+  if (ALL_PROJECTS.some((p) => p.category === c)) {
+    _seen.add(c);
+    _dynamic.push(c);
+  }
+});
+// Then catch any new category not in the preferred order
+ALL_PROJECTS.forEach((p) => {
+  if (!_seen.has(p.category)) {
+    _seen.add(p.category);
+    _dynamic.push(p.category);
+  }
+});
+const CATEGORIES = ["All", ..._dynamic];
+
+const INITIAL_LIMIT = 6; // 3 rows × 2 cols in "All" view
 
 /* ══════════════════════════════════════════════════════════
-   SECTION 1 — HERO  (mirrors MAHome)
+   HERO SECTION
    ══════════════════════════════════════════════════════════ */
 const SCHome = memo(function SCHome({ onScrollDown, scroller }) {
   const ref = useRef(null);
 
-  // Same parallax pattern as MAHome
   const { scrollYProgress } = useScroll({
     target: ref,
     container: scroller,
     offset: ["start start", "end start"],
   });
-  const rawY    = useTransform(scrollYProgress, [0, 1], ["0%", "22%"]);
-  const innerY  = useSpring(rawY, { stiffness: 70, damping: 18, mass: 0.6 });
+  const rawY   = useTransform(scrollYProgress, [0, 1], ["0%", "20%"]);
+  const innerY = useSpring(rawY, { stiffness: 80, damping: 20, mass: 0.5 });
 
   const ctnr = {
     hidden: {},
-    show: { transition: { staggerChildren: 0.11, delayChildren: 0.28 } },
+    show: { transition: { staggerChildren: 0.1, delayChildren: 0.24 } },
   };
   const itm = {
-    hidden: { opacity: 0, y: 32 },
-    show:   { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } },
+    hidden: { opacity: 0, y: 28 },
+    show:   { opacity: 1, y: 0, transition: { duration: 0.75, ease: [0.22, 1, 0.36, 1] } },
   };
 
   return (
@@ -74,23 +149,29 @@ const SCHome = memo(function SCHome({ onScrollDown, scroller }) {
       <motion.div className="sc-home-inner" style={{ y: innerY }}>
         <motion.div variants={ctnr} initial="hidden" animate="show">
 
-          <motion.div variants={itm} className="sc-home-tag">
-            Multidisciplinary Creative Showcase
-          </motion.div>
+          <motion.span variants={itm} className="sc-home-tag">
+            Selected Works
+          </motion.span>
 
+          {/*
+            TWO LINES: each span is display:block.
+            Font size clamped at max 72px so "Multidisciplinary"
+            never wraps beyond one line on any desktop viewport.
+          */}
           <motion.h1 variants={itm} className="sc-home-name">
-            <span className="sc-d-block">Selected</span>
-            <span className="sc-d-block">Works</span>
+            <span className="sc-name-line">Multidisciplinary</span>
+            <span className="sc-name-line sc-name-muted">Creative Showcase</span>
           </motion.h1>
 
           <motion.p variants={itm} className="sc-home-sub">
-            Graphic Design · Logos · Game Art · Wallpapers · Development
+            Graphic Design&nbsp;&nbsp;·&nbsp;&nbsp;Logos&nbsp;&nbsp;·&nbsp;&nbsp;
+            Game Art&nbsp;&nbsp;·&nbsp;&nbsp;Wallpapers&nbsp;&nbsp;·&nbsp;&nbsp;Development
           </motion.p>
 
-          <motion.button variants={itm} className="sc-home-scroll" onClick={onScrollDown}>
-            <span>Scroll</span>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 3v10M4 9l4 4 4-4" stroke="currentColor"
+          <motion.button variants={itm} className="sc-home-cta" onClick={onScrollDown}>
+            Explore Projects
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M7 2v10M3 8l4 4 4-4" stroke="currentColor"
                     strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </motion.button>
@@ -98,56 +179,82 @@ const SCHome = memo(function SCHome({ onScrollDown, scroller }) {
         </motion.div>
       </motion.div>
 
-      {/* Ghost watermark — mirrors ma-home-bg-name */}
-      <div className="sc-home-bg" aria-hidden="true">MC</div>
+      {/* Ghost watermark */}
+      <div className="sc-home-watermark" aria-hidden="true">MC</div>
     </section>
   );
 });
 
 /* ══════════════════════════════════════════════════════════
-   SECTION 2 — PROJECTS (filter + grid + read-more)
+   PROJECT CARD
+   — Clicking opens the project link in a new tab.
+   — Hover: border darkens, image scales slightly. NO shadow, NO glow.
    ══════════════════════════════════════════════════════════ */
 const ProjectCard = memo(function ProjectCard({ project, index }) {
-  const [hov, setHov] = useState(false);
+  const hasLink = project.link && project.link !== "#";
+
+  const handleClick = useCallback(() => {
+    if (hasLink) window.open(project.link, "_blank", "noopener,noreferrer");
+  }, [project.link, hasLink]);
+
   return (
-    <motion.div
+    <motion.article
       className="sc-card"
-      initial={{ opacity: 0, y: 22 }}
+      onClick={handleClick}
+      style={{ cursor: hasLink ? "pointer" : "default" }}
+      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: false, margin: "-6% 0px -6% 0px" }}
-      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1], delay: index * 0.055 }}
-      onHoverStart={() => setHov(true)}
-      onHoverEnd={() => setHov(false)}
+      viewport={{ once: true, margin: "-5% 0px" }}
+      transition={{
+        duration: 0.5,
+        ease: [0.22, 1, 0.36, 1],
+        delay: (index % 2) * 0.06,
+      }}
+      whileHover={hasLink ? { y: -3 } : {}}
     >
-      <div className="sc-card-img-wrap">
-        <img
+      <div className="sc-card-media">
+        <motion.img
           src={project.src}
           alt={project.title}
-          className={`sc-card-img${hov ? " sc-card-img--hov" : ""}`}
+          className="sc-card-img"
           draggable={false}
+          whileHover={{ scale: 1.04 }}
+          transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
         />
-        <div className={`sc-card-shine${hov ? " sc-card-shine--on" : ""}`} />
       </div>
-      <div className="sc-card-body">
+      <div className="sc-card-info">
         <span className="sc-card-label">{project.label}</span>
         <h3 className="sc-card-title">{project.title}</h3>
+        {hasLink && (
+          <span className="sc-card-arrow" aria-hidden="true">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+              <path d="M1.5 9.5L9.5 1.5M9.5 1.5H3.5M9.5 1.5V7.5"
+                    stroke="currentColor" strokeWidth="1.5"
+                    strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </span>
+        )}
       </div>
-    </motion.div>
+    </motion.article>
   );
 });
 
+/* ══════════════════════════════════════════════════════════
+   PROJECTS SECTION — filter + grid + read-more
+   ══════════════════════════════════════════════════════════ */
 const SCProjects = memo(function SCProjects() {
   const [activeCategory, setActiveCategory] = useState("All");
-  const [expanded,       setExpanded]       = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const handleCategory = useCallback((cat) => {
     setActiveCategory(cat);
     setExpanded(false);
   }, []);
 
-  const filtered     = activeCategory === "All"
+  const filtered = activeCategory === "All"
     ? ALL_PROJECTS
     : ALL_PROJECTS.filter((p) => p.category === activeCategory);
+
   const isAll        = activeCategory === "All";
   const showReadMore = isAll && !expanded && filtered.length > INITIAL_LIMIT;
   const displayed    = isAll && !expanded ? filtered.slice(0, INITIAL_LIMIT) : filtered;
@@ -155,30 +262,44 @@ const SCProjects = memo(function SCProjects() {
   return (
     <section className="sc-projects">
 
-      {/* Sticky filter — mirrors exp-left-col sticky pattern */}
+      {/* ── Sticky filter bar ── */}
       <div className="sc-filter-sticky">
         <div className="sc-filter-bar">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              className={`sc-filter-btn${activeCategory === cat ? " sc-filter-btn--active" : ""}`}
-              onClick={() => handleCategory(cat)}
-            >
-              {cat}
-            </button>
-          ))}
+          {CATEGORIES.map((cat) => {
+            const isActive = activeCategory === cat;
+            return (
+              <button
+                key={cat}
+                /*
+                  Using inline style for the active state because it has
+                  100% specificity — no class override can beat it.
+                  This is the definitive fix for the "active not visible" bug.
+                */
+                className="sc-filter-btn"
+                style={
+                  isActive
+                    ? { background: "#111111", borderColor: "#111111", color: "#ffffff" }
+                    : {}
+                }
+                onClick={() => handleCategory(cat)}
+              >
+                {cat}
+              </button>
+            );
+          })}
         </div>
       </div>
 
+      {/* ── Grid ── */}
       <div className="sc-grid-outer">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeCategory}
             className="sc-grid"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
           >
             {displayed.map((project, i) => (
               <ProjectCard key={project.id} project={project} index={i} />
@@ -186,21 +307,22 @@ const SCProjects = memo(function SCProjects() {
           </motion.div>
         </AnimatePresence>
 
-        {/* Read More — only in "All" category */}
+        {/* Read More — All category only */}
         <AnimatePresence>
           {showReadMore && (
             <motion.div
               className="sc-readmore-wrap"
-              initial={{ opacity: 0, y: 14 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.32 }}
+              transition={{ duration: 0.28 }}
             >
               <button className="sc-readmore-btn" onClick={() => setExpanded(true)}>
-                <span>Read More</span>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M7 2V12M2 7L7 12L12 7" stroke="currentColor"
-                        strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                Show All Projects
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <path d="M6.5 1.5v10M2 8l4.5 4.5L11 8"
+                        stroke="currentColor" strokeWidth="1.6"
+                        strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
             </motion.div>
@@ -208,99 +330,99 @@ const SCProjects = memo(function SCProjects() {
         </AnimatePresence>
       </div>
 
-      {/* Strip — mirrors ma-exp-strip */}
+      {/* Count strip */}
       <div className="sc-strip">
-        <p className="sc-strip-text">
-          {displayed.length} of {filtered.length} projects
-          {activeCategory !== "All" ? ` in ${activeCategory}` : ""}.
-        </p>
+        <span className="sc-strip-text">
+          {displayed.length}&thinsp;/&thinsp;{filtered.length} projects
+          {activeCategory !== "All" ? ` · ${activeCategory}` : ""}
+        </span>
       </div>
+
     </section>
   );
 });
 
 /* ══════════════════════════════════════════════════════════
-   SECTION 3 — FOOTER  (mirrors MAFooter exactly)
+   FOOTER — modern, clean, minimal
+   Heading: "Think bold. Design sharp. Build right."
    ══════════════════════════════════════════════════════════ */
 const SCFooter = memo(function SCFooter({ onClose }) {
-  const [hov, setHov] = useState(false);
   return (
     <footer className="sc-footer">
-      <div className="sc-footer-topline" aria-hidden="true" />
-      <div className="sc-footer-watermark" aria-hidden="true">WORK</div>
+
+      <div className="sc-footer-watermark" aria-hidden="true">AA</div>
 
       <div className="sc-footer-body">
+
+        {/* Eyebrow row */}
         <div className="sc-footer-eyebrow-row">
           <span className="sc-footer-eyebrow">
             <span className="sc-footer-dot" />
-            Open to new projects
+            Available for new projects
           </span>
           <span className="sc-footer-year">2026</span>
         </div>
 
-        <h2 className="sc-footer-big">
-          <span className="sc-footer-big-line">Let's build</span>
-          <span className="sc-footer-big-line sc-footer-big-italic">something</span>
-          <span className="sc-footer-big-line">great.</span>
+        {/* Big headline — modern & unique */}
+        <h2 className="sc-footer-headline">
+          <span className="sc-fh-line">Think bold.</span>
+          <span className="sc-fh-line sc-fh-accent">Design sharp.</span>
+          <span className="sc-fh-line">Build right.</span>
         </h2>
 
-        {/* Mirrors MAFooter CTA — clicking closes the panel */}
-        <button
-          className={`sc-footer-cta${hov ? " sc-footer-cta--hov" : ""}`}
-          onMouseEnter={() => setHov(true)}
-          onMouseLeave={() => setHov(false)}
-          onClick={onClose}
-          aria-label="Back to portfolio"
-        >
-          <span className="sc-footer-cta-label">Back to Portfolio</span>
-          <span className="sc-footer-cta-arrow">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M3 9h12M10 4l5 5-5 5" stroke="currentColor"
-                    strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        {/* Back button */}
+        <button className="sc-footer-back" onClick={onClose}>
+          <span className="sc-footer-back-icon">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M11 7H3M6 3.5L3 7l3 3.5"
+                    stroke="currentColor" strokeWidth="1.6"
+                    strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </span>
+          Back to Portfolio
         </button>
+
       </div>
 
+      {/* Bottom bar */}
       <div className="sc-footer-bottom">
         <span className="sc-footer-copy">© 2026 Arjun Aadhith</span>
-        <span className="sc-footer-made">Designed &amp; Built by Arjun</span>
+        <span className="sc-footer-sep" aria-hidden="true" />
+        <span className="sc-footer-built">Designed &amp; Built by Arjun</span>
       </div>
+
     </footer>
   );
 });
 
 /* ══════════════════════════════════════════════════════════
-   ROOT EXPORT — ShowcasePage
-   Mirrors MoreAbout root export exactly.
+   ROOT EXPORT — mirrors MoreAbout.jsx pattern exactly
    ══════════════════════════════════════════════════════════ */
 export default function ShowcasePage({ isOpen, onClose }) {
   const pageRef    = useRef(null);
   const projectRef = useRef(null);
 
-  /* 1. Hide / show navbar — identical to MoreAbout
-        Navbar listens: portfolio:nav → { visible: false } raises z-index */
+  /* 1. Navbar z-index — identical to MoreAbout */
   useEffect(() => {
     window.dispatchEvent(
       new CustomEvent("portfolio:nav", { detail: { visible: !isOpen } }),
     );
   }, [isOpen]);
 
-  /* 2. Nav-icon click closes this panel — identical to MoreAbout
-        Navbar dispatches portfolio:closeAbout on every nav icon click */
+  /* 2. Nav icon click closes panel — same event as MoreAbout */
   useEffect(() => {
     const fn = () => onClose();
     window.addEventListener("portfolio:closeAbout", fn);
     return () => window.removeEventListener("portfolio:closeAbout", fn);
   }, [onClose]);
 
-  /* 3. Body scroll lock — identical to MoreAbout */
+  /* 3. Body scroll lock */
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
 
-  /* 4. Escape key — identical to MoreAbout */
+  /* 4. Escape key */
   useEffect(() => {
     if (!isOpen) return;
     const fn = (e) => { if (e.key === "Escape") onClose(); };
@@ -308,14 +430,12 @@ export default function ShowcasePage({ isOpen, onClose }) {
     return () => window.removeEventListener("keydown", fn);
   }, [isOpen, onClose]);
 
-  /* 5. Scroll to top on every open — identical to MoreAbout */
+  /* 5. Scroll to top on every open */
   useEffect(() => {
     if (isOpen && pageRef.current) pageRef.current.scrollTop = 0;
   }, [isOpen]);
 
-  /* 6. Relay scroll direction so navbar hides/shows inside this panel.
-        Uses portfolio:aboutScroll — the exact event Navbar already listens to.
-        No changes to Navbar.jsx needed. */
+  /* 6. Relay scroll to navbar — same event as MoreAbout */
   useEffect(() => {
     const el = pageRef.current;
     if (!el) return;
@@ -327,7 +447,7 @@ export default function ShowcasePage({ isOpen, onClose }) {
         const currentY  = el.scrollTop;
         const direction = currentY > lastY ? "down" : "up";
         window.dispatchEvent(
-          new CustomEvent("portfolio:aboutScroll", {   // ← same event as MoreAbout
+          new CustomEvent("portfolio:aboutScroll", {
             detail: { direction, scrollTop: currentY },
           }),
         );
@@ -346,19 +466,6 @@ export default function ShowcasePage({ isOpen, onClose }) {
   return (
     <>
       <style>{CSS}</style>
-
-      {/*
-        THE PANEL — byte-for-byte identical to MoreAbout:
-
-          <motion.div
-            className="ma-page"          ← we use "sc-page" to avoid style clash
-            ref={pageRef}
-            animate={{ y: isOpen ? "0%" : "100%" }}
-            transition={{ duration: 0.72, ease: [0.22, 1, 0.36, 1] }}
-            aria-hidden={!isOpen}
-            style={{ pointerEvents: isOpen ? "auto" : "none" }}
-          >
-      */}
       <motion.div
         className="sc-page"
         ref={pageRef}
@@ -367,7 +474,6 @@ export default function ShowcasePage({ isOpen, onClose }) {
         aria-hidden={!isOpen}
         style={{ pointerEvents: isOpen ? "auto" : "none" }}
       >
-        {/* key={String(isOpen)} resets inner state on every open — identical to MoreAbout */}
         <div key={String(isOpen)} style={{ display: "contents" }}>
           <SCHome onScrollDown={scrollDown} scroller={pageRef} />
           <div ref={projectRef}><SCProjects /></div>
@@ -380,12 +486,10 @@ export default function ShowcasePage({ isOpen, onClose }) {
 
 /* ══════════════════════════════════════════════════════════
    STYLES
-   Colors: #ffffff / #eeeeee only.
-   Prefix: sc-  (no collision with ma- or sc2-)
    ══════════════════════════════════════════════════════════ */
 const CSS = `
 
-  /* ── Shell — mirrors .ma-page exactly ── */
+  /* ── Page shell ── */
   .sc-page {
     position: fixed;
     inset: 0;
@@ -396,18 +500,22 @@ const CSS = `
     font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont,
                  "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
+    /* Smooth native momentum scroll */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
     scroll-behavior: smooth;
   }
 
   /* ══════════════════════════════════════
-     HERO — mirrors .ma-home
+     HERO
      ══════════════════════════════════════ */
   .sc-home {
     position: relative;
     height: 100vh;
+    min-height: 560px;
     display: flex;
     align-items: center;
-    padding: 0 72px;
+    padding: 0 80px;
     overflow: hidden;
     background: #ffffff;
     border-bottom: 1px solid #eeeeee;
@@ -418,35 +526,47 @@ const CSS = `
     will-change: transform;
   }
   .sc-home-tag {
-    display: inline-block;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.16em;
+    display: inline-flex;
+    align-items: center;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: #aaaaaa;
-    border: 1.5px solid #eeeeee;
+    color: #bbbbbb;
+    border: 1.5px solid #e8e8e8;
     border-radius: 100px;
-    padding: 6px 18px;
-    margin-bottom: 36px;
+    padding: 6px 16px;
+    margin-bottom: 28px;
   }
+
+  /*
+    HERO TITLE — two lines enforced.
+    clamp max = 72px so "Multidisciplinary" (16 chars) always fits
+    on a single line from 768px viewport upward.
+  */
   .sc-home-name {
-    font-size: clamp(68px, 11vw, 148px);
+    font-size: clamp(34px, 5.2vw, 72px);
     font-weight: 800;
-    line-height: 0.93;
-    letter-spacing: -0.05em;
-    margin: 0 0 36px;
+    line-height: 1.04;
+    letter-spacing: -0.045em;
+    margin: 0 0 24px;
     color: #111111;
     font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont, sans-serif;
   }
-  .sc-d-block { display: block; }
+  .sc-name-line      { display: block; }
+  .sc-name-muted     { color: #cccccc; }
+
   .sc-home-sub {
-    font-size: 14px;
-    color: #aaaaaa;
+    font-size: 12.5px;
+    color: #bbbbbb;
     letter-spacing: 0.02em;
-    margin: 0 0 56px;
+    margin: 0 0 40px;
     font-weight: 400;
+    line-height: 1.5;
   }
-  .sc-home-scroll {
+
+  /* Scroll CTA button */
+  .sc-home-cta {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -454,103 +574,120 @@ const CSS = `
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: #aaaaaa;
+    color: #888888;
     background: none;
-    border: none;
-    padding: 0;
+    border: 1.5px solid #e8e8e8;
+    border-radius: 100px;
+    padding: 10px 20px;
     cursor: pointer;
     font-family: inherit;
-    transition: color 0.2s;
+    transition: color 0.2s ease, border-color 0.2s ease;
+    /* NO shadow, NO glow */
   }
-  .sc-home-scroll:hover { color: #555555; }
-  /* Ghost watermark — mirrors .ma-home-bg-name */
-  .sc-home-bg {
+  .sc-home-cta:hover { color: #333333; border-color: #cccccc; }
+
+  /* Watermark */
+  .sc-home-watermark {
     position: absolute;
-    bottom: -40px;
-    right: -40px;
-    font-size: clamp(180px, 28vw, 400px);
-    font-weight: 800;
-    letter-spacing: -0.08em;
-    color: #eeeeee;
+    bottom: -0.1em;
+    right: -0.04em;
+    font-size: clamp(160px, 24vw, 340px);
+    font-weight: 900;
+    letter-spacing: -0.06em;
     line-height: 1;
+    color: #f4f4f4;
     pointer-events: none;
+    user-select: none;
     z-index: 1;
     font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont, sans-serif;
-    user-select: none;
   }
 
   /* ══════════════════════════════════════
-     PROJECTS
+     PROJECTS SECTION
      ══════════════════════════════════════ */
-  .sc-projects { background: #eeeeee; }
+  .sc-projects {
+    background: #f7f7f7;
+    padding-bottom: 80px;
+  }
 
-  /* Sticky filter bar */
+  /* Sticky filter */
   .sc-filter-sticky {
     position: sticky;
     top: 0;
     z-index: 9;
     background: #ffffff;
     border-bottom: 1px solid #eeeeee;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.04);
   }
   .sc-filter-bar {
-    max-width: 1200px;
+    max-width: 1240px;
     margin: 0 auto;
-    padding: 14px 56px;
+    padding: 14px 60px;
     display: flex;
     gap: 6px;
     overflow-x: auto;
     scrollbar-width: none;
   }
   .sc-filter-bar::-webkit-scrollbar { display: none; }
+
+  /* Filter button base */
   .sc-filter-btn {
     flex-shrink: 0;
-    background: transparent;
-    border: 1.5px solid #dddddd;
+    background: #ffffff;
+    border: 1.5px solid #e4e4e4;
     border-radius: 100px;
-    padding: 7px 20px;
+    padding: 7px 18px;
     font-size: 12px;
     font-weight: 600;
-    letter-spacing: 0.04em;
-    color: #888888;
+    letter-spacing: 0.03em;
+    color: #999999;
     cursor: pointer;
     font-family: inherit;
-    transition: all 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     white-space: nowrap;
+    /* Smooth transition for non-active state changes */
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
   }
-  .sc-filter-btn:hover           { border-color: #bbbbbb; color: #333333; }
-  .sc-filter-btn--active         { background: #111111; border-color: #111111; color: #ffffff; }
-  .sc-filter-btn--active:hover   { background: #333333; border-color: #333333; }
+  /* Hover — only applied when NOT active (inline style overrides this) */
+  .sc-filter-btn:hover {
+    background: #f2f2f2;
+    border-color: #cccccc;
+    color: #444444;
+  }
+  /* NOTE: Active state is applied via inline style in JSX for 100% specificity.
+     This is intentional — it cannot be overridden by any CSS selector. */
 
   /* Grid */
   .sc-grid-outer {
-    max-width: 1200px;
+    max-width: 1240px;
     margin: 0 auto;
-    padding: 48px 56px 0;
+    padding: 40px 60px 0;
   }
   .sc-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
+    gap: 16px;
   }
 
-  /* Card */
+  /* ── Card — border-radius 12px matching your design screenshots ── */
   .sc-card {
     background: #ffffff;
-    border-radius: 20px;
+    border-radius: 12px;           /* exact value from your screenshots */
     overflow: hidden;
-    cursor: pointer;
-    transition: transform 0.38s cubic-bezier(0.34, 1.1, 0.64, 1),
-                box-shadow 0.38s ease;
+    border: 1.5px solid #eeeeee;
+    /* NO box-shadow, NO glow — transition on border and transform only */
+    transition: border-color 0.22s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
   }
   .sc-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 24px 64px rgba(0,0,0,0.10);
+    border-color: #d4d4d4;
+    /* transform handled by framer-motion whileHover={{ y: -3 }} */
   }
-  .sc-card-img-wrap {
-    position: relative;
+
+  .sc-card-media {
     aspect-ratio: 16 / 10;
     overflow: hidden;
-    background: #eeeeee;
+    background: #f0f0f0;
+    /* Image fills right up to card edges — no inner radius */
   }
   .sc-card-img {
     width: 100%;
@@ -560,146 +697,143 @@ const CSS = `
     pointer-events: none;
     user-select: none;
     -webkit-user-drag: none;
-    transition: transform 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    /* scale handled by framer-motion whileHover */
+    transform-origin: center;
   }
-  .sc-card-img--hov { transform: scale(1.05); }
-  .sc-card-shine {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 60%);
-    opacity: 0;
-    transition: opacity 0.32s ease;
-    pointer-events: none;
-  }
-  .sc-card-shine--on { opacity: 1; }
-  .sc-card-body {
-    padding: 18px 22px 22px;
-    border-top: 1px solid #eeeeee;
+  .sc-card-info {
+    padding: 14px 18px 18px;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    position: relative;
   }
   .sc-card-label {
-    display: block;
     font-size: 9px;
     font-weight: 700;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: #aaaaaa;
-    margin-bottom: 6px;
+    color: #bbbbbb;
   }
   .sc-card-title {
-    font-size: 15px;
+    font-size: 14.5px;
     font-weight: 700;
     letter-spacing: -0.02em;
     color: #111111;
-    line-height: 1.3;
+    line-height: 1.35;
     margin: 0;
+  }
+  /* External link indicator */
+  .sc-card-arrow {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    color: #cccccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease, transform 0.2s ease;
+  }
+  .sc-card:hover .sc-card-arrow {
+    color: #888888;
+    transform: translate(1px, -1px);
   }
 
   /* Read More */
   .sc-readmore-wrap {
     display: flex;
     justify-content: center;
-    margin-top: 48px;
+    margin-top: 40px;
   }
   .sc-readmore-btn {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     background: #ffffff;
-    border: 1.5px solid #dddddd;
+    border: 1.5px solid #e4e4e4;
     border-radius: 100px;
-    padding: 13px 32px;
-    font-size: 13px;
+    padding: 11px 28px;
+    font-size: 12.5px;
     font-weight: 600;
-    letter-spacing: 0.04em;
-    color: #333333;
+    letter-spacing: 0.03em;
+    color: #555555;
     cursor: pointer;
     font-family: inherit;
-    transition: all 0.26s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    /* NO shadow on hover */
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   }
   .sc-readmore-btn:hover {
     background: #111111;
     border-color: #111111;
     color: #ffffff;
-    transform: translateY(-2px);
-    box-shadow: 0 10px 28px rgba(0,0,0,0.12);
   }
-  .sc-readmore-btn svg { transition: transform 0.26s ease; }
-  .sc-readmore-btn:hover svg { transform: translateY(3px); }
 
   /* Strip */
   .sc-strip {
-    background: #ffffff;
     border-top: 1px solid #eeeeee;
-    margin-top: 48px;
+    margin-top: 40px;
+    background: #ffffff;
   }
   .sc-strip-text {
-    max-width: 1200px;
+    display: block;
+    max-width: 1240px;
     margin: 0 auto;
-    padding: 20px 56px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
+    padding: 14px 60px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: #cccccc;
-    display: block;
   }
 
   /* ══════════════════════════════════════
-     FOOTER — mirrors .ma-footer exactly
+     FOOTER — modern minimal
      ══════════════════════════════════════ */
   .sc-footer {
     position: relative;
     background: #ffffff;
     overflow: hidden;
-    padding: 0 72px 0;
-    min-height: 88vh;
+    padding: 80px 80px 0;
+    min-height: 78vh;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     border-top: 1px solid #eeeeee;
   }
-  .sc-footer-topline {
-    width: 100%;
-    height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      #dddddd 30%,
-      #dddddd 70%,
-      transparent 100%
-    );
-  }
+
+  /* Background "AA" watermark */
   .sc-footer-watermark {
     position: absolute;
-    bottom: -0.12em;
+    bottom: -0.08em;
     right: -0.04em;
-    font-size: clamp(200px, 32vw, 480px);
+    font-size: clamp(160px, 26vw, 400px);
     font-weight: 900;
     letter-spacing: -0.06em;
     line-height: 1;
-    color: #eeeeee;
-    font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont, sans-serif;
+    color: #f4f4f4;
     pointer-events: none;
     user-select: none;
     z-index: 0;
+    font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont, sans-serif;
   }
+
   .sc-footer-body {
     position: relative;
     z-index: 1;
-    padding: 80px 0 60px;
-    max-width: 1100px;
-    width: 100%;
+    padding-bottom: 56px;
   }
+
+  /* Eyebrow */
   .sc-footer-eyebrow-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 52px;
+    margin-bottom: 44px;
   }
   .sc-footer-eyebrow {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 9px;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.2em;
@@ -707,108 +841,132 @@ const CSS = `
     color: #aaaaaa;
   }
   .sc-footer-dot {
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    background: #4ade80;
-    box-shadow: 0 0 0 3px rgba(74,222,128,0.18);
-    animation: sc-dot-breathe 2.6s ease-in-out infinite;
+    background: #22c55e;
     flex-shrink: 0;
+    animation: sc-dot-blink 2.4s ease-in-out infinite;
   }
-  @keyframes sc-dot-breathe {
-    0%, 100% { box-shadow: 0 0 0 3px rgba(74,222,128,0.18); }
-    50%       { box-shadow: 0 0 0 7px rgba(74,222,128,0.06); }
+  @keyframes sc-dot-blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.35; }
   }
   .sc-footer-year {
     font-size: 11px;
-    font-weight: 600;
-    color: #cccccc;
-    letter-spacing: 0.1em;
+    font-weight: 500;
+    color: #dddddd;
+    letter-spacing: 0.06em;
   }
-  .sc-footer-big {
-    font-size: clamp(60px, 10.5vw, 148px);
+
+  /*
+    BIG HEADLINE — "Think bold. / Design sharp. / Build right."
+    Three lines, clean, bold, modern.
+  */
+  .sc-footer-headline {
+    font-size: clamp(44px, 7.5vw, 112px);
     font-weight: 900;
     letter-spacing: -0.05em;
-    line-height: 0.94;
-    margin: 0 0 64px;
+    line-height: 0.96;
+    margin: 0 0 52px;
     font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont, sans-serif;
     display: flex;
     flex-direction: column;
   }
-  .sc-footer-big-line   { display: block; color: #111111; }
-  .sc-footer-big-italic { color: #cccccc; font-style: italic; font-weight: 700; }
+  .sc-fh-line   { display: block; color: #111111; }
+  .sc-fh-accent { color: #d4d4d4; font-style: italic; font-weight: 700; }
 
-  /* CTA — mirrors .ma-footer-cta-btn */
-  .sc-footer-cta {
+  /* Back button — pill outline style */
+  .sc-footer-back {
     display: inline-flex;
     align-items: center;
-    gap: 0;
-    height: 60px;
-    padding: 0 8px 0 32px;
-    background: #111111;
-    color: #ffffff;
-    border: none;
+    gap: 10px;
+    height: 48px;
+    padding: 0 22px 0 14px;
+    background: transparent;
+    color: #333333;
+    border: 1.5px solid #e0e0e0;
     border-radius: 100px;
-    font-size: 15px;
-    font-weight: 700;
+    font-size: 13px;
+    font-weight: 600;
     font-family: inherit;
-    letter-spacing: -0.01em;
     cursor: pointer;
-    transition: background 0.22s, transform 0.18s;
+    /* NO shadow, NO glow */
+    transition: background 0.22s ease, border-color 0.22s ease, color 0.22s ease;
   }
-  .sc-footer-cta:hover  { background: #333333; transform: translateY(-2px); }
-  .sc-footer-cta:active { transform: scale(0.97); }
-  .sc-footer-cta-label  { flex-shrink: 0; margin-right: 16px; }
-  .sc-footer-cta-arrow {
-    width: 44px;
-    height: 44px;
+  .sc-footer-back:hover {
+    background: #111111;
+    border-color: #111111;
+    color: #ffffff;
+  }
+  .sc-footer-back-icon {
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
-    background: #ffffff;
-    color: #111111;
+    background: #f2f2f2;
     display: flex;
     align-items: center;
     justify-content: center;
+    color: #555555;
     flex-shrink: 0;
-    transition: transform 0.22s;
+    transition: background 0.22s ease, color 0.22s ease;
   }
-  .sc-footer-cta:hover .sc-footer-cta-arrow { transform: translateX(3px); }
+  .sc-footer-back:hover .sc-footer-back-icon {
+    background: rgba(255,255,255,0.15);
+    color: #ffffff;
+  }
+
+  /* Bottom bar */
   .sc-footer-bottom {
     position: relative;
     z-index: 1;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 28px 0 40px;
+    gap: 14px;
+    padding: 22px 0 36px;
     border-top: 1px solid #eeeeee;
   }
-  .sc-footer-copy { font-size: 13px; color: #aaaaaa; font-weight: 400; letter-spacing: 0.01em; }
-  .sc-footer-made { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #cccccc; }
+  .sc-footer-copy,
+  .sc-footer-built {
+    font-size: 12px;
+    color: #c0c0c0;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+  }
+  .sc-footer-sep {
+    display: block;
+    width: 1px;
+    height: 11px;
+    background: #e4e4e4;
+    flex-shrink: 0;
+  }
 
   /* ══════════════════════════════════════
      RESPONSIVE
      ══════════════════════════════════════ */
-  @media (max-width: 1000px) {
-    .sc-home        { padding: 0 40px; }
-    .sc-filter-bar  { padding: 12px 32px; }
-    .sc-grid-outer  { padding: 32px 32px 0; }
-    .sc-strip-text  { padding: 16px 32px; }
-    .sc-footer      { padding: 0 40px; }
+  @media (max-width: 1024px) {
+    .sc-home       { padding: 0 48px; }
+    .sc-filter-bar { padding: 12px 36px; }
+    .sc-grid-outer { padding: 32px 36px 0; }
+    .sc-strip-text { padding: 12px 36px; }
+    .sc-footer     { padding: 64px 48px 0; }
   }
   @media (max-width: 768px) {
-    .sc-home        { padding: 0 24px; }
+    .sc-home        { padding: 0 28px; min-height: 100svh; }
+    .sc-home-name   { font-size: clamp(30px, 8vw, 52px); }
     .sc-filter-bar  { padding: 12px 20px; }
     .sc-grid-outer  { padding: 24px 20px 0; }
-    .sc-strip-text  { padding: 14px 20px; }
-    .sc-footer      { padding: 0 24px; min-height: auto; }
-    .sc-footer-body { padding: 60px 0 44px; }
-    .sc-footer-big  { font-size: clamp(48px, 12vw, 80px); margin-bottom: 48px; }
-    .sc-footer-watermark { font-size: clamp(140px, 40vw, 260px); }
-    .sc-footer-bottom { padding: 24px 0 32px; }
-    .sc-footer-made { display: none; }
-    .sc-home-name   { font-size: clamp(52px, 13vw, 80px); }
+    .sc-grid        { gap: 12px; }
+    .sc-strip-text  { padding: 12px 20px; }
+    .sc-footer      { padding: 48px 28px 0; min-height: auto; }
+    .sc-footer-headline { font-size: clamp(36px, 10vw, 64px); margin-bottom: 40px; }
+    .sc-footer-watermark { font-size: clamp(120px, 32vw, 200px); }
+    .sc-footer-built { display: none; }
+    .sc-footer-sep   { display: none; }
   }
-  @media (max-width: 540px) {
-    .sc-grid        { grid-template-columns: 1fr; }
-    .sc-home-bg     { display: none; }
+  @media (max-width: 520px) {
+    .sc-grid            { grid-template-columns: 1fr; }
+    .sc-home-watermark  { display: none; }
+    .sc-footer-watermark { display: none; }
   }
 `;
