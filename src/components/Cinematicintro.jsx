@@ -30,9 +30,9 @@ const CHROME_STRONG = `linear-gradient(
 const LINE_COUNT    = 11;
 const ANIM_DURATION = 1800;
 
-// Transition durations — must match CSS values below exactly
-const SLIDE_IN_MS  = 520;  // how long the enter transition takes
-const SLIDE_OUT_MS = 420;  // how long the exit transition takes
+// Transition durations — must match CSS values in Word component exactly
+const SLIDE_IN_MS  = 320;  // was 520ms
+const SLIDE_OUT_MS = 240;  // was 420ms
 
 // ─── Easing ──────────────────────────────────────────────────────────────────
 const easeInOutCubic = t =>
@@ -40,15 +40,11 @@ const easeInOutCubic = t =>
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const delay = ms => new Promise(r => setTimeout(r, ms));
-
-// Wait for TWO animation frames — guarantees the browser has painted
-// the current state before we trigger a CSS transition.
 const nextPaint = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
 // ─── Main component ──────────────────────────────────────────────────────────
 export default function CinematicIntro({ children, onComplete }) {
   const [screen,  setScreen]  = useState("s1");
-  // "left" | "center" | "right"
   const [wordPos, setWordPos] = useState("left");
 
   const lineProgressRef = useRef(0);
@@ -70,9 +66,9 @@ export default function CinematicIntro({ children, onComplete }) {
     document.body.style.overflow = "hidden";
 
     (async () => {
-      await showWord("s1", 700);
-      await showWord("s2", 650);
-      await showWord("s3", 900);
+      await showWord("s1", 380);  // was 700ms hold
+      await showWord("s2", 340);  // was 650ms hold
+      await showWord("s3", 480);  // was 900ms hold
 
       setScreen("lines");
       await runLines();
@@ -86,24 +82,14 @@ export default function CinematicIntro({ children, onComplete }) {
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, []);
 
-  // ── showWord ──────────────────────────────────────────────────────────────
-  // 1. Mount the word at "left" (invisible, off-screen left)
-  // 2. Wait for the browser to actually paint that state (double rAF)
-  // 3. Set "center" → CSS transition fires: slides in smoothly from left
-  // 4. Hold for `holdMs`
-  // 5. Set "right" → CSS transition fires: slides out to right
-  // 6. Wait the FULL exit transition duration before unmounting
   async function showWord(screenId, holdMs) {
     setScreen(screenId);
-    setWordPos("left");          // mount at left, opacity 0 — NOT yet animated
-
-    await nextPaint();           // browser paints "left" state before transition starts
-
-    setWordPos("center");        // NOW trigger slide-in transition
-    await delay(holdMs + SLIDE_IN_MS); // hold includes slide-in time
-
-    setWordPos("right");         // trigger slide-out transition
-    await delay(SLIDE_OUT_MS + 40); // wait FULL exit duration + tiny buffer before unmount
+    setWordPos("left");
+    await nextPaint();
+    setWordPos("center");
+    await delay(holdMs + SLIDE_IN_MS);
+    setWordPos("right");
+    await delay(SLIDE_OUT_MS + 30);
   }
 
   function runLines() {
@@ -191,18 +177,16 @@ export default function CinematicIntro({ children, onComplete }) {
   );
 }
 
+// ─── Word ─────────────────────────────────────────────────────────────────────
 function Word({ text, pos, size, gradient, spacing, strong }) {
-  const isEntering = pos === "center";
-  const isExiting  = pos === "right";
-
   const tx = pos === "left" ? -110 : pos === "right" ? 110 : 0;
   const op = pos === "center" ? 1 : 0;
 
-  // Different durations per direction so enter feels smooth, exit feels snappy
-  const transDuration = isExiting ? "0.40s" : "0.50s";
+  const isExiting     = pos === "right";
+  const transDuration = isExiting ? "0.24s" : "0.30s"; // was 0.40s / 0.50s
   const transEasing   = isExiting
-    ? "cubic-bezier(0.4, 0, 1, 1)"          // ease-in: accelerates out
-    : "cubic-bezier(0.16, 1, 0.3, 1)";      // expo-out: fast start, smooth land
+    ? "cubic-bezier(0.4, 0, 1, 1)"
+    : "cubic-bezier(0.16, 1, 0.3, 1)";
 
   return (
     <div style={{
