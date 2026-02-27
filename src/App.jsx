@@ -8,6 +8,7 @@ import Multidisciplinary from "./components/Multidisciplinary.jsx";
 import Illustrations from "./components/Illustrations.jsx";
 import Education from "./components/Education.jsx";
 import Footer from "./components/Footer.jsx";
+import CinematicIntro from "./components/CinematicIntro";
 import { useEffect } from "react";
 
 export default function App() {
@@ -15,7 +16,6 @@ export default function App() {
     const hero = document.getElementById("hero-section");
 
     const onScroll = () => {
-      // Read from whichever container is actually scrolling
       const scrollY =
         document.documentElement.scrollTop ||
         document.body.scrollTop ||
@@ -32,7 +32,6 @@ export default function App() {
       }
     };
 
-    // Listen on both to be safe
     window.addEventListener("scroll", onScroll, { passive: true });
     document.addEventListener("scroll", onScroll, { passive: true });
     return () => {
@@ -42,46 +41,47 @@ export default function App() {
   }, []);
 
   return (
-    // No overflow/height here — lets the browser's default scroll context handle everything
-    <div style={{ background: "#E8E8E8" }}>
-      <Navbar />
+    <CinematicIntro>
+      <div style={{ background: "#E8E8E8" }}>
+        <Navbar />
 
-      <div
-        id="home"
-        style={{
-          position      : "sticky",
-          top           : 0,
-          width         : "100%",
-          height        : "100vh",
-          zIndex        : 1,
-          transformOrigin: "top center",
-          willChange    : "transform, border-radius",
-          overflow      : "visible",
-          boxShadow     : "0 8px 60px rgba(0,0,0,0.15)",
-        }}
-      >
-        <div id="hero-section" style={{ width: "100%", height: "100%" }}>
-          <Hero />
+        <div
+          id="home"
+          style={{
+            position       : "sticky",
+            top            : 0,
+            width          : "100%",
+            height         : "100vh",
+            zIndex         : 1,
+            transformOrigin: "top center",
+            willChange     : "transform, border-radius",
+            overflow       : "visible",
+            boxShadow      : "0 8px 60px rgba(0,0,0,0.15)",
+          }}
+        >
+          <div id="hero-section" style={{ width: "100%", height: "100%" }}>
+            <Hero />
+          </div>
+        </div>
+
+        <div style={{ position: "relative", zIndex: 2 }}>
+          <About />
+          <Skills />
+
+          <div id="projects">
+            <Projects />
+            <Mycreations />
+            <Multidisciplinary />
+            <Illustrations />
+          </div>
+
+          <Education />
+
+          <div id="contact">
+            <Footer />
+          </div>
         </div>
       </div>
-
-      <div style={{ position: "relative", zIndex: 2 }}>
-        <About />
-        <Skills />
-
-        <div id="projects">
-          <Projects />
-          <Mycreations />
-          <Multidisciplinary />
-          <Illustrations />
-        </div>
-
-        <Education />
-
-        <div id="contact">
-          <Footer />
-        </div>
-      </div>
-    </div>
+    </CinematicIntro>
   );
 }
