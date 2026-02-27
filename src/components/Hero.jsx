@@ -1,297 +1,232 @@
 import { useEffect, useRef } from "react";
 
-function SplitText({ line, delay = 0 }) {
-  const words = line.split(" ");
+const css = `
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  @keyframes wordReveal {
+    from { opacity: 0; transform: translateY(105%); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes lineGrow {
+    from { transform: scaleX(0); opacity: 0; }
+    to   { transform: scaleX(1); opacity: 1; }
+  }
+  @keyframes scrollBob {
+    0%, 100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+    50%       { transform: translateX(-50%) translateY(7px); opacity: 0.2; }
+  }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(255,255,255,0.5); }
+    65%  { box-shadow: 0 0 0 6px rgba(255,255,255,0); }
+    100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+  }
+
+  .hero-root {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    background: #ffffff;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+  }
+
+  /* Available for Work button */
+  .avail-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 11px 26px 11px 18px;
+    background: #000;
+    border: none;
+    border-radius: 100px;
+    cursor: default;
+    margin-bottom: 46px;
+    animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 150ms both;
+  }
+  .avail-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #fff;
+    flex-shrink: 0;
+    animation: pulse 2s ease 1.2s infinite;
+  }
+  .avail-label {
+    font-family: -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #EEEEEE;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Headline */
+  .hero-headline {
+    font-family: -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif;
+    font-size: clamp(64px, 7.4vw, 118px);
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -0.042em;
+    color: #000;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "kern" 1;
+    text-rendering: optimizeLegibility;
+  }
+  .hl-line {
+    display: block;
+  }
+  .hl-inner { display: block; }
+  .hl-inner.a1 { animation: wordReveal 1.1s cubic-bezier(0.16,1,0.3,1) 380ms both; }
+  .hl-inner.a2 { animation: wordReveal 1.1s cubic-bezier(0.16,1,0.3,1) 580ms both; }
+
+  /* Divider + sub */
+  .hero-divider {
+    width: 36px; height: 1.5px;
+    background: #000;
+    transform-origin: left;
+    animation: lineGrow 0.7s cubic-bezier(0.16,1,0.3,1) 900ms both;
+  }
+  .hero-sub {
+    font-family: -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #000;
+    opacity: 0.3;
+    -webkit-font-smoothing: antialiased;
+    animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 950ms both;
+  }
+
+  /* Scroll indicator */
+  .scroll-wrap {
+    position: absolute;
+    bottom: 44px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 9px;
+    animation: fadeIn 1s ease 1300ms both;
+  }
+  .scroll-label {
+    font-family: -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #000;
+    opacity: 0.22;
+  }
+  .mouse {
+    position: relative;
+    width: 18px; height: 28px;
+    border: 1.5px solid rgba(0,0,0,0.22);
+    border-radius: 9px;
+  }
+  .mouse-dot {
+    position: absolute;
+    top: 5px; left: 50%;
+    width: 2px; height: 5px;
+    background: #000;
+    opacity: 0.35;
+    border-radius: 2px;
+    animation: scrollBob 1.7s ease-in-out infinite;
+  }
+
+  .grid-svg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    animation: fadeIn 1.5s ease 0.1s both;
+  }
+`;
+
+function Grid() {
   return (
-    <>
-      {words.map((word, i) => (
-        <span key={i} style={{ display: "inline-block", verticalAlign: "bottom" }}>
-          <span
-            style={{
-              display: "inline-block",
-              animation: `wordUp 0.8s cubic-bezier(0.16,1,0.3,1) both`,
-              animationDelay: `${delay + i * 95}ms`,
-            }}
-          >
-            {word}
-            {i < words.length - 1 ? "\u00A0" : ""}
-          </span>
-        </span>
-      ))}
-    </>
+    <svg className="grid-svg" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="g40" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M40 0H0V40" fill="none" stroke="#EEEEEE" strokeWidth="0.5"/>
+        </pattern>
+        <pattern id="g200" width="200" height="200" patternUnits="userSpaceOnUse">
+          <rect width="200" height="200" fill="url(#g40)" />
+          <path d="M200 0H0V200" fill="none" stroke="#EEEEEE" strokeWidth="1"/>
+        </pattern>
+        <linearGradient id="gRight" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="55%" stopColor="white" stopOpacity="0"/>
+          <stop offset="100%" stopColor="white" stopOpacity="1"/>
+        </linearGradient>
+        <linearGradient id="gTop" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="white" stopOpacity="1"/>
+          <stop offset="18%"  stopColor="white" stopOpacity="0"/>
+          <stop offset="82%"  stopColor="white" stopOpacity="0"/>
+          <stop offset="100%" stopColor="white" stopOpacity="1"/>
+        </linearGradient>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#g200)" />
+      <line x1="0"     y1="61.8%" x2="100%"  y2="61.8%" stroke="#EEEEEE" strokeWidth="0.8"/>
+      <line x1="61.8%" y1="0"     x2="61.8%" y2="100%"  stroke="#EEEEEE" strokeWidth="0.8"/>
+      <rect width="100%" height="100%" fill="url(#gRight)" />
+      <rect width="100%" height="100%" fill="url(#gTop)" />
+    </svg>
   );
 }
 
 export default function Hero() {
-  const ghostEl = useRef(null);
-  const mouse   = useRef({ x: 0, y: 0 });
-  const cur     = useRef({ x: 0, y: 0 });
-  const raf     = useRef(null);
-
-  useEffect(() => {
-    const move = (e) => {
-      mouse.current.x = (e.clientX / window.innerWidth  - 0.5) * 2;
-      mouse.current.y = (e.clientY / window.innerHeight - 0.5) * 2;
-    };
-    window.addEventListener("mousemove", move);
-
-    const tick = () => {
-      cur.current.x += (mouse.current.x - cur.current.x) * 0.055;
-      cur.current.y += (mouse.current.y - cur.current.y) * 0.055;
-      if (ghostEl.current) {
-        ghostEl.current.style.transform =
-          `translate(${cur.current.x * 26}px, ${cur.current.y * 18}px)`;
-      }
-      raf.current = requestAnimationFrame(tick);
-    };
-    raf.current = requestAnimationFrame(tick);
-
-    return () => {
-      window.removeEventListener("mousemove", move);
-      cancelAnimationFrame(raf.current);
-    };
-  }, []);
-
   return (
     <>
-      <style>{`
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { width: 100%; height: 100%; overflow-x: hidden; }
-        body {
-          font-family: -apple-system, "SF Pro Text", BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-          -webkit-font-smoothing: antialiased;
-          -moz-osx-font-smoothing: grayscale;
-        }
+      <style>{css}</style>
+      <div className="hero-root">
+        <Grid />
 
-        @keyframes wordUp {
-          from { opacity: 0; transform: translateY(110%); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes scrollEntry {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
+        <div style={{ position: "relative", zIndex: 10, paddingLeft: "7.5%", paddingRight: "7.5%", paddingBottom: "120px", width: "100%" }}>
 
-        /* ── Available badge — StarBorder on hover, no text shine ── */
-        .available-badge {
-          display: inline-block;
-          position: relative;
-          padding: 1.5px;
-          border-radius: 12px;
-          overflow: hidden;
-          cursor: default;
-        }
-        .available-badge::before {
-          content: "";
-          position: absolute;
-          width: 300%; height: 50%;
-          bottom: -12px; right: -250%;
-          border-radius: 50%;
-          background: radial-gradient(circle, #888888, transparent 10%);
-          opacity: 0;
-          animation: star-bottom 6s linear infinite alternate;
-          animation-play-state: paused;
-          transition: opacity 0.4s ease;
-          z-index: 0;
-          pointer-events: none;
-        }
-        .available-badge::after {
-          content: "";
-          position: absolute;
-          width: 300%; height: 50%;
-          top: -12px; left: -250%;
-          border-radius: 50%;
-          background: radial-gradient(circle, #888888, transparent 10%);
-          opacity: 0;
-          animation: star-top 6s linear infinite alternate;
-          animation-play-state: paused;
-          transition: opacity 0.4s ease;
-          z-index: 0;
-          pointer-events: none;
-        }
-        .available-badge:hover::before,
-        .available-badge:hover::after {
-          animation-play-state: running;
-          opacity: 0.8;
-        }
-        @keyframes star-bottom {
-          0%   { transform: translate(0%, 0%);    opacity: 1; }
-          100% { transform: translate(-100%, 0%); opacity: 0; }
-        }
-        @keyframes star-top {
-          0%   { transform: translate(0%, 0%);    opacity: 1; }
-          100% { transform: translate(100%, 0%);  opacity: 0; }
-        }
-        .available-badge-inner {
-          position: relative;
-          z-index: 1;
-          display: inline-block;
-          padding: 10px 24px;
-          border: 1.5px solid #C2C2C2;
-          border-radius: 12px;
-          background: #FFF;
-          letter-spacing: 0.01em;
-          font-size: 15px;
-          font-weight: 600;
-          font-family: -apple-system, 'SF Pro Text', BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
-          -webkit-font-smoothing: antialiased;
-          transition: border-color 0.3s ease;
-        }
-        .available-badge:hover .available-badge-inner { border-color: #888888; }
-        .available-badge-text { display: inline-block; color: #111; }
+          {/* Available for Work — pill button */}
+          <button className="avail-btn">
+            <span className="avail-dot" />
+            <span className="avail-label">Available for Work</span>
+          </button>
 
-        /* ── Headline ── */
-        .hero-headline {
-          margin: 0;
-          font-size: clamp(70px, 9.5vw, 110px);
-          font-weight: 950;
-          color: #0A0A0A;
-          letter-spacing: -0.038em;
-          line-height: 1.0;
-          font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-          font-optical-sizing: auto;
-          font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
-          -webkit-font-smoothing: antialiased;
-          text-rendering: optimizeLegibility;
-        }
-
-        /* ── Scroll button ── */
-        .scroll-btn-wrapper {
-          animation: scrollEntry 0.8s cubic-bezier(0.16,1,0.3,1) 1100ms both;
-        }
-        .scroll-btn {
-          display: inline-flex;
-          padding: 0;
-          border: 1.5px solid #C2C2C2;
-          border-radius: 24px;
-          background: transparent;
-          cursor: pointer;
-          font-family: -apple-system, 'SF Pro Text', BlinkMacSystemFont, sans-serif;
-          -webkit-font-smoothing: antialiased;
-          transition: border-color 0.2s ease, background 0.2s ease;
-        }
-        .scroll-btn:hover { border-color: #ABABAB; background: #F8F8F8; }
-        .scroll-btn-inner {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 9px 20px 9px 22px;
-          font-size: 13.5px;
-          font-weight: 400;
-          color: #555;
-          letter-spacing: -0.005em;
-        }
-
-        /* ── Mouse scroll icon ── */
-        .scroll-icon {
-          position: relative;
-          width: 16px;
-          height: 24px;
-          border: 1.5px solid #aaa;
-          border-radius: 8px;
-          flex-shrink: 0;
-          transition: border-color 0.2s ease;
-          overflow: hidden;
-        }
-        .scroll-icon::before {
-          content: "";
-          position: absolute;
-          top: 4px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 2.5px;
-          height: 5px;
-          background: #aaa;
-          border-radius: 2px;
-          animation: none;
-          transition: background 0.2s ease;
-        }
-        .scroll-btn:hover .scroll-icon { border-color: #666; }
-        .scroll-btn:hover .scroll-icon::before {
-          background: #666;
-          animation: scroll-dot 1.1s cubic-bezier(0.45, 0, 0.55, 1) infinite;
-        }
-        @keyframes scroll-dot {
-          0%   { transform: translateX(-50%) translateY(0px);  opacity: 1; }
-          60%  { transform: translateX(-50%) translateY(8px);  opacity: 0.2; }
-          61%  { transform: translateX(-50%) translateY(-2px); opacity: 0; }
-          100% { transform: translateX(-50%) translateY(0px);  opacity: 1; }
-        }
-      `}</style>
-
-      <div
-        style={{
-          position: "relative",
-          width: "100%",
-          height: "100vh",
-          background: "#ffffff",
-          borderRadius: "inherit",
-          overflow: "hidden",
-        }}
-      >
-        {/* Ghost parallax */}
-        <div style={{ position: "absolute", top: "14%", right: "5.5%", zIndex: 10, pointerEvents: "none" }}>
-          <div ref={ghostEl} style={{ willChange: "transform" }}>
-            <img
-              src="/ghost.png"
-              alt="Red ghost character"
-              style={{ width: 255, height: 255, objectFit: "contain", display: "block" }}
-            />
-          </div>
-        </div>
-
-        {/* Hero text */}
-        <div
-          style={{
-            position: "absolute",
-            top: "56%",
-            left: "9.5%",
-            right: "9.5%",
-            transform: "translateY(-50%)",
-            marginTop: "20px",
-            zIndex: 10,
-          }}
-        >
-          <div style={{ marginBottom: 20, overflow: "hidden" }}>
-            <span style={{ display: "inline-block", animation: "wordUp 0.8s cubic-bezier(0.16,1,0.3,1) 100ms both" }}>
-              <span className="available-badge">
-                <span className="available-badge-inner">
-                  <span className="available-badge-text">Available for Work</span>
-                </span>
-              </span>
-            </span>
-          </div>
-
+          {/* Headline — 2 lines */}
           <h1 className="hero-headline">
-            <span style={{ display: "block" }}>
-              <SplitText line="Exceptional design" delay={280} />
+            <span className="hl-line">
+              <span className="hl-inner a1">Exceptional Design</span>
             </span>
-            <span style={{ display: "block" }}>
-              <SplitText line="needs no explanation" delay={640} />
+            <span className="hl-line" style={{ marginTop: "0.05em" }}>
+              <span
+                className="hl-inner a2"
+                style={{ color: "transparent", WebkitTextStroke: "1.5px #000" }}
+              >
+                Needs No Explanation
+              </span>
             </span>
           </h1>
+
+          {/* Rule + sub */}
+          <div style={{ display: "flex", alignItems: "center", gap: 18, marginTop: 44 }}>
+            <div className="hero-divider" />
+            <span className="hero-sub">Craft · Clarity · Confidence</span>
+          </div>
         </div>
 
-        {/* Scroll Down */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 60,
-            left: 0,
-            right: 0,
-            display: "flex",
-            justifyContent: "center",
-            zIndex: 50,
-          }}
-        >
-          <div className="scroll-btn-wrapper">
-            <button className="scroll-btn">
-              <span className="scroll-btn-inner">
-                Scroll Down
-                <span className="scroll-icon" />
-              </span>
-            </button>
+        {/* Scroll indicator */}
+        <div className="scroll-wrap">
+          <div className="mouse">
+            <div className="mouse-dot" />
           </div>
+          <span className="scroll-label">Scroll</span>
         </div>
       </div>
     </>

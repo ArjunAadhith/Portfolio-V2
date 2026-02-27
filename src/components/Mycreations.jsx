@@ -12,23 +12,22 @@ const CARDS = [
   { id: 9, title: "DDDAS Site Design",    image: "/UIUX/9.png", link: "https://www.figma.com/proto/1itf6UuzeiXOBFBhmhj4eM/DDDAS-Design?page-id=0%3A1&node-id=1-2&viewport=240%2C164%2C0.09&t=7HYdcdULhxg9uwW2-1&scaling=min-zoom&content-scaling=fixed" },
 ];
 
-/* ─── ORIGINAL CONSTANTS ─── */
 const CARD_W       = 644;
 const GAP          = 28;
 const SIDE_PADDING = 80;
 const SMOOTHNESS   = 0.010;
 const TIP_LERP     = 0.12;
-
-/* Marquee velocity: px per frame at 60fps */
 const MARQUEE_SPEED = 0.6;
 
 const MQ_ITEMS = [
   "UI Design", "UX Research", "Figma Prototypes",
-  "Visual Design", "Interaction Design", "Motion Design",
+  "Visual Design", "Interaction Design", "User Flows",
+  "Wireframing", "Usability Testing", "Design Systems",
+  "Mobile Apps", "Web Interfaces", "User-Centered Design",
+  "User Personas", "Information Architecture"
 ];
 
 export default function Showcase() {
-  /* ─── ORIGINAL REFS & STATE ─── */
   const sectionRef = useRef(null);
   const trackRef   = useRef(null);
   const currentRef = useRef(0);
@@ -36,20 +35,16 @@ export default function Showcase() {
   const rafRef     = useRef(null);
   const [sectionH, setSectionH] = useState("300vh");
 
-  /* Marquee refs */
-  const mqWrapRef   = useRef(null);
   const mqTrackRef  = useRef(null);
   const mqOffsetRef = useRef(0);
   const mqRafRef    = useRef(null);
 
-  /* ─── ORIGINAL getMax ─── */
   const getMax = useCallback(() => {
     const vw     = window.innerWidth;
     const totalW = CARDS.length * CARD_W + (CARDS.length - 1) * GAP + SIDE_PADDING * 2;
     return Math.max(0, totalW - vw);
   }, []);
 
-  /* ─── ORIGINAL height effect ─── */
   useEffect(() => {
     const update = () => setSectionH("calc(100vh + " + getMax() + "px)");
     update();
@@ -57,7 +52,6 @@ export default function Showcase() {
     return () => window.removeEventListener("resize", update);
   }, [getMax]);
 
-  /* ─── ORIGINAL scroll RAF ─── */
   useEffect(() => {
     const tick = (timestamp) => {
       if (sectionRef.current && trackRef.current) {
@@ -83,24 +77,18 @@ export default function Showcase() {
     return () => { cancelAnimationFrame(rafRef.current); lastTsRef.current = null; };
   }, [getMax]);
 
-  /* ─── JS-driven seamless marquee ─── */
-  /* Renders two identical copies side-by-side. Once the first copy has fully
-     scrolled off-screen (offset >= halfW), we snap back by exactly halfW —
-     perfectly seamless, zero partial cuts, velocity-based. */
   useEffect(() => {
     const track = mqTrackRef.current;
     if (!track) return;
-
     const loop = () => {
       mqOffsetRef.current += MARQUEE_SPEED;
       const halfW = track.scrollWidth / 2;
       if (mqOffsetRef.current >= halfW) {
-        mqOffsetRef.current -= halfW; // hard snap — no visible jump
+        mqOffsetRef.current -= halfW;
       }
       track.style.transform = `translateX(-${mqOffsetRef.current.toFixed(3)}px)`;
       mqRafRef.current = requestAnimationFrame(loop);
     };
-
     mqRafRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(mqRafRef.current);
   }, []);
@@ -115,7 +103,6 @@ export default function Showcase() {
 
     html { scroll-behavior: smooth; }
 
-    /* ── Section ── */
     #sc-section {
       position: relative;
       background: #ffffff;
@@ -123,7 +110,6 @@ export default function Showcase() {
       font-family: 'Syne', 'SF Pro Display', -apple-system, sans-serif;
     }
 
-    /* ── ORIGINAL sticky ── */
     #sc-sticky {
       position: sticky;
       top: 0;
@@ -135,9 +121,7 @@ export default function Showcase() {
       align-items: flex-start;
     }
 
-    /* ════════════════════════════════
-       BACKGROUND — arc waves + grid
-    ════════════════════════════════ */
+    /* ── Background ── */
     #sc-bg {
       position: absolute;
       inset: 0;
@@ -146,58 +130,26 @@ export default function Showcase() {
       overflow: hidden;
     }
 
-    /* Sparse vertical columns */
-    #sc-grid-cols {
+    /* 5 vertical lines — fade in/out at edges */
+    #sc-vlines {
       position: absolute;
       inset: 0;
-      background-image: repeating-linear-gradient(
-        90deg,
-        transparent 0px,
-        transparent calc(20% - 1px),
-        #f2f2f2 calc(20% - 1px),
-        #f2f2f2 20%
+      display: flex;
+      justify-content: space-evenly;
+    }
+
+    .sc-vline {
+      width: 1px;
+      height: 100%;
+      background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        #e8e8e8 15%,
+        #e2e2e2 50%,
+        #e8e8e8 85%,
+        transparent 100%
       );
     }
-
-    /* SVG arc waves */
-    #sc-arcs {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-    }
-    #sc-arcs path {
-      fill: none;
-      stroke: #eeeeee;
-      stroke-width: 1;
-      vector-effect: non-scaling-stroke;
-    }
-
-    /* Slow float animations on arc groups */
-    @keyframes _driftUp {
-      0%, 100% { transform: translateY(0);     }
-      50%       { transform: translateY(-16px); }
-    }
-    @keyframes _driftDn {
-      0%, 100% { transform: translateY(0);    }
-      50%       { transform: translateY(12px); }
-    }
-    #sc-arc-grp-a { animation: _driftUp 16s ease-in-out infinite; }
-    #sc-arc-grp-b { animation: _driftDn 20s ease-in-out infinite; }
-
-    /* Corner ticks */
-    .sc-tick {
-      position: absolute; width: 14px; height: 14px;
-    }
-    .sc-tick::before, .sc-tick::after {
-      content: ''; position: absolute; background: #e0e0e0;
-    }
-    .sc-tick::before { width: 1px; height: 100%; }
-    .sc-tick::after  { width: 100%; height: 1px; top: 0; }
-    .sc-tick.tl { top:30px; left:30px; } .sc-tick.tl::before{left:0}  .sc-tick.tl::after{left:0}
-    .sc-tick.tr { top:30px; right:30px; } .sc-tick.tr::before{right:0} .sc-tick.tr::after{right:0}
-    .sc-tick.bl { bottom:30px; left:30px; } .sc-tick.bl::before{left:0}  .sc-tick.bl::after{bottom:0;top:auto}
-    .sc-tick.br { bottom:30px; right:30px; } .sc-tick.br::before{right:0} .sc-tick.br::after{bottom:0;top:auto;right:0}
 
     /* Scatter cross pixels */
     .sc-x {
@@ -207,9 +159,7 @@ export default function Showcase() {
     .sc-x::before { width: 1px; height: 100%; left: 50%; }
     .sc-x::after  { width: 100%; height: 1px; top: 50%; }
 
-    /* ════════════════════════════════
-       MARQUEE
-    ════════════════════════════════ */
+    /* ── Marquee ── */
     #sc-marquee-wrap {
       position: absolute;
       top: 0; left: 0; right: 0;
@@ -224,7 +174,6 @@ export default function Showcase() {
     #sc-marquee-track {
       display: flex;
       white-space: nowrap;
-      /* JS drives transform — no CSS animation */
       will-change: transform;
     }
 
@@ -247,9 +196,7 @@ export default function Showcase() {
       padding: 0 4px;
     }
 
-    /* ════════════════════════════════
-       HEADING
-    ════════════════════════════════ */
+    /* ── Heading ── */
     #sc-heading-block {
       width: 100%;
       margin: 0 0 52px;
@@ -259,22 +206,7 @@ export default function Showcase() {
       z-index: 1;
     }
 
-    /* Eyebrow */
-    #sc-eyebrow {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-    .sc-ey-dash  { display: block; width: 24px; height: 1px; background: #d8d8d8; }
-    .sc-ey-label {
-      font-family: 'Syne', sans-serif;
-      font-size: 10px; font-weight: 500;
-      letter-spacing: 0.24em; text-transform: uppercase;
-      color: #c8c8c8;
-    }
 
-    /* Hero title row */
     #sc-title-row {
       display: flex;
       align-items: flex-end;
@@ -308,11 +240,10 @@ export default function Showcase() {
       font-weight: 400;
       letter-spacing: 0.04em;
       line-height: 0.88;
-      color: transparent;
+      color: white;
       -webkit-text-stroke: 1.5px #d4d4d4;
     }
 
-    /* Tagline */
     #sc-tagline {
       display: flex;
       align-items: center;
@@ -326,33 +257,8 @@ export default function Showcase() {
       letter-spacing: 0.20em; text-transform: uppercase;
       color: #c4c4c4;
     }
-    .sc-tg-pill {
-      font-family: 'Syne', sans-serif;
-      font-size: 9px; font-weight: 600;
-      letter-spacing: 0.20em; text-transform: uppercase;
-      color: #cccccc;
-      border: 1px solid #eeeeee;
-      padding: 3px 10px;
-      border-radius: 100px;
-    }
 
-    /* Vertical side label */
-    #sc-side {
-      position: absolute;
-      right: 26px; top: 50%;
-      transform: translateY(-50%) rotate(90deg);
-      transform-origin: center;
-      font-family: 'Syne', sans-serif;
-      font-size: 8.5px; font-weight: 600;
-      letter-spacing: 0.30em; text-transform: uppercase;
-      color: #e2e2e2;
-      white-space: nowrap;
-      z-index: 2;
-    }
-
-    /* ════════════════════════════════
-       TRACK — ORIGINAL structure
-    ════════════════════════════════ */
+    /* ── Track ── */
     #sc-overflow-clip {
       width: 100%;
       overflow: hidden;
@@ -360,7 +266,6 @@ export default function Showcase() {
       z-index: 1;
     }
 
-    /* ─── ORIGINAL #sc-track ─── */
     #sc-track {
       display: flex;
       gap: 28px;
@@ -372,7 +277,6 @@ export default function Showcase() {
       -webkit-backface-visibility: hidden;
     }
 
-    /* Cards — no shadow, border only, smooth hover */
     .sc-card-link {
       display: flex;
       width: 644px;
@@ -410,7 +314,6 @@ export default function Showcase() {
       transform: scale(1.04);
     }
 
-    /* Tooltip */
     .sc-tooltip {
       position: absolute;
       pointer-events: none;
@@ -437,36 +340,36 @@ export default function Showcase() {
     }
   `;
 
-  /* Build two identical copies for seamless marquee loop */
   const mqSingle = MQ_ITEMS.flatMap((item, i) => [
     <span key={`a-${i}`} className="sc-mq-item">{item}</span>,
     <span key={`s-${i}`} className="sc-mq-sep">·</span>,
   ]);
-  const mqItems = [...mqSingle, ...mqSingle]; // two copies — JS snaps at halfway
+  const mqItems = [...mqSingle, ...mqSingle];
 
   return (
     <>
       <style>{styles}</style>
 
-      {/* sectionRef + sectionH — ORIGINAL */}
-      <div
-        id="sc-section"
-        ref={sectionRef}
-        style={{ height: sectionH }}
-      >
+      <div id="sc-section" ref={sectionRef} style={{ height: sectionH }}>
         <div id="sc-sticky">
 
-          {/* ── Background layer ── */}
+          {/* ── Background ── */}
           <div id="sc-bg" aria-hidden="true">
-            <div id="sc-grid-cols" />
+            <div id="sc-vlines">
+              <div className="sc-vline" />
+              <div className="sc-vline" />
+              <div className="sc-vline" />
+              <div className="sc-vline" />
+              <div className="sc-vline" />
+            </div>
             <div className="sc-x" style={{ top:"17%", left:"55%" }} />
             <div className="sc-x" style={{ top:"68%", left:"42%" }} />
             <div className="sc-x" style={{ top:"36%", left:"85%" }} />
             <div className="sc-x" style={{ bottom:"20%", right:"148px" }} />
           </div>
 
-          {/* ── Marquee — JS-driven, no CSS animation ── */}
-          <div id="sc-marquee-wrap" aria-hidden="true" ref={mqWrapRef}>
+          {/* ── Marquee ── */}
+          <div id="sc-marquee-wrap" aria-hidden="true">
             <div id="sc-marquee-track" ref={mqTrackRef}>
               {mqItems}
             </div>
@@ -474,10 +377,6 @@ export default function Showcase() {
 
           {/* ── Heading ── */}
           <div id="sc-heading-block">
-            <div id="sc-eyebrow">
-              <span className="sc-ey-dash" />
-              <span className="sc-ey-label">Selected Works &amp; Explorations</span>
-            </div>
 
             <div id="sc-title-row">
               <span className="sc-t-solid">Showcase</span>
@@ -491,7 +390,7 @@ export default function Showcase() {
             </div>
           </div>
 
-          {/* ── Track — ORIGINAL ref + id ── */}
+          {/* ── Track ── */}
           <div id="sc-overflow-clip">
             <div id="sc-track" ref={trackRef}>
               {CARDS.map((card) => (
@@ -506,7 +405,6 @@ export default function Showcase() {
   );
 }
 
-/* ─── ORIGINAL Card — zero changes ─── */
 function Card({ card }) {
   const cardRef    = useRef(null);
   const tipRef     = useRef(null);
