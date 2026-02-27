@@ -30,7 +30,7 @@ function getScrollY() {
 const SCROLL_THRESHOLD = 10;
 
 // ─── NavIcon ──────────────────────────────────────────────────────
-function NavIcon({ src, alt, label, href = "#", onNavClick }) {
+function NavIcon({ src, alt, label, href = "#", onNavClick, active }) {
   const imgRef = useRef(null);
 
   const handleEnter = () => {
@@ -47,30 +47,21 @@ function NavIcon({ src, alt, label, href = "#", onNavClick }) {
   const isExternal = href.startsWith("http") || href.startsWith("mailto:");
 
   const handleClick = (e) => {
-    /*
-     * STEP 1 — always close MoreAbout first.
-     * MoreAbout listens for this event and calls onClose().
-     * This works even when the navbar is visually above the panel
-     * because it's a DOM event, not a click through z-index.
-     */
     window.dispatchEvent(new CustomEvent("portfolio:closeAbout"));
-
     if (href.startsWith("#")) {
       e.preventDefault();
-
       if (href === "#home") {
         smoothScrollTo(0);
       } else {
         const id = href.slice(1);
         const el = document.getElementById(id);
         if (el) {
-          const container   = getScrollContainer();
-          const scrollTop   = container === window ? window.scrollY : container.scrollTop;
-          const y           = scrollTop + el.getBoundingClientRect().top - 90;
+          const container = getScrollContainer();
+          const scrollTop = container === window ? window.scrollY : container.scrollTop;
+          const y         = scrollTop + el.getBoundingClientRect().top - 90;
           smoothScrollTo(y);
         }
       }
-
       onNavClick?.(href);
     }
   };
@@ -78,10 +69,11 @@ function NavIcon({ src, alt, label, href = "#", onNavClick }) {
   return (
     <a
       href={href}
-      className="nav-icon-wrap"
+      className={`nav-icon-wrap${active ? " nav-icon-active" : ""}`}
       onMouseEnter={handleEnter}
       onMouseLeave={handleLeave}
       onClick={handleClick}
+      aria-label={label}
       {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
     >
       <span className="nav-icon-slot">
@@ -160,12 +152,6 @@ export default function Navbar() {
   const navRef                      = useRef(null);
   const [modalOpen, setModalOpen]   = useState(false);
   const [activeHref, setActiveHref] = useState("#home");
-
-  /*
-   * aboveAbout — true while MoreAbout panel is open.
-   * Switches .navbar-wrapper to z-index 200001 so icons are
-   * always visible and clickable above the MoreAbout overlay.
-   */
   const [aboveAbout, setAboveAbout] = useState(false);
 
   // ── Entry animation ──────────────────────────────────────────────
@@ -191,19 +177,14 @@ export default function Navbar() {
     return () => { cancelAnimationFrame(raf1); if (raf2) cancelAnimationFrame(raf2); };
   }, []);
 
-  // ── Listen for MoreAbout open/close — raise/lower z-index ────────
+  // ── Listen for MoreAbout open/close ──────────────────────────────
   useEffect(() => {
-    /*
-     * MoreAbout dispatches "portfolio:nav" with { visible: false }
-     * when it opens, and { visible: true } when it closes.
-     * We flip aboveAbout accordingly.
-     */
     const fn = (e) => setAboveAbout(!e.detail.visible);
     window.addEventListener("portfolio:nav", fn);
     return () => window.removeEventListener("portfolio:nav", fn);
   }, []);
 
-  // ── Scroll-based hide / reveal  (normal page scroll) ─────────────
+  // ── Scroll-based hide / reveal (window) ──────────────────────────
   useEffect(() => {
     const el = navRef.current;
     if (!el) return;
@@ -225,10 +206,7 @@ export default function Navbar() {
     };
 
     const onWindowScroll = () => {
-      if (!ticking) {
-        ticking = true;
-        requestAnimationFrame(() => update(getScrollY()));
-      }
+      if (!ticking) { ticking = true; requestAnimationFrame(() => update(getScrollY())); }
     };
 
     window.addEventListener("scroll",   onWindowScroll, { passive: true, capture: true });
@@ -239,33 +217,21 @@ export default function Navbar() {
     };
   }, []);
 
-  // ── Scroll-based hide / reveal  (inside MoreAbout panel) ─────────
+  // ── Scroll-based hide / reveal (MoreAbout panel) ─────────────────
   useEffect(() => {
-    /*
-     * MoreAbout's fixed div has overflow-y:auto.
-     * Scrolling inside it never fires window/document scroll events.
-     * MoreAbout forwards its scroll via "portfolio:aboutScroll":
-     *   { direction: "up" | "down", scrollTop: number }
-     *
-     * We mirror the exact same hide / show logic here.
-     */
     const el = navRef.current;
     if (!el) return;
-    let isHidden    = false;
-    let lastScrollTop = 0;
+    let isHidden = false;
 
     const fn = (e) => {
       const { direction, scrollTop } = e.detail;
-
       if (scrollTop <= 10) {
-        // At the very top — always show
         if (isHidden) { isHidden = false; el.classList.remove("nav-hidden"); }
       } else if (direction === "down" && !isHidden) {
         isHidden = true; el.classList.add("nav-hidden");
       } else if (direction === "up" && isHidden) {
         isHidden = false; el.classList.remove("nav-hidden");
       }
-      lastScrollTop = scrollTop;
     };
 
     window.addEventListener("portfolio:aboutScroll", fn);
@@ -294,14 +260,10 @@ export default function Navbar() {
       <style>{CSS}</style>
       <div
         ref={navRef}
-        /*
-         * nav-above-about class switches z-index from 100 → 200001.
-         * 200001 > MoreAbout's z-index (100000) so the navbar floats
-         * visibly above the panel and icons are always clickable.
-         */
         className={`navbar-wrapper${aboveAbout ? " nav-above-about" : ""}`}
         style={{ transform: "translateY(-22px)", opacity: 0, filter: "blur(7px)" }}
       >
+        {/* Nav pill — always visible at all breakpoints */}
         <div className="nav-pill">
           <div className="logo-section">
             <img className="logo-img" src="/Nav logo icon.png" alt="Arjun Aadhith" />
@@ -315,15 +277,22 @@ export default function Navbar() {
           </div>
           <div className="nav-spacer" />
           <div className="nav-icons">
-            <NavIcon src="/Home icon.png"    alt="Home"     label="Home"     href="#home"     onNavClick={setActiveHref} />
-            <NavIcon src="/Project icon.png" alt="Projects" label="Projects" href="#projects" onNavClick={setActiveHref} />
-            <NavIcon src="/Contact icon.png" alt="Contact"  label="Contact"  href="#contact"  onNavClick={setActiveHref} />
+            <NavIcon src="/Home icon.png"    alt="Home"     label="Home"     href="#home"     onNavClick={setActiveHref} active={activeHref === "#home"} />
+            <NavIcon src="/Project icon.png" alt="Projects" label="Projects" href="#projects" onNavClick={setActiveHref} active={activeHref === "#projects"} />
+            <NavIcon src="/Contact icon.png" alt="Contact"  label="Contact"  href="#contact"  onNavClick={setActiveHref} active={activeHref === "#contact"} />
           </div>
         </div>
+
+        {/*
+         * Resume pill — desktop & tablet only.
+         * Hidden via CSS on ≤639px. No JS conditional needed;
+         * keeping it in the DOM avoids layout recalculation on resize.
+         */}
         <button className="resume-pill" onClick={() => setModalOpen(true)}>
           <span className="resume-pill-text">Resume</span>
         </button>
       </div>
+
       <ResumeModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
     </>
   );
@@ -334,10 +303,11 @@ export default function Navbar() {
 const CSS = `
   *, *::before, *::after { box-sizing: border-box; }
 
-  @keyframes enterOut { from{transform:translateY(0);opacity:1} to{transform:translateY(-150%);opacity:0} }
-  @keyframes enterIn  { from{transform:translateY(150%);opacity:0} to{transform:translateY(0);opacity:1} }
-  @keyframes leaveOut { from{transform:translateY(0);opacity:1} to{transform:translateY(150%);opacity:0} }
-  @keyframes leaveIn  { from{transform:translateY(-150%);opacity:0} to{transform:translateY(0);opacity:1} }
+  /* ── Icon bounce animations ─────────────────────────────────── */
+  @keyframes enterOut { from{transform:translateY(0);opacity:1}    to{transform:translateY(-150%);opacity:0} }
+  @keyframes enterIn  { from{transform:translateY(150%);opacity:0} to{transform:translateY(0);opacity:1}    }
+  @keyframes leaveOut { from{transform:translateY(0);opacity:1}    to{transform:translateY(150%);opacity:0}  }
+  @keyframes leaveIn  { from{transform:translateY(-150%);opacity:0} to{transform:translateY(0);opacity:1}   }
 
   .icon-enter {
     animation: enterOut 0.20s cubic-bezier(0.55,0,0.45,1) 0ms    forwards,
@@ -348,39 +318,43 @@ const CSS = `
                leaveIn  0.30s cubic-bezier(0.16,1,0.3,1)  0.20s  forwards;
   }
 
-  /* ── Wrapper — default z-index 100, boosted to 200001 over MoreAbout ── */
+  /* ═══════════════════════════════════════════════════════════════
+     WRAPPER  — desktop default
+  ═══════════════════════════════════════════════════════════════ */
   .navbar-wrapper {
     position: fixed; top: 0; left: 0; right: 0;
-    padding-top: 38px; padding-bottom: 12px;
-    display: flex; justify-content: center; align-items: flex-start; gap: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 38px 24px 12px;
     z-index: 100;
     transition:
-      transform   0.65s cubic-bezier(0.4,0,0.2,1),
-      opacity     0.65s cubic-bezier(0.4,0,0.2,1),
-      filter      0.50s cubic-bezier(0.4,0,0.2,1),
-      z-index     0s   linear;   /* instant z-index switch — no flash */
+      transform 0.65s cubic-bezier(0.4,0,0.2,1),
+      opacity   0.65s cubic-bezier(0.4,0,0.2,1),
+      filter    0.50s cubic-bezier(0.4,0,0.2,1),
+      z-index   0s    linear;
   }
-
-  /*
-   * Applied when MoreAbout is open.
-   * z-index 200001 > MoreAbout's 100000 — navbar floats above the panel.
-   */
-  .navbar-wrapper.nav-above-about {
-    z-index: 200001 !important;
-  }
-
+  .navbar-wrapper.nav-above-about { z-index: 200001 !important; }
   .navbar-wrapper.nav-hidden {
     transform : translateY(-120px) !important;
     opacity   : 0.4               !important;
     filter    : blur(3px)         !important;
   }
 
+  /* ─── Nav pill ───────────────────────────────────────────────── */
   .nav-pill {
-    display: flex; align-items: center; height: 52px;
-    background: #FFFFFF; border: 1.5px solid #D4D4D4;
-    border-radius: 14px; padding: 0 8px 0 14px; width: 480px;
+    display: flex; align-items: center;
+    height: 52px;
+    background: #FFFFFF;
+    border: 1.5px solid #D4D4D4;
+    border-radius: 14px;
+    padding: 0 8px 0 14px;
+    width: 480px;
+    flex-shrink: 0;
   }
 
+  /* ─── Logo ───────────────────────────────────────────────────── */
   .logo-section { display:flex; align-items:center; gap:8px; flex-shrink:0; cursor:default; }
   .logo-img { width:30px; height:30px; object-fit:contain; border-radius:4px; display:block; }
   .logo-name-shine {
@@ -406,27 +380,36 @@ const CSS = `
   .nav-spacer { flex:1; }
   .nav-icons  { display:flex; align-items:center; gap:0; }
 
+  /* ─── Icon wraps ─────────────────────────────────────────────── */
   .nav-icon-wrap {
     position:relative; display:flex; align-items:center; justify-content:center;
-    width:46px; height:40px; border-radius:10px; text-decoration:none; cursor:pointer;
-    transition:transform 0.30s cubic-bezier(0.22,1,0.36,1); transform-origin:center;
+    width:46px; height:40px; border-radius:10px;
+    text-decoration:none; cursor:pointer;
+    transition:transform 0.30s cubic-bezier(0.22,1,0.36,1);
+    transform-origin:center;
   }
   .nav-icon-wrap:hover  { transform:scale(1.08); }
   .nav-icon-wrap:active { transform:scale(0.93); transition-duration:0.10s; }
 
   .nav-icon-slot {
     display:flex; align-items:center; justify-content:center;
-    width:24px; height:24px; overflow:hidden; clip-path:inset(-200% 0 -200% 0);
+    width:24px; height:24px;
+    overflow:hidden; clip-path:inset(-200% 0 -200% 0);
   }
   .nav-icon-img {
     display:block;
     filter:invert(10%) sepia(0%) saturate(0%) brightness(100%) contrast(100%);
+    transition:filter 0.2s ease;
   }
+  /* Active state: icon goes fully black */
+  .nav-icon-active .nav-icon-img { filter:brightness(0%); }
 
+  /* Tooltip */
   .nav-label {
     position:absolute; top:calc(100% + 8px); left:50%;
     transform:translateX(-50%) translateY(4px);
-    background:#232323; color:#fff; font-size:11px; font-weight:500;
+    background:#232323; color:#fff;
+    font-size:11px; font-weight:500;
     padding:4px 10px; border-radius:7px; white-space:nowrap;
     pointer-events:none; opacity:0;
     transition:opacity 0.18s ease, transform 0.18s ease; z-index:100;
@@ -434,20 +417,23 @@ const CSS = `
   }
   .nav-icon-wrap:hover .nav-label { opacity:1; transform:translateX(-50%) translateY(0px); }
 
+  /* ─── Resume pill ────────────────────────────────────────────── */
   .resume-pill {
-    position:relative; height:52px; background:#FFFFFF;
-    border:1.5px solid #D4D4D4; border-radius:14px;
+    position:relative; height:52px;
+    background:#FFFFFF; border:1.5px solid #D4D4D4; border-radius:14px;
     display:flex; align-items:center; padding:0 28px;
-    font-size:15px; font-weight:500; color:#111; letter-spacing:-0.01em; cursor:pointer;
+    font-size:15px; font-weight:500; color:#111; letter-spacing:-0.01em;
+    cursor:pointer; white-space:nowrap; outline:none; overflow:hidden;
     font-family:-apple-system,"SF Pro Text",BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
-    overflow:hidden; -webkit-font-smoothing:antialiased; white-space:nowrap; outline:none;
+    -webkit-font-smoothing:antialiased; flex-shrink:0;
     transition:
       color        0.40s cubic-bezier(0.16,1,0.3,1),
       border-color 0.40s cubic-bezier(0.16,1,0.3,1),
       transform    0.28s cubic-bezier(0.22,1,0.36,1);
   }
   .resume-pill::before {
-    content:""; position:absolute; inset:0; background:#111111; border-radius:inherit;
+    content:""; position:absolute; inset:0;
+    background:#111111; border-radius:inherit;
     transform:translateY(102%);
     transition:transform 0.46s cubic-bezier(0.16,1,0.3,1); z-index:0;
   }
@@ -456,27 +442,109 @@ const CSS = `
   .resume-pill:active { transform:scale(0.96); transition-duration:0.10s; }
   .resume-pill-text   { position:relative; z-index:1; }
 
-  /* ── Resume modal ────────────────────────────────────────────────── */
+
+  /* ═══════════════════════════════════════════════════════════════
+     TABLET  640px – 1023px
+     • Pill goes fluid (flex:1) so it always fills remaining space
+     • Resume button scales down slightly but stays visible
+  ═══════════════════════════════════════════════════════════════ */
+  @media (min-width: 640px) and (max-width: 1023px) {
+    .navbar-wrapper {
+      padding: 26px 20px 10px;
+      gap: 8px;
+    }
+    .nav-pill {
+      width: auto;
+      flex: 1;
+      max-width: 440px;
+      height: 48px;
+      padding: 0 6px 0 12px;
+    }
+    .resume-pill {
+      height: 48px;
+      padding: 0 22px;
+      font-size: 14px;
+    }
+    .logo-img { width:28px; height:28px; }
+    .logo-name-text { font-size:12.5px; }
+    .nav-icon-wrap { width:40px; height:36px; }
+  }
+
+
+  /* ═══════════════════════════════════════════════════════════════
+     MOBILE  ≤639px
+     • Wrapper padding tightened for screen edges
+     • Nav pill spans full safe width — no fixed pixel width
+     • Resume pill hidden via display:none (no JS needed)
+     • Tooltips suppressed (no hover on touch)
+     • Touch targets kept at ≥44px
+  ═══════════════════════════════════════════════════════════════ */
+  @media (max-width: 639px) {
+    .navbar-wrapper {
+      padding: 40px 28px 10px;
+      gap: 0;
+    }
+    .nav-pill {
+      width: 100%;
+      max-width: 360px;
+      height: 52px;
+      padding: 0 8px 0 12px;
+      border-radius: 16px;
+    }
+    .logo-img { width:28px; height:28px; }
+    .logo-name-text { font-size:12px; }
+    .nav-icon-wrap { width:44px; height:44px; }
+    /* Resume completely removed from mobile layout */
+    .resume-pill { display:none !important; }
+    /* Tooltips serve no purpose on touch screens */
+    .nav-label { display:none; }
+  }
+
+  /* ── Very small phones  ≤374px ───────────────────────────────── */
+  @media (max-width: 374px) {
+    /*
+     * top padding stays locked at 40px — only horizontal padding
+     * and component sizing compress for very narrow screens.
+     */
+    .navbar-wrapper { padding: 40px 24px 8px; }
+    .nav-pill { height:50px; padding:0 6px 0 10px; }
+    .logo-img { width:26px; height:26px; }
+    .logo-name-text { font-size:11px; letter-spacing:0.05em; }
+    .nav-icon-wrap { width:40px; height:40px; }
+  }
+
+
+  /* ═══════════════════════════════════════════════════════════════
+     RESUME MODAL
+  ═══════════════════════════════════════════════════════════════ */
   .rm-backdrop {
-    position:fixed; inset:0; z-index:200002; /* above nav-above-about */
+    position:fixed; inset:0; z-index:200002;
     background:rgba(0,0,0,0.52);
     backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-    display:flex; align-items:center; justify-content:center; padding:24px;
+    display:flex; align-items:center; justify-content:center;
+    padding:clamp(12px, 4vw, 24px);
     opacity:0; pointer-events:none; transition:opacity 0.28s ease;
   }
   .rm-backdrop.rm-open { opacity:1; pointer-events:auto; }
 
   .rm-modal {
-    background:#ffffff; border-radius:18px; width:min(780px,100%); height:90vh;
+    background:#ffffff; border-radius:18px;
+    width:min(780px, 100%);
+    height:clamp(75vh, 88vh, 90vh);
     display:flex; flex-direction:column; overflow:hidden;
     transform:scale(0.94) translateY(10px);
     transition:transform 0.38s cubic-bezier(0.16,1,0.3,1);
   }
   .rm-backdrop.rm-open .rm-modal { transform:scale(1) translateY(0); }
 
+  @media (max-width: 480px) {
+    .rm-modal { border-radius:14px; height:90vh; }
+  }
+
   .rm-topbar {
     display:flex; align-items:center; justify-content:space-between;
-    padding:16px 20px; border-bottom:1px solid #EFEFEF; flex-shrink:0;
+    padding:clamp(13px, 3vw, 16px) clamp(14px, 4vw, 20px);
+    border-bottom:1px solid #EFEFEF; flex-shrink:0;
   }
   .rm-title {
     font-size:14px; font-weight:600; color:#111;
@@ -485,30 +553,40 @@ const CSS = `
   }
   .rm-close {
     display:flex; align-items:center; justify-content:center;
-    width:30px; height:30px; background:#F2F2F2; border:none; border-radius:8px;
-    cursor:pointer; color:#666; transition:background 0.18s ease, color 0.18s ease;
+    width:30px; height:30px; background:#F2F2F2;
+    border:none; border-radius:8px; cursor:pointer; color:#666;
+    transition:background 0.18s ease, color 0.18s ease;
     outline:none; flex-shrink:0;
   }
   .rm-close:hover { background:#E6E6E6; color:#111; }
+
   .rm-body {
-    flex:1; overflow-y:auto; overflow-x:hidden; background:#F4F4F4;
-    padding:0; display:block;
+    flex:1; overflow-y:auto; overflow-x:hidden;
+    background:#F4F4F4; padding:0; display:block;
+    -webkit-overflow-scrolling:touch;
   }
   .rm-img {
     display:block; width:100%; height:auto;
     pointer-events:none; user-select:none; -webkit-user-drag:none;
   }
+
   .rm-footer {
-    flex-shrink:0; padding:14px 20px; border-top:1px solid #EFEFEF;
+    flex-shrink:0;
+    padding:clamp(10px, 2.5vw, 14px) clamp(14px, 4vw, 20px);
+    border-top:1px solid #EFEFEF;
     display:flex; justify-content:center; background:#ffffff;
   }
   .rm-download {
-    display:inline-flex; align-items:center; gap:8px;
-    height:40px; padding:0 32px; background:#111111; color:#ffffff;
-    border:none; border-radius:10px; font-size:14px; font-weight:500; cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    height:clamp(38px, 6vw, 40px);
+    padding:0 clamp(20px, 6vw, 32px);
+    background:#111111; color:#ffffff;
+    border:none; border-radius:10px;
+    font-size:clamp(13px, 2vw, 14px); font-weight:500;
+    cursor:pointer; outline:none; width:100%; max-width:220px;
     font-family:-apple-system,"SF Pro Text",BlinkMacSystemFont,sans-serif;
     -webkit-font-smoothing:antialiased;
-    transition:background 0.18s ease, transform 0.15s ease; outline:none;
+    transition:background 0.18s ease, transform 0.15s ease;
   }
   .rm-download:hover  { background:#333333; }
   .rm-download:active { transform:scale(0.97); }
