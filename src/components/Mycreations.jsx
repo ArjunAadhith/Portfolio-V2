@@ -130,27 +130,6 @@ export default function Showcase() {
       overflow: hidden;
     }
 
-    /* 5 vertical lines — fade in/out at edges */
-    #sc-vlines {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      justify-content: space-evenly;
-    }
-
-    .sc-vline {
-      width: 1px;
-      height: 100%;
-      background: linear-gradient(
-        to bottom,
-        transparent 0%,
-        #e8e8e8 15%,
-        #e2e2e2 50%,
-        #e8e8e8 85%,
-        transparent 100%
-      );
-    }
-
     /* Scatter cross pixels */
     .sc-x {
       position: absolute; width: 6px; height: 6px;
@@ -355,13 +334,6 @@ export default function Showcase() {
 
           {/* ── Background ── */}
           <div id="sc-bg" aria-hidden="true">
-            <div id="sc-vlines">
-              <div className="sc-vline" />
-              <div className="sc-vline" />
-              <div className="sc-vline" />
-              <div className="sc-vline" />
-              <div className="sc-vline" />
-            </div>
             <div className="sc-x" style={{ top:"17%", left:"55%" }} />
             <div className="sc-x" style={{ top:"68%", left:"42%" }} />
             <div className="sc-x" style={{ top:"36%", left:"85%" }} />
