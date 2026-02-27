@@ -8,7 +8,7 @@ import Multidisciplinary from "./components/Multidisciplinary.jsx";
 import Illustrations from "./components/Illustrations.jsx";
 import Education from "./components/Education.jsx";
 import Footer from "./components/Footer.jsx";
-import CinematicIntro from "./components/CinematicIntro";
+import CinematicIntro from "./components/CinematicIntro.jsx";
 import { useEffect } from "react";
 
 export default function App() {
