@@ -1,41 +1,48 @@
 import { useState, useEffect, useRef } from "react";
 
-// ─── Chrome Gradients ────────────────────────────────────────────────────────
+// ─── Chrome Gradients ───────────────────────────────────────────────────────
 const CHROME = `linear-gradient(
   180deg,
-  #ffffff 0%, #e8e8e8 15%, #f4f4f4 28%,
-  #9e9e9e 44%, #ebebeb 54%, #bdbdbd 67%,
-  #f0f0f0 79%, #878787 100%
+  #ffffff 0%,
+  #e8e8e8 15%,
+  #f4f4f4 28%,
+  #9e9e9e 44%,
+  #ebebeb 54%,
+  #bdbdbd 67%,
+  #f0f0f0 79%,
+  #878787 100%
 )`;
 
 const CHROME_STRONG = `linear-gradient(
   165deg,
-  #ffffff 0%, #dedede 10%, #f7f7f7 20%,
-  #acacac 34%, #f2f2f2 46%, #959595 58%,
-  #f4f4f4 70%, #a8a8a8 83%, #ffffff 100%
+  #ffffff 0%,
+  #dedede 10%,
+  #f7f7f7 20%,
+  #acacac 34%,
+  #f2f2f2 46%,
+  #959595 58%,
+  #f4f4f4 70%,
+  #a8a8a8 83%,
+  #ffffff 100%
 )`;
 
-// ─── Wipe Config ─────────────────────────────────────────────────────────────
-// Horizontal slats: each one slides off to the RIGHT.
-// Stagger radiates outward from the center slat — so center exits first,
-// top/bottom edges exit last. Feels like a premium venetian blind opening.
-const SLAT_COUNT    = 16;   // number of horizontal strips
-const ANIM_DURATION = 1600; // ms — total wipe window (stagger spreads within this)
-const STAGGER_DEPTH = 0.42; // fraction of ANIM_DURATION used for staggering
+// ─── Config ──────────────────────────────────────────────────────────────────
+const LINE_COUNT    = 11;
+const ANIM_DURATION = 1800; // ms
 
 // ─── Easing ──────────────────────────────────────────────────────────────────
-const easeOutExpo = t => t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
 const easeInOutCubic = t =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 const delay = ms => new Promise(r => setTimeout(r, ms));
 
-// ─── Main ────────────────────────────────────────────────────────────────────
+// ─── Main component ──────────────────────────────────────────────────────────
 export default function CinematicIntro({ children, onComplete }) {
   const [phase,       setPhase]       = useState("s1");
   const [wordVisible, setWordVisible] = useState(false);
-  const wipeProgress                  = useRef(0);  // 0 → 1 raw time progress
-  const [, tick]                      = useState(0);
+  const lineProgressRef               = useRef(0);
+  const [, forceUpdate]               = useState(0);
   const rafRef                        = useRef(null);
   const hasRun                        = useRef(false);
 
@@ -74,8 +81,8 @@ export default function CinematicIntro({ children, onComplete }) {
 
       setWordVisible(false);
       await delay(180);
-      setPhase("wipe");
-      await runWipe();
+      setPhase("lines");
+      await runLines();
 
       sessionStorage.setItem("_introPlayed", "1");
       setPhase("done");
@@ -86,19 +93,17 @@ export default function CinematicIntro({ children, onComplete }) {
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, []);
 
-  function runWipe() {
+  function runLines() {
     return new Promise(resolve => {
       const start = performance.now();
-      const total = ANIM_DURATION;
-
-      const frame = now => {
-        const raw = Math.min((now - start) / total, 1);
-        wipeProgress.current = raw;
-        tick(raw);
-        if (raw < 1) rafRef.current = requestAnimationFrame(frame);
-        else resolve();
+      const tick  = now => {
+        const raw = Math.min((now - start) / ANIM_DURATION, 1);
+        lineProgressRef.current = raw;
+        forceUpdate(raw);
+        if (raw < 1) { rafRef.current = requestAnimationFrame(tick); }
+        else { resolve(); }
       };
-      rafRef.current = requestAnimationFrame(frame);
+      rafRef.current = requestAnimationFrame(tick);
     });
   }
 
@@ -107,28 +112,24 @@ export default function CinematicIntro({ children, onComplete }) {
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
 
-      {/* Underlying content */}
       <div style={{
-        position     : "relative",
-        zIndex       : 0,
+        position    : "relative",
+        zIndex      : 0,
         pointerEvents: isDone ? "auto" : "none",
-        userSelect   : isDone ? "auto" : "none",
+        userSelect  : isDone ? "auto" : "none",
       }}>
         {children}
       </div>
 
-      {/* Intro overlay */}
       {!isDone && (
         <div style={{
           position  : "fixed",
           inset     : 0,
           zIndex    : 9999,
-          background: phase === "wipe" ? "transparent" : "#000000",
+          background: phase === "lines" ? "transparent" : "#000000",
           overflow  : "visible",
         }}>
-
-          {/* Text screens */}
-          {phase !== "wipe" && (
+          {phase !== "lines" && (
             <div style={{
               position      : "absolute",
               inset         : 0,
@@ -138,20 +139,38 @@ export default function CinematicIntro({ children, onComplete }) {
               overflow      : "visible",
             }}>
               {phase === "s1" && (
-                <Word text="Make"       visible={wordVisible} size="clamp(120px,18vw,260px)" gradient={CHROME}        spacing="-0.03em" />
+                <Word
+                  text="Make"
+                  visible={wordVisible}
+                  size="clamp(120px, 18vw, 260px)"
+                  gradient={CHROME}
+                  spacing="-0.03em"
+                />
               )}
               {phase === "s2" && (
-                <Word text="A"          visible={wordVisible} size="clamp(160px,28vw,340px)" gradient={CHROME}        spacing="-0.03em" />
+                <Word
+                  text="A"
+                  visible={wordVisible}
+                  size="clamp(160px, 28vw, 340px)"
+                  gradient={CHROME}
+                  spacing="-0.03em"
+                />
               )}
               {phase === "s3" && (
-                <Word text="Difference" visible={wordVisible} size="clamp(72px,17vw,230px)"  gradient={CHROME_STRONG} spacing="-0.04em" strong />
+                <Word
+                  text="Difference"
+                  visible={wordVisible}
+                  size="clamp(72px, 17vw, 230px)"
+                  gradient={CHROME_STRONG}
+                  spacing="-0.04em"
+                  strong
+                />
               )}
             </div>
           )}
 
-          {/* Slat wipe */}
-          {phase === "wipe" && (
-            <Slats progress={wipeProgress.current} />
+          {phase === "lines" && (
+            <WipeLines progress={lineProgressRef.current} />
           )}
         </div>
       )}
@@ -163,12 +182,12 @@ export default function CinematicIntro({ children, onComplete }) {
 function Word({ text, visible, size, gradient, spacing, strong }) {
   return (
     <div style={{
-      transition : "opacity 0.22s ease, transform 0.38s cubic-bezier(0.22,1,0.36,1)",
-      opacity    : visible ? 1 : 0,
-      transform  : visible ? "scale(1)" : "scale(0.96)",
-      willChange : "opacity, transform",
-      overflow   : "visible",
-      padding    : "0.2em 0.1em",
+      transition  : "opacity 0.22s ease, transform 0.38s cubic-bezier(0.22,1,0.36,1)",
+      opacity     : visible ? 1 : 0,
+      transform   : visible ? "scale(1)" : "scale(0.96)",
+      willChange  : "opacity, transform",
+      overflow    : "visible",
+      padding     : "0.2em 0.1em",
     }}>
       <span style={{
         display              : "block",
@@ -194,64 +213,95 @@ function Word({ text, visible, size, gradient, spacing, strong }) {
   );
 }
 
-// ─── Slats ────────────────────────────────────────────────────────────────────
-// N horizontal strips stacked to fill the screen.
-// Each slat slides off to the RIGHT using translateX.
-// Stagger is center-out: the middle slat exits first, edges last.
-// Each slat also has a 1px bright highlight on its bottom edge — a subtle
-// chrome-trim detail that reads as premium as it exits.
-function Slats({ progress }) {
-  const n          = SLAT_COUNT;
-  const slatH      = `${100 / n}vh`;   // exact equal share of viewport
-  const centerIdx  = (n - 1) / 2;      // 7.5 for 16 slats
+// ─── Left → Right Wipe ────────────────────────────────────────────────────────
+//
+// HOW IT WORKS:
+//   The black veil is a single full-screen div that slides off to the right,
+//   driven purely by rAF — no CSS transition fighting it.
+//
+//   11 vertical lines sit on top of the veil (zIndex:1).
+//   Each line has a fixed stagger delay (0 … 0.4 of the timeline).
+//   Within its window, each line travels from -2vw → 104vw.
+//   Lines are spaced ~2vw apart at their stagger offsets so they appear as
+//   a tight-but-readable bundle, not a single thick stripe.
+//
+//   The leading line slightly trails the veil edge — it looks like the veil
+//   is being torn by the bundle of lines.
+//
+function WipeLines({ progress }) {
+
+  // ── Veil ──
+  // Starts at translateX(0) = covering full screen.
+  // Ends at translateX(105vw) = fully off screen to the right.
+  // Use easeInOutCubic for a controlled, premium feel.
+  const veilT = easeInOutCubic(progress);
+  const veilX = veilT * 106; // vw
 
   return (
-    <div style={{
-      position : "absolute",
-      inset    : 0,
-      overflow : "hidden",  // contain slats to viewport — they slide out rightward
-    }}>
-      {Array.from({ length: n }).map((_, i) => {
-        // Distance from center (0 = center, 1 = outermost)
-        const distFromCenter = Math.abs(i - centerIdx) / centerIdx; // 0 → 1
+    <div style={{ position: "absolute", inset: 0, overflow: "visible" }}>
 
-        // Center slat starts first. Edge slats start later.
-        // Each slat's local start is offset by distFromCenter × STAGGER_DEPTH
-        const localStart = distFromCenter * STAGGER_DEPTH;
-        const localEnd   = 1.0;
+      {/* ── Black veil — slides RIGHT, always behind lines ── */}
+      <div style={{
+        position  : "absolute",
+        top       : 0,
+        bottom    : 0,
+        left      : 0,
+        right     : 0,
+        zIndex    : 0,
+        background: "#000000",
+        transform : `translateX(${veilX}vw)`,
+        willChange: "transform",
+      }} />
 
-        // Normalize progress for this slat: 0 → 1 within its window
-        const localT = Math.max(0, Math.min(1,
-          (progress - localStart) / (localEnd - localStart)
+      {/* ── Lines ── */}
+      {Array.from({ length: LINE_COUNT }).map((_, i) => {
+        // Stagger: line 0 leads, line N-1 is last
+        // Each line starts and ends in tight sequence
+        const staggerFraction = 0.38;                          // total stagger window
+        const staggerOffset   = (i / (LINE_COUNT - 1)) * staggerFraction;
+        const window          = 1 - staggerFraction;
+
+        // Normalized progress for this individual line (0 → 1)
+        const lp = Math.max(0, Math.min(1,
+          (progress - staggerOffset) / window
         ));
 
-        // Apply ease-out-expo so each slat fires fast then eases to rest off-screen
-        const easedT = easeOutExpo(localT);
+        const lpEased = easeInOutCubic(lp);
 
-        // translateX: 0% (covering) → 105% (fully off-screen right)
-        const tx = easedT * 105;
+        // Travel: -4vw (off left) → 106vw (off right)
+        const tx = -4 + lpEased * 112;
 
-        // Subtle brightness taper: center slats slightly brighter (more contrast)
-        // to reinforce depth layering
-        const shade = Math.round(0 + distFromCenter * 18); // 0 → 18
-        const bg    = `rgb(${shade}, ${shade}, ${shade})`;
+        // Only render when in or near viewport
+        const onScreen = tx > -5 && tx < 107;
+
+        const isFirst  = i === 0;
+        const isMid    = i === Math.floor(LINE_COUNT / 2);
+
+        // Leading line (i=0) is brightest; trailing lines step down slightly
+        const brightnessStep = 1 - (i / LINE_COUNT) * 0.25;
+        const lineColor = isFirst || isMid
+          ? `rgba(255,255,255,${brightnessStep})`
+          : `rgba(228,228,228,${brightnessStep * 0.88})`;
 
         return (
           <div
             key={i}
             style={{
               position  : "absolute",
+              top       : 0,
+              bottom    : 0,
               left      : 0,
-              right     : 0,
-              top       : `${(i / n) * 100}%`,
-              height    : slatH,
               zIndex    : 1,
-              background: bg,
-              transform : `translateX(${tx}%)`,
+              width     : isFirst ? "2px" : isMid ? "1.5px" : "1px",
+              background: lineColor,
+              transform : `translateX(${tx}vw)`,
+              opacity   : onScreen ? 1 : 0,
+              boxShadow : isFirst
+                ? "0 0 12px 4px rgba(255,255,255,0.55), 0 0 28px 8px rgba(255,255,255,0.18)"
+                : isMid
+                  ? "0 0 8px 2px rgba(255,255,255,0.35), 0 0 18px 4px rgba(255,255,255,0.12)"
+                  : "0 0 3px 1px rgba(255,255,255,0.15)",
               willChange: "transform",
-              // 1px highlight trim on bottom edge of each slat
-              // gives a chrome-blade edge feel as they slide
-              boxShadow : "inset 0 -1px 0 rgba(255,255,255,0.18)",
             }}
           />
         );
