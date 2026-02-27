@@ -28,7 +28,11 @@ const CHROME_STRONG = `linear-gradient(
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 const LINE_COUNT    = 11;
-const ANIM_DURATION = 1800; // ms
+const ANIM_DURATION = 1800;
+
+// Transition durations — must match CSS values below exactly
+const SLIDE_IN_MS  = 520;  // how long the enter transition takes
+const SLIDE_OUT_MS = 420;  // how long the exit transition takes
 
 // ─── Easing ──────────────────────────────────────────────────────────────────
 const easeInOutCubic = t =>
@@ -37,21 +41,27 @@ const easeInOutCubic = t =>
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const delay = ms => new Promise(r => setTimeout(r, ms));
 
+// Wait for TWO animation frames — guarantees the browser has painted
+// the current state before we trigger a CSS transition.
+const nextPaint = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
 // ─── Main component ──────────────────────────────────────────────────────────
 export default function CinematicIntro({ children, onComplete }) {
-  const [phase,       setPhase]       = useState("s1");
-  const [wordVisible, setWordVisible] = useState(false);
-  const lineProgressRef               = useRef(0);
-  const [, forceUpdate]               = useState(0);
-  const rafRef                        = useRef(null);
-  const hasRun                        = useRef(false);
+  const [screen,  setScreen]  = useState("s1");
+  // "left" | "center" | "right"
+  const [wordPos, setWordPos] = useState("left");
+
+  const lineProgressRef = useRef(0);
+  const [, forceUpdate] = useState(0);
+  const rafRef          = useRef(null);
+  const hasRun          = useRef(false);
 
   useEffect(() => {
     if (hasRun.current) return;
     hasRun.current = true;
 
     if (sessionStorage.getItem("_introPlayed")) {
-      setPhase("done");
+      setScreen("done");
       document.body.style.overflow = "";
       onComplete?.();
       return;
@@ -60,38 +70,41 @@ export default function CinematicIntro({ children, onComplete }) {
     document.body.style.overflow = "hidden";
 
     (async () => {
-      setPhase("s1"); setWordVisible(false);
-      await delay(50);
-      setWordVisible(true);
-      await delay(1300);
+      await showWord("s1", 700);
+      await showWord("s2", 650);
+      await showWord("s3", 900);
 
-      setWordVisible(false);
-      await delay(200);
-      setPhase("s2"); setWordVisible(false);
-      await delay(50);
-      setWordVisible(true);
-      await delay(1300);
-
-      setWordVisible(false);
-      await delay(200);
-      setPhase("s3"); setWordVisible(false);
-      await delay(50);
-      setWordVisible(true);
-      await delay(1600);
-
-      setWordVisible(false);
-      await delay(180);
-      setPhase("lines");
+      setScreen("lines");
       await runLines();
 
       sessionStorage.setItem("_introPlayed", "1");
-      setPhase("done");
+      setScreen("done");
       document.body.style.overflow = "";
       onComplete?.();
     })();
 
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, []);
+
+  // ── showWord ──────────────────────────────────────────────────────────────
+  // 1. Mount the word at "left" (invisible, off-screen left)
+  // 2. Wait for the browser to actually paint that state (double rAF)
+  // 3. Set "center" → CSS transition fires: slides in smoothly from left
+  // 4. Hold for `holdMs`
+  // 5. Set "right" → CSS transition fires: slides out to right
+  // 6. Wait the FULL exit transition duration before unmounting
+  async function showWord(screenId, holdMs) {
+    setScreen(screenId);
+    setWordPos("left");          // mount at left, opacity 0 — NOT yet animated
+
+    await nextPaint();           // browser paints "left" state before transition starts
+
+    setWordPos("center");        // NOW trigger slide-in transition
+    await delay(holdMs + SLIDE_IN_MS); // hold includes slide-in time
+
+    setWordPos("right");         // trigger slide-out transition
+    await delay(SLIDE_OUT_MS + 40); // wait FULL exit duration + tiny buffer before unmount
+  }
 
   function runLines() {
     return new Promise(resolve => {
@@ -107,16 +120,16 @@ export default function CinematicIntro({ children, onComplete }) {
     });
   }
 
-  const isDone = phase === "done";
+  const isDone = screen === "done";
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
 
       <div style={{
-        position    : "relative",
-        zIndex      : 0,
+        position     : "relative",
+        zIndex       : 0,
         pointerEvents: isDone ? "auto" : "none",
-        userSelect  : isDone ? "auto" : "none",
+        userSelect   : isDone ? "auto" : "none",
       }}>
         {children}
       </div>
@@ -126,41 +139,41 @@ export default function CinematicIntro({ children, onComplete }) {
           position  : "fixed",
           inset     : 0,
           zIndex    : 9999,
-          background: phase === "lines" ? "transparent" : "#000000",
-          overflow  : "visible",
+          background: screen === "lines" ? "transparent" : "#000000",
+          overflow  : "hidden",
         }}>
-          {phase !== "lines" && (
+          {screen !== "lines" && (
             <div style={{
               position      : "absolute",
               inset         : 0,
               display       : "flex",
               alignItems    : "center",
               justifyContent: "center",
-              overflow      : "visible",
+              overflow      : "hidden",
             }}>
-              {phase === "s1" && (
+              {screen === "s1" && (
                 <Word
                   text="Make"
-                  visible={wordVisible}
-                  size="clamp(120px, 18vw, 260px)"
+                  pos={wordPos}
+                  size="clamp(140px, 22vw, 300px)"
                   gradient={CHROME}
                   spacing="-0.03em"
                 />
               )}
-              {phase === "s2" && (
+              {screen === "s2" && (
                 <Word
                   text="A"
-                  visible={wordVisible}
-                  size="clamp(160px, 28vw, 340px)"
+                  pos={wordPos}
+                  size="clamp(180px, 32vw, 400px)"
                   gradient={CHROME}
                   spacing="-0.03em"
                 />
               )}
-              {phase === "s3" && (
+              {screen === "s3" && (
                 <Word
                   text="Difference"
-                  visible={wordVisible}
-                  size="clamp(72px, 17vw, 230px)"
+                  pos={wordPos}
+                  size="clamp(80px, 20vw, 260px)"
                   gradient={CHROME_STRONG}
                   spacing="-0.04em"
                   strong
@@ -169,7 +182,7 @@ export default function CinematicIntro({ children, onComplete }) {
             </div>
           )}
 
-          {phase === "lines" && (
+          {screen === "lines" && (
             <WipeLines progress={lineProgressRef.current} />
           )}
         </div>
@@ -178,21 +191,32 @@ export default function CinematicIntro({ children, onComplete }) {
   );
 }
 
-// ─── Word ─────────────────────────────────────────────────────────────────────
-function Word({ text, visible, size, gradient, spacing, strong }) {
+function Word({ text, pos, size, gradient, spacing, strong }) {
+  const isEntering = pos === "center";
+  const isExiting  = pos === "right";
+
+  const tx = pos === "left" ? -110 : pos === "right" ? 110 : 0;
+  const op = pos === "center" ? 1 : 0;
+
+  // Different durations per direction so enter feels smooth, exit feels snappy
+  const transDuration = isExiting ? "0.40s" : "0.50s";
+  const transEasing   = isExiting
+    ? "cubic-bezier(0.4, 0, 1, 1)"          // ease-in: accelerates out
+    : "cubic-bezier(0.16, 1, 0.3, 1)";      // expo-out: fast start, smooth land
+
   return (
     <div style={{
-      transition  : "opacity 0.22s ease, transform 0.38s cubic-bezier(0.22,1,0.36,1)",
-      opacity     : visible ? 1 : 0,
-      transform   : visible ? "scale(1)" : "scale(0.96)",
-      willChange  : "opacity, transform",
-      overflow    : "visible",
-      padding     : "0.2em 0.1em",
+      transition : `opacity ${transDuration} ease, transform ${transDuration} ${transEasing}`,
+      opacity    : op,
+      transform  : `translateX(${tx}px)`,
+      willChange : "opacity, transform",
+      overflow   : "visible",
+      padding    : "0.2em 0.1em",
     }}>
       <span style={{
         display              : "block",
         fontFamily           : "'SF Pro Display', -apple-system, 'Helvetica Neue', Helvetica, sans-serif",
-        fontWeight           : 800,
+        fontWeight           : 500,
         fontSize             : size,
         letterSpacing        : spacing,
         lineHeight           : 1.1,
@@ -213,34 +237,14 @@ function Word({ text, visible, size, gradient, spacing, strong }) {
   );
 }
 
-// ─── Left → Right Wipe ────────────────────────────────────────────────────────
-//
-// HOW IT WORKS:
-//   The black veil is a single full-screen div that slides off to the right,
-//   driven purely by rAF — no CSS transition fighting it.
-//
-//   11 vertical lines sit on top of the veil (zIndex:1).
-//   Each line has a fixed stagger delay (0 … 0.4 of the timeline).
-//   Within its window, each line travels from -2vw → 104vw.
-//   Lines are spaced ~2vw apart at their stagger offsets so they appear as
-//   a tight-but-readable bundle, not a single thick stripe.
-//
-//   The leading line slightly trails the veil edge — it looks like the veil
-//   is being torn by the bundle of lines.
-//
+// ─── Left → Right Wipe ───────────────────────────────────────────────────────
 function WipeLines({ progress }) {
-
-  // ── Veil ──
-  // Starts at translateX(0) = covering full screen.
-  // Ends at translateX(105vw) = fully off screen to the right.
-  // Use easeInOutCubic for a controlled, premium feel.
   const veilT = easeInOutCubic(progress);
-  const veilX = veilT * 106; // vw
+  const veilX = veilT * 106;
 
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "visible" }}>
 
-      {/* ── Black veil — slides RIGHT, always behind lines ── */}
       <div style={{
         position  : "absolute",
         top       : 0,
@@ -253,33 +257,18 @@ function WipeLines({ progress }) {
         willChange: "transform",
       }} />
 
-      {/* ── Lines ── */}
       {Array.from({ length: LINE_COUNT }).map((_, i) => {
-        // Stagger: line 0 leads, line N-1 is last
-        // Each line starts and ends in tight sequence
-        const staggerFraction = 0.38;                          // total stagger window
+        const staggerFraction = 0.38;
         const staggerOffset   = (i / (LINE_COUNT - 1)) * staggerFraction;
-        const window          = 1 - staggerFraction;
-
-        // Normalized progress for this individual line (0 → 1)
-        const lp = Math.max(0, Math.min(1,
-          (progress - staggerOffset) / window
-        ));
-
-        const lpEased = easeInOutCubic(lp);
-
-        // Travel: -4vw (off left) → 106vw (off right)
-        const tx = -4 + lpEased * 112;
-
-        // Only render when in or near viewport
-        const onScreen = tx > -5 && tx < 107;
-
-        const isFirst  = i === 0;
-        const isMid    = i === Math.floor(LINE_COUNT / 2);
-
-        // Leading line (i=0) is brightest; trailing lines step down slightly
-        const brightnessStep = 1 - (i / LINE_COUNT) * 0.25;
-        const lineColor = isFirst || isMid
+        const w               = 1 - staggerFraction;
+        const lp              = Math.max(0, Math.min(1, (progress - staggerOffset) / w));
+        const lpEased         = easeInOutCubic(lp);
+        const tx              = -4 + lpEased * 112;
+        const onScreen        = tx > -5 && tx < 107;
+        const isFirst         = i === 0;
+        const isMid           = i === Math.floor(LINE_COUNT / 2);
+        const brightnessStep  = 1 - (i / LINE_COUNT) * 0.25;
+        const lineColor       = isFirst || isMid
           ? `rgba(255,255,255,${brightnessStep})`
           : `rgba(228,228,228,${brightnessStep * 0.88})`;
 
