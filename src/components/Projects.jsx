@@ -29,7 +29,9 @@ export default function Projects() {
           font-weight: 800;
         }
 
-        /* ── Header — normal flow, scrolls naturally with section ── */
+        /* ════════════════════════════════════════
+           DESKTOP — completely untouched
+        ════════════════════════════════════════ */
         #pj-header {
           position: relative;
           background: #000;
@@ -51,7 +53,7 @@ export default function Projects() {
         }
 
         .pj-heading {
-          margin: 122px 0 0; /* was 72px — shifted 50px down */
+          margin: 122px 0 0;
           font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
           font-size: clamp(40px, 5.8vw, 72px);
           font-weight: 800;
@@ -153,24 +155,207 @@ export default function Projects() {
           transform: scale(1) translateY(0);
         }
 
-        @media (max-width: 1120px) {
+        /* ════════════════════════════════════════
+           RESPONSIVE — added below desktop
+        ════════════════════════════════════════ */
+
+        /* Tablet landscape: 1024px – 1199px */
+        @media (min-width: 1024px) and (max-width: 1199px) {
           .pj-card {
-            width: calc(100vw - 32px);
-            height: 620px;
-            left: 16px;
+            width: calc(100vw - 48px);
+            height: 560px;
+            left: 24px;
             transform: translateY(100%);
+            top: 70px;
           }
-          .pj-card.entered {
-            transform: translateY(0);
+          .pj-card.entered { transform: translateY(0); }
+          .pj-card.init    { transform: translateY(0); }
+        }
+
+        /* Tablet portrait: 768px – 1023px */
+        @media (min-width: 768px) and (max-width: 1023px) {
+          .pj-label {
+            position: relative;
+            top: auto; left: auto;
+            text-align: center;
+            padding-top: 36px;
+            font-size: 14px;
           }
-          .pj-card.init {
-            transform: translateY(0);
+          .pj-heading {
+            margin-top: 14px;
+            white-space: normal;
+            padding: 0 24px 20px;
+          }
+          .pj-card {
+            width: calc(100vw - 40px);
+            height: 460px;
+            left: 20px;
+            transform: translateY(100%);
+            border-radius: 36px;
+            top: 80px;
+            cursor: pointer;
+          }
+          .pj-card.entered { transform: translateY(0); }
+          .pj-card.init    { transform: translateY(0); }
+          .pj-tip { display: none; }
+        }
+
+        /* ════════════════════════════════════════
+           MOBILE ≤ 767px
+           KEY FIXES:
+           1. #pj-outer height reduced from N×100vh → N×60vh
+              so there is no giant black void between cards
+           2. .pj-wrapper height: 60vh to match
+           3. Card centered vertically in each sticky frame
+              using top:50% + negative margin-top
+        ════════════════════════════════════════ */
+        @media (max-width: 767px) {
+          /* Reduce header spacing */
+          .pj-label {
+            position: relative;
+            top: auto; left: auto;
+            text-align: center;
+            padding-top: 28px;
+            font-size: 14px;
+          }
+          .pj-heading {
+            margin-top: 8px;
+            white-space: normal;
+            text-align: center;
+            padding: 0 20px 20px;
+            font-size: clamp(28px, 8vw, 42px);
+            letter-spacing: -0.032em;
+          }
+
+          /*
+            Shrink the scroll container so the black area is proportional.
+            Card height ≈ (100vw - 24px) × 10/16 ≈ 58vw.
+            Each sticky slot = 60vh gives enough scroll feel without dead space.
+          */
+          #pj-outer {
+            height: ${N * 60}vh;
+          }
+          .pj-wrapper {
+            height: 60vh;
+          }
+
+          /*
+            Card: fluid width + aspect-ratio (no fixed height).
+            Vertically centered in the 60vh sticky slot:
+              top: 50%  → top edge at slot midpoint
+              margin-top: negative half of card height
+              card height = (100vw - 24px) × 10/16
+              half height  = (100vw - 24px) × 5/16
+          */
+          .pj-card {
+            width: calc(100vw - 24px);
+            height: auto;
+            aspect-ratio: 16 / 10;
+            left: 12px;
+            top: 50%;
+            margin-top: calc((100vw - 24px) * -5 / 16);
+            border-radius: 22px;
+            transform: translateY(100%);
+            cursor: pointer;
+          }
+          .pj-card.entered { transform: translateY(0); }
+          .pj-card.init    { transform: translateY(0); }
+          .pj-tip { display: none; }
+        }
+
+        /* Small mobile: ≤ 480px */
+        @media (max-width: 480px) {
+          #pj-outer  { height: ${N * 58}vh; }
+          .pj-wrapper { height: 58vh; }
+          .pj-label  { font-size: 13px; padding-top: 24px; }
+          .pj-heading {
+            font-size: clamp(26px, 7.5vw, 36px);
+            padding: 0 16px 16px;
+          }
+          .pj-card {
+            width: calc(100vw - 20px);
+            left: 10px;
+            margin-top: calc((100vw - 20px) * -5 / 16);
+            border-radius: 18px;
           }
         }
 
-        @media (max-width: 600px) {
-          .pj-heading { white-space: normal; }
-          .pj-card { top: 180px; }
+        /* Standard mobile: ≤ 390px — iPhone 13/14/15, Galaxy S, Pixel */
+        @media (max-width: 390px) {
+          #pj-outer  { height: ${N * 56}vh; }
+          .pj-wrapper { height: 56vh; }
+          .pj-label  { font-size: 13px; padding-top: 20px; }
+          .pj-heading {
+            font-size: clamp(24px, 7vw, 32px);
+            padding: 0 14px 14px;
+            letter-spacing: -0.025em;
+          }
+          .pj-card {
+            width: calc(100vw - 16px);
+            left: 8px;
+            margin-top: calc((100vw - 16px) * -5 / 16);
+            border-radius: 16px;
+          }
+        }
+
+        /* Tiny: ≤ 320px — SE 1st gen, small Android */
+        @media (max-width: 320px) {
+          #pj-outer  { height: ${N * 54}vh; }
+          .pj-wrapper { height: 54vh; }
+          .pj-label  { font-size: 12px; padding-top: 18px; }
+          .pj-heading {
+            font-size: clamp(22px, 6.8vw, 28px);
+            padding: 0 12px 12px;
+            letter-spacing: -0.022em;
+          }
+          .pj-card {
+            width: calc(100vw - 14px);
+            left: 7px;
+            margin-top: calc((100vw - 14px) * -5 / 16);
+            border-radius: 14px;
+          }
+        }
+
+        /* Landscape phone */
+        @media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
+          #pj-outer  { height: ${N * 90}vh; }
+          .pj-wrapper { height: 90vh; }
+          .pj-label {
+            position: relative;
+            top: auto; left: auto;
+            text-align: center;
+            font-size: 13px;
+            padding-top: 14px;
+          }
+          .pj-heading {
+            margin-top: 6px;
+            white-space: normal;
+            padding: 0 20px 10px;
+            font-size: clamp(22px, 5vw, 36px);
+          }
+          .pj-card {
+            width: calc(100vw - 32px);
+            height: calc(90vh - 100px);
+            aspect-ratio: unset;
+            left: 16px;
+            top: 50%;
+            margin-top: calc((90vh - 100px) / -2);
+            border-radius: 18px;
+            transform: translateY(100%);
+            cursor: pointer;
+          }
+          .pj-card.entered { transform: translateY(0); }
+          .pj-card.init    { transform: translateY(0); }
+          .pj-tip { display: none; }
+        }
+
+        /* iOS notch / Dynamic Island safe area */
+        @supports (padding: env(safe-area-inset-top)) {
+          @media (max-width: 767px) {
+            #pj-header {
+              padding-top: env(safe-area-inset-top, 0px);
+            }
+          }
         }
       `}</style>
 
@@ -198,7 +383,6 @@ function StickyCard({ card, index }) {
 
   useEffect(() => {
     if (index === 0) return;
-
     const obs = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -206,10 +390,7 @@ function StickyCard({ card, index }) {
           obs.disconnect();
         }
       },
-      {
-        threshold: 0,
-        rootMargin: "0px 0px 0px 0px",
-      }
+      { threshold: 0, rootMargin: "0px 0px 0px 0px" }
     );
     if (wrapperRef.current) obs.observe(wrapperRef.current);
     return () => obs.disconnect();
