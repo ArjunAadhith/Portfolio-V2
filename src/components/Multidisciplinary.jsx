@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from "react";
-import ShowcasePage from "./Showcasepage.jsx"; // ← ADD (1): import
+import ShowcasePage from "./Showcasepage.jsx";
 
 const IMAGES = [
   { id: 1, src: "/multidisciplinary/m1.png", label: "Aston Martin Valhalla",        link: "https://3d-car-model-design.netlify.app/" },
@@ -101,8 +101,6 @@ export default function SplitShowcase() {
   const lastTs      = useRef(null);
 
   const [wrapperHeight, setWrapperHeight] = useState("100vh");
-
-  // ← ADD (2): mirrors `const [moreOpen, setMoreOpen] = useState(false)` in About.jsx
   const [showcaseOpen, setShowcaseOpen] = useState(false);
 
   /* ── Measure: how much does the right panel overflow? ── */
@@ -161,10 +159,6 @@ export default function SplitShowcase() {
     <>
       <style>{CSS}</style>
 
-      {/* ← ADD (3): always mounted above the section, never conditionally rendered.
-           Mirrors About.jsx exactly:
-             <MoreAbout isOpen={moreOpen} onClose={() => setMoreOpen(false)} />
-      */}
       <ShowcasePage
         isOpen={showcaseOpen}
         onClose={() => setShowcaseOpen(false)}
@@ -191,11 +185,6 @@ export default function SplitShowcase() {
                 crafted with intention.
               </p>
 
-              {/* ← CHANGED: was <a href="/explore" className="sc2-btn">
-                   Now a <button> with onClick — mirrors About.jsx:
-                     <button className="btn-pill" onClick={() => setMoreOpen(true)}>
-                   Removing href prevents the browser scroll-to-top.
-              */}
               <button
                 className="sc2-btn"
                 onClick={() => setShowcaseOpen(true)}
@@ -227,8 +216,7 @@ export default function SplitShowcase() {
   );
 }
 
-/* ─── Styles (your original — only the .sc2-btn text-decoration removed
-     since it's now a <button> not an <a>) ─────────────────────────── */
+/* ─── Styles ─────────────────────────────────────────────────────────── */
 const CSS = `
   .sc2-wrapper *, .sc2-wrapper *::before, .sc2-wrapper *::after {
     box-sizing: border-box; margin: 0; padding: 0;
@@ -260,6 +248,10 @@ const CSS = `
     pointer-events: none;
     z-index: 0;
   }
+
+  /* ══════════════════════════════════════════
+     DESKTOP BASE (1280px) — UNTOUCHED
+  ══════════════════════════════════════════ */
 
   /* ── Left ── */
   .sc2-left {
@@ -304,7 +296,6 @@ const CSS = `
     margin-bottom: 44px;
   }
 
-  /* Button — visually identical, now a <button> element */
   .sc2-btn {
     display: inline-flex;
     align-items: center;
@@ -319,6 +310,9 @@ const CSS = `
     background: transparent;
     margin-bottom: 56px;
     font-family: inherit;
+    min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 
   .sc2-btn-bg {
@@ -467,21 +461,477 @@ const CSS = `
     scale: 1;
   }
 
-  /* ── Responsive ── */
-  @media (max-width: 768px) {
+
+  /* ══════════════════════════════════════════
+     ULTRA-WIDE (1440px – 1600px)
+  ══════════════════════════════════════════ */
+  @media (min-width: 1440px) {
+    .sc2-left-inner {
+      padding: 50px 60px 40px 100px;
+      max-width: 580px;
+    }
+
+    .sc2-title {
+      font-size: clamp(38px, 3vw, 58px);
+    }
+
+    .sc2-body {
+      font-size: 14px;
+      max-width: 300px;
+    }
+
+    .sc2-cards {
+      padding: 36px 52px 48px;
+      gap: 18px;
+    }
+
+    .sc2-card {
+      border-radius: 32px;
+    }
+  }
+
+
+  /* ══════════════════════════════════════════
+     ULTRA-WIDE (1920px+)
+  ══════════════════════════════════════════ */
+  @media (min-width: 1920px) {
+    .sc2-sticky {
+      max-width: 1920px;
+      margin: 0 auto;
+    }
+
+    .sc2-left-inner {
+      padding: 60px 72px 50px 120px;
+      max-width: 640px;
+    }
+
+    .sc2-title {
+      font-size: clamp(44px, 2.8vw, 64px);
+      margin-bottom: 28px;
+    }
+
+    .sc2-body {
+      font-size: 15px;
+      max-width: 320px;
+      margin-bottom: 52px;
+    }
+
+    .sc2-btn {
+      padding: 14px 34px;
+      margin-bottom: 64px;
+    }
+
+    .sc2-btn-text {
+      font-size: 13px;
+    }
+
+    .sc2-counter-num {
+      font-size: 42px;
+    }
+
+    .sc2-cards {
+      padding: 40px 64px 56px;
+      gap: 22px;
+    }
+
+    .sc2-card-overlay {
+      padding: 24px 28px;
+    }
+
+    .sc2-card-label {
+      font-size: 12px;
+    }
+  }
+
+
+  /* ══════════════════════════════════════════
+     TABLET LANDSCAPE (1024px – 1279px)
+  ══════════════════════════════════════════ */
+  @media (min-width: 1024px) and (max-width: 1279px) {
+    .sc2-left-inner {
+      padding: 40px 40px 36px 60px;
+    }
+
+    .sc2-title {
+      font-size: clamp(28px, 3.2vw, 42px);
+    }
+
+    .sc2-body {
+      font-size: 12.5px;
+      max-width: 240px;
+      margin-bottom: 36px;
+    }
+
+    .sc2-btn {
+      margin-bottom: 44px;
+    }
+
+    .sc2-counter-num {
+      font-size: 30px;
+    }
+
+    .sc2-cards {
+      padding: 28px 28px 36px;
+      gap: 14px;
+    }
+
+    .sc2-card {
+      border-radius: 24px;
+    }
+  }
+
+
+  /* ══════════════════════════════════════════
+     TABLET PORTRAIT (768px – 1023px)
+  ══════════════════════════════════════════ */
+  @media (min-width: 768px) and (max-width: 1023px) {
     .sc2-sticky {
       flex-direction: column;
       height: auto;
       position: relative;
     }
-    .sc2-wrapper { height: auto !important; }
-    .sc2-left  { width: 100%; height: auto; }
-    .sc2-left-inner { height: auto; padding: 60px 28px 40px 40px; }
-    .sc2-right { width: 100%; height: auto; overflow: visible; }
+
+    .sc2-wrapper {
+      height: auto !important;
+    }
+
+    .sc2-left {
+      width: 100%;
+      height: auto;
+    }
+
+    .sc2-left-inner {
+      height: auto;
+      justify-content: flex-start;
+      padding: 64px 56px 48px 64px;
+      max-width: 100%;
+    }
+
+    .sc2-eyebrow {
+      margin-bottom: 20px;
+    }
+
+    .sc2-title {
+      font-size: clamp(36px, 5.5vw, 52px);
+      margin-bottom: 20px;
+    }
+
+    .sc2-body {
+      font-size: 14px;
+      max-width: 380px;
+      margin-bottom: 40px;
+    }
+
+    .sc2-btn {
+      padding: 13px 32px;
+      margin-bottom: 48px;
+      min-height: 48px;
+    }
+
+    .sc2-counter-num {
+      font-size: 38px;
+    }
+
+    .sc2-right {
+      width: 100%;
+      height: auto;
+      overflow: visible;
+    }
+
     .sc2-cards {
-      padding: 24px 20px 40px;
+      padding: 8px 40px 64px;
+      gap: 16px;
       will-change: auto;
+      transform: none !important;
+    }
+
+    .sc2-card {
+      border-radius: 28px;
+      cursor: pointer;
+    }
+
+    .sc2-tip {
+      display: none;
+    }
+  }
+
+
+  /* ══════════════════════════════════════════
+     MOBILE — ALL DEVICES (≤ 767px)
+  ══════════════════════════════════════════ */
+  @media (max-width: 767px) {
+    .sc2-sticky {
+      flex-direction: column;
+      height: auto;
+      position: relative;
+    }
+
+    .sc2-wrapper {
+      height: auto !important;
+    }
+
+    .sc2-left {
+      width: 100%;
+      height: auto;
+    }
+
+    .sc2-left-inner {
+      height: auto;
+      justify-content: flex-start;
+      padding: 56px 24px 36px 28px;
+    }
+
+    .sc2-eyebrow {
+      font-size: 9px;
+      letter-spacing: 0.20em;
+      margin-bottom: 18px;
+    }
+
+    .sc2-title {
+      font-size: clamp(28px, 8vw, 38px);
+      line-height: 1.10;
+      letter-spacing: -0.03em;
+      margin-bottom: 16px;
+    }
+
+    .sc2-body {
+      font-size: 13px;
+      line-height: 1.68;
+      max-width: 100%;
+      margin-bottom: 32px;
+      color: rgba(255,255,255,0.42);
+    }
+
+    .sc2-btn {
+      padding: 13px 28px;
+      margin-bottom: 40px;
+      min-height: 48px;
+    }
+
+    .sc2-btn-text {
+      font-size: 11px;
+    }
+
+    .sc2-counter {
+      gap: 12px;
+    }
+
+    .sc2-counter-num {
+      font-size: 30px;
+    }
+
+    .sc2-counter-divider {
+      width: 24px;
+    }
+
+    .sc2-right {
+      width: 100%;
+      height: auto;
+      overflow: visible;
+    }
+
+    .sc2-cards {
+      padding: 4px 16px 56px;
+      gap: 12px;
+      will-change: auto;
+      transform: none !important;
+    }
+
+    .sc2-card {
+      border-radius: 20px;
+      cursor: pointer;
+      /* Keep hover animations off on touch — no :hover on mobile */
+    }
+
+    .sc2-card-overlay {
+      /* Always show label on mobile for better UX */
+      opacity: 1;
+      background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 45%);
+    }
+
+    .sc2-card-label {
+      font-size: 10px;
+      letter-spacing: 0.08em;
+    }
+
+    /* Hide cursor tooltip on touch devices */
+    .sc2-tip {
+      display: none;
+    }
+  }
+
+
+  /* ══════════════════════════════════════════
+     SMALL MOBILE (≤ 375px) — iPhone SE,
+     320px devices, Galaxy A-series small
+  ══════════════════════════════════════════ */
+  @media (max-width: 375px) {
+    .sc2-left-inner {
+      padding: 48px 20px 32px 22px;
+    }
+
+    .sc2-title {
+      font-size: clamp(24px, 8.5vw, 32px);
+    }
+
+    .sc2-body {
+      font-size: 12.5px;
+      margin-bottom: 28px;
+    }
+
+    .sc2-btn {
+      padding: 12px 24px;
+      margin-bottom: 36px;
+    }
+
+    .sc2-counter-num {
+      font-size: 26px;
+    }
+
+    .sc2-cards {
+      padding: 4px 12px 48px;
+      gap: 10px;
+    }
+
+    .sc2-card {
+      border-radius: 16px;
+    }
+  }
+
+
+  /* ══════════════════════════════════════════
+     TINY SCREENS (≤ 320px)
+  ══════════════════════════════════════════ */
+  @media (max-width: 320px) {
+    .sc2-left-inner {
+      padding: 44px 16px 28px 18px;
+    }
+
+    .sc2-title {
+      font-size: 22px;
+    }
+
+    .sc2-body {
+      font-size: 12px;
+    }
+
+    .sc2-btn {
+      padding: 11px 20px;
+      margin-bottom: 32px;
+    }
+
+    .sc2-counter-num {
+      font-size: 24px;
+    }
+
+    .sc2-cards {
+      padding: 4px 10px 44px;
+      gap: 8px;
+    }
+
+    .sc2-card {
+      border-radius: 14px;
+    }
+  }
+
+
+  /* ══════════════════════════════════════════
+     LARGE MOBILE (428px+) — iPhone 14 Pro Max,
+     Plus/Max models, large Android flagships
+  ══════════════════════════════════════════ */
+  @media (min-width: 428px) and (max-width: 767px) {
+    .sc2-left-inner {
+      padding: 60px 32px 40px 36px;
+    }
+
+    .sc2-title {
+      font-size: clamp(30px, 7.5vw, 40px);
+    }
+
+    .sc2-body {
+      font-size: 13.5px;
+      max-width: 340px;
+    }
+
+    .sc2-cards {
+      padding: 4px 20px 60px;
+      gap: 14px;
+    }
+
+    .sc2-card {
+      border-radius: 22px;
+    }
+  }
+
+
+  /* ══════════════════════════════════════════
+     iOS SAFE AREA — notch / Dynamic Island /
+     home indicator support
+  ══════════════════════════════════════════ */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    @media (max-width: 767px) {
+      .sc2-cards {
+        padding-bottom: calc(56px + env(safe-area-inset-bottom));
+      }
+
+      .sc2-left-inner {
+        padding-top: calc(56px + env(safe-area-inset-top));
+        padding-left: calc(28px + env(safe-area-inset-left));
+        padding-right: calc(24px + env(safe-area-inset-right));
+      }
+    }
+
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .sc2-left-inner {
+        padding-top: calc(64px + env(safe-area-inset-top));
+        padding-left: calc(64px + env(safe-area-inset-left));
+      }
+
+      .sc2-cards {
+        padding-bottom: calc(64px + env(safe-area-inset-bottom));
+      }
+    }
+  }
+
+
+  /* ══════════════════════════════════════════
+     TOUCH DEVICE — disable hover states to
+     prevent sticky hover on tap
+  ══════════════════════════════════════════ */
+  @media (hover: none) and (pointer: coarse) {
+    .sc2-card:hover {
       transform: none;
+    }
+
+    .sc2-card:hover .sc2-card-img {
+      transform: none;
+    }
+
+    .sc2-card:active {
+      transform: scale(0.98);
+      transition: transform 0.18s ease;
+    }
+
+    .sc2-btn:hover .sc2-btn-bg {
+      transform: translateY(101%);
+    }
+
+    .sc2-btn:hover .sc2-btn-text {
+      color: rgba(255,255,255,0.80);
+    }
+
+    .sc2-btn:active .sc2-btn-bg {
+      transform: translateY(0);
+      transition: transform 0.22s ease;
+    }
+
+    .sc2-btn:active .sc2-btn-text {
+      color: #0a0a0a;
+      transition: color 0.22s ease;
+    }
+
+    .sc2-tip {
+      display: none !important;
     }
   }
 `;
