@@ -12,11 +12,12 @@ const CARDS = [
   { id: 9, title: "DDDAS Site Design",    image: "/UIUX/9.png", link: "https://www.figma.com/proto/1itf6UuzeiXOBFBhmhj4eM/DDDAS-Design?page-id=0%3A1&node-id=1-2&viewport=240%2C164%2C0.09&t=7HYdcdULhxg9uwW2-1&scaling=min-zoom&content-scaling=fixed" },
 ];
 
-const CARD_W       = 644;
-const GAP          = 28;
-const SIDE_PADDING = 80;
-const SMOOTHNESS   = 0.010;
-const TIP_LERP     = 0.12;
+// ── Desktop constants (unchanged) ──────────────────────────────────────────
+const CARD_W        = 644;
+const GAP           = 28;
+const SIDE_PADDING  = 80;
+const SMOOTHNESS    = 0.010;
+const TIP_LERP      = 0.12;
 const MARQUEE_SPEED = 0.6;
 
 const MQ_ITEMS = [
@@ -27,12 +28,42 @@ const MQ_ITEMS = [
   "User Personas", "Information Architecture"
 ];
 
+// ── Breakpoint helper ───────────────────────────────────────────────────────
+function useBreakpoint() {
+  const [bp, setBp] = useState(() => getBreakpoint(
+    typeof window !== "undefined" ? window.innerWidth : 1280
+  ));
+  useEffect(() => {
+    const update = () => setBp(getBreakpoint(window.innerWidth));
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  return bp;
+}
+
+function getBreakpoint(w) {
+  if (w < 480)  return "xs";       // small mobile  (320–479)
+  if (w < 768)  return "mobile";   // standard mobile (480–767)
+  if (w < 1024) return "tablet";   // tablet portrait / landscape (768–1023)
+  if (w < 1280) return "sm-desk";  // small desktop (1024–1279)
+  return "desktop";                // 1280+ (original layout untouched)
+}
+
+// ── Main component ──────────────────────────────────────────────────────────
 export default function Showcase() {
-  const sectionRef = useRef(null);
-  const trackRef   = useRef(null);
-  const currentRef = useRef(0);
-  const lastTsRef  = useRef(null);
-  const rafRef     = useRef(null);
+  const bp          = useBreakpoint();
+  const isMobile    = bp === "xs" || bp === "mobile";
+  const isTablet    = bp === "tablet";
+  const isSmDesk    = bp === "sm-desk";
+  // Use native swipe scroll on xs / mobile / tablet portrait
+  const useNative   = isMobile || isTablet;
+
+  const sectionRef  = useRef(null);
+  const trackRef    = useRef(null);
+  const currentRef  = useRef(0);
+  const lastTsRef   = useRef(null);
+  const rafRef      = useRef(null);
   const [sectionH, setSectionH] = useState("300vh");
 
   const mqTrackRef  = useRef(null);
@@ -45,14 +76,18 @@ export default function Showcase() {
     return Math.max(0, totalW - vw);
   }, []);
 
+  // Section height — only matters in desktop sticky mode
   useEffect(() => {
+    if (useNative) { setSectionH("auto"); return; }
     const update = () => setSectionH("calc(100vh + " + getMax() + "px)");
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
-  }, [getMax]);
+  }, [getMax, useNative]);
 
+  // Sticky scroll animation — desktop only
   useEffect(() => {
+    if (useNative) return;
     const tick = (timestamp) => {
       if (sectionRef.current && trackRef.current) {
         const dt = lastTsRef.current == null
@@ -75,17 +110,16 @@ export default function Showcase() {
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => { cancelAnimationFrame(rafRef.current); lastTsRef.current = null; };
-  }, [getMax]);
+  }, [getMax, useNative]);
 
+  // Marquee
   useEffect(() => {
     const track = mqTrackRef.current;
     if (!track) return;
     const loop = () => {
       mqOffsetRef.current += MARQUEE_SPEED;
       const halfW = track.scrollWidth / 2;
-      if (mqOffsetRef.current >= halfW) {
-        mqOffsetRef.current -= halfW;
-      }
+      if (mqOffsetRef.current >= halfW) mqOffsetRef.current -= halfW;
       track.style.transform = `translateX(-${mqOffsetRef.current.toFixed(3)}px)`;
       mqRafRef.current = requestAnimationFrame(loop);
     };
@@ -93,6 +127,7 @@ export default function Showcase() {
     return () => cancelAnimationFrame(mqRafRef.current);
   }, []);
 
+  // ── Styles ──────────────────────────────────────────────────────────────
   const styles = `
     @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;500;600;700&family=Playfair+Display:ital,wght@1,400&display=swap');
 
@@ -103,6 +138,7 @@ export default function Showcase() {
 
     html { scroll-behavior: smooth; }
 
+    /* ── Base ── */
     #sc-section {
       position: relative;
       background: #ffffff;
@@ -130,7 +166,6 @@ export default function Showcase() {
       overflow: hidden;
     }
 
-    /* Scatter cross pixels */
     .sc-x {
       position: absolute; width: 6px; height: 6px;
     }
@@ -185,7 +220,6 @@ export default function Showcase() {
       z-index: 1;
     }
 
-
     #sc-title-row {
       display: flex;
       align-items: flex-end;
@@ -237,7 +271,7 @@ export default function Showcase() {
       color: #c4c4c4;
     }
 
-    /* ── Track ── */
+    /* ── Track (desktop sticky) ── */
     #sc-overflow-clip {
       width: 100%;
       overflow: hidden;
@@ -256,6 +290,7 @@ export default function Showcase() {
       -webkit-backface-visibility: hidden;
     }
 
+    /* ── Cards ── */
     .sc-card-link {
       display: flex;
       width: 644px;
@@ -269,9 +304,7 @@ export default function Showcase() {
       border: 1px solid #eeeeee;
       transition: border-color 0.35s ease;
     }
-    .sc-card-link:hover {
-      border-color: #dddddd;
-    }
+    .sc-card-link:hover { border-color: #dddddd; }
 
     .sc-right {
       width: 100%; height: 100%;
@@ -289,10 +322,9 @@ export default function Showcase() {
       -webkit-user-drag: none;
       transition: transform 0.55s cubic-bezier(.16,1,.3,1);
     }
-    .sc-card-link:hover .sc-img {
-      transform: scale(1.04);
-    }
+    .sc-card-link:hover .sc-img { transform: scale(1.04); }
 
+    /* Tooltip */
     .sc-tooltip {
       position: absolute;
       pointer-events: none;
@@ -316,6 +348,264 @@ export default function Showcase() {
     .sc-tooltip.visible {
       opacity: 1;
       transform: translate(-50%, -50%) scale(1);
+    }
+
+    /* ════════════════════════════════════════════════════
+       ULTRA-WIDE  ≥ 1920px
+       Content stays centered, whitespace is balanced.
+    ════════════════════════════════════════════════════ */
+    @media (min-width: 1920px) {
+      #sc-heading-block {
+        padding: 0 120px;
+      }
+
+      #sc-track {
+        padding: 0 120px;
+      }
+    }
+
+    /* ════════════════════════════════════════════════════
+       SMALL DESKTOP  1024px – 1279px
+       Slightly reduced card & heading, same sticky scroll.
+    ════════════════════════════════════════════════════ */
+    @media (min-width: 1024px) and (max-width: 1279px) {
+      #sc-heading-block {
+        padding: 0 48px;
+        margin-bottom: 36px;
+      }
+
+      #sc-track {
+        padding: 0 48px;
+        gap: 20px;
+      }
+
+      .sc-card-link {
+        width: 480px;
+        height: 280px;
+        border-radius: 22px;
+      }
+    }
+
+    /* ════════════════════════════════════════════════════
+       TABLET  768px – 1023px
+       Native horizontal swipe; single-row carousel.
+       Sticky disabled in JSX for this range.
+    ════════════════════════════════════════════════════ */
+    @media (min-width: 768px) and (max-width: 1023px) {
+      #sc-section {
+        /* height: auto set via JS */
+        padding-bottom: 60px;
+      }
+
+      /* Disable sticky in CSS as extra guard */
+      #sc-sticky {
+        position: relative !important;
+        height: auto !important;
+        overflow: visible !important;
+        justify-content: flex-start;
+        padding-top: 56px; /* clear marquee */
+      }
+
+      #sc-heading-block {
+        padding: 0 40px;
+        margin-bottom: 32px;
+      }
+
+      .sc-t-solid,
+      .sc-t-ghost {
+        font-size: clamp(56px, 9vw, 88px);
+      }
+
+      .sc-t-italic {
+        font-size: clamp(18px, 2.8vw, 32px);
+        padding: 0 12px 10px;
+      }
+
+      #sc-tagline { margin-top: 12px; }
+      .sc-tg-text { font-size: 9.5px; }
+
+      /* Native scroll track */
+      #sc-overflow-clip {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      #sc-overflow-clip::-webkit-scrollbar { display: none; }
+
+      #sc-track {
+        width: max-content;
+        transform: none !important;
+        padding: 0 40px 24px;
+        gap: 20px;
+      }
+
+      .sc-card-link {
+        width: 400px;
+        height: 240px;
+        border-radius: 20px;
+        cursor: pointer; /* restore on touch */
+      }
+
+      /* Hide tooltip on touch */
+      .sc-tooltip { display: none; }
+    }
+
+    /* ════════════════════════════════════════════════════
+       MOBILE  < 768px
+       Native swipe, stacked heading, proportional sizing.
+    ════════════════════════════════════════════════════ */
+    @media (max-width: 767px) {
+      #sc-section {
+        padding-bottom: 48px;
+      }
+
+      #sc-sticky {
+        position: relative !important;
+        height: auto !important;
+        overflow: visible !important;
+        justify-content: flex-start;
+        padding-top: 48px; /* clear marquee */
+      }
+
+      /* ── Marquee ── */
+      #sc-marquee-wrap {
+        height: 28px;
+      }
+      .sc-mq-item {
+        font-size: 7.5px;
+        letter-spacing: 0.20em;
+        padding: 0 18px;
+      }
+
+      /* ── Heading ── */
+      #sc-heading-block {
+        padding: 0 20px;
+        margin-bottom: 24px;
+      }
+
+      #sc-title-row {
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 0;
+        row-gap: 2px;
+      }
+
+      .sc-t-solid {
+        font-size: clamp(52px, 17vw, 76px);
+        line-height: 0.90;
+      }
+
+      .sc-t-ghost {
+        font-size: clamp(52px, 17vw, 76px);
+        line-height: 0.90;
+      }
+
+      .sc-t-italic {
+        font-size: clamp(16px, 5.2vw, 26px);
+        padding: 0 10px 8px;
+      }
+
+      #sc-tagline {
+        margin-top: 10px;
+        gap: 10px;
+      }
+      .sc-tg-bar  { width: 20px; }
+      .sc-tg-text { font-size: 8.5px; letter-spacing: 0.16em; }
+
+      /* ── Track: native swipe ── */
+      #sc-overflow-clip {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      #sc-overflow-clip::-webkit-scrollbar { display: none; }
+
+      #sc-track {
+        width: max-content;
+        transform: none !important;
+        padding: 0 20px 16px;
+        gap: 14px;
+      }
+
+      /* ── Cards ── */
+      .sc-card-link {
+        width: 76vw;
+        max-width: 340px;
+        height: auto;
+        aspect-ratio: 16 / 9;
+        border-radius: 16px;
+        cursor: pointer;
+        min-height: 44px; /* touch target floor */
+      }
+
+      .sc-tooltip { display: none; }
+
+      /* Suppress decorative crosses on mobile */
+      #sc-bg .sc-x { display: none; }
+    }
+
+    /* ════════════════════════════════════════════════════
+       EXTRA-SMALL  < 480px  (320px–479px)
+       Narrower cards, tighter spacing.
+    ════════════════════════════════════════════════════ */
+    @media (max-width: 479px) {
+      #sc-heading-block { padding: 0 16px; }
+
+      #sc-track { padding: 0 16px 16px; gap: 12px; }
+
+      .sc-card-link {
+        width: 84vw;
+        max-width: 300px;
+      }
+
+      .sc-t-solid,
+      .sc-t-ghost {
+        font-size: clamp(44px, 18.5vw, 64px);
+      }
+
+      .sc-t-italic {
+        font-size: clamp(14px, 5.5vw, 22px);
+        padding: 0 8px 6px;
+      }
+    }
+
+    /* ════════════════════════════════════════════════════
+       IOS SAFE-AREA  (notch / home-bar devices)
+    ════════════════════════════════════════════════════ */
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+      @media (max-width: 1023px) {
+        #sc-section {
+          padding-bottom: max(48px, env(safe-area-inset-bottom));
+        }
+
+        #sc-track {
+          /* add right clearance for notch in landscape */
+          padding-right: max(20px, env(safe-area-inset-right));
+        }
+      }
+    }
+
+    /* ════════════════════════════════════════════════════
+       SCROLL-SNAP on native swipe tracks
+       Gives satisfying card-by-card feel on touch.
+    ════════════════════════════════════════════════════ */
+    @media (max-width: 1023px) {
+      #sc-overflow-clip {
+        scroll-snap-type: x mandatory;
+      }
+      .sc-card-link {
+        scroll-snap-align: start;
+      }
+    }
+
+    /* ════════════════════════════════════════════════════
+       REDUCED-MOTION  preference
+    ════════════════════════════════════════════════════ */
+    @media (prefers-reduced-motion: reduce) {
+      .sc-img { transition: none; }
+      .sc-tooltip { transition: opacity 0.1s ease; }
     }
   `;
 
@@ -349,13 +639,11 @@ export default function Showcase() {
 
           {/* ── Heading ── */}
           <div id="sc-heading-block">
-
             <div id="sc-title-row">
               <span className="sc-t-solid">Showcase</span>
               <span className="sc-t-italic">of my</span>
               <span className="sc-t-ghost">Creations</span>
             </div>
-
             <div id="sc-tagline">
               <span className="sc-tg-bar" />
               <span className="sc-tg-text">UI · UX · Figma Prototypes</span>
@@ -366,7 +654,7 @@ export default function Showcase() {
           <div id="sc-overflow-clip">
             <div id="sc-track" ref={trackRef}>
               {CARDS.map((card) => (
-                <Card key={card.id} card={card} />
+                <Card key={card.id} card={card} useTooltip={!useNative} />
               ))}
             </div>
           </div>
@@ -377,7 +665,8 @@ export default function Showcase() {
   );
 }
 
-function Card({ card }) {
+// ── Card ────────────────────────────────────────────────────────────────────
+function Card({ card, useTooltip }) {
   const cardRef    = useRef(null);
   const tipRef     = useRef(null);
   const targetRef  = useRef({ x: 0, y: 0 });
@@ -405,6 +694,7 @@ function Card({ card }) {
   }, []);
 
   const onMouseEnter = useCallback((e) => {
+    if (!useTooltip) return;
     const local = toLocal(e);
     currentPos.current = { ...local };
     targetRef.current  = { ...local };
@@ -416,9 +706,12 @@ function Card({ card }) {
       requestAnimationFrame(() => tip.classList.add("visible"));
     }
     startLoop();
-  }, [toLocal, startLoop]);
+  }, [toLocal, startLoop, useTooltip]);
 
-  const onMouseMove  = useCallback((e) => { targetRef.current = toLocal(e); }, [toLocal]);
+  const onMouseMove  = useCallback((e) => {
+    if (!useTooltip) return;
+    targetRef.current = toLocal(e);
+  }, [toLocal, useTooltip]);
 
   const onMouseLeave = useCallback(() => {
     activeRef.current = false;
@@ -441,9 +734,11 @@ function Card({ card }) {
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
     >
-      <div ref={tipRef} className="sc-tooltip">
-        {"Explore Now \u2197"}
-      </div>
+      {useTooltip && (
+        <div ref={tipRef} className="sc-tooltip">
+          {"Explore Now \u2197"}
+        </div>
+      )}
       <div className="sc-right">
         <div className="sc-img-placeholder">
           <img
