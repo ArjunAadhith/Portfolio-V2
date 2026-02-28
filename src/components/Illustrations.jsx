@@ -7,9 +7,9 @@ const ROW_1 = [
   { id: 4, src: "/illustration/i4.png", alt: "Colourful characters" },
 ];
 const ROW_2 = [
-  { id: 5, src: "/illustration/i4.png", alt: "Colourful characters" },
+  { id: 5, src: "/illustration/l0.jpg", alt: "Colourful characters" },
   { id: 6, src: "/illustration/i5.png", alt: "People crowd" },
-  { id: 7, src: "/illustration/i4.png", alt: "Colourful characters" },
+  { id: 7, src: "/illustration/l01.jpg", alt: "Colourful characters" },
   { id: 8, src: "/illustration/i6.png", alt: "Woman with phone" },
 ];
 
@@ -83,7 +83,10 @@ export default function Illustrations() {
 }
 
 const CSS = `
-  /* ── Section: fills exactly one viewport height ── */
+  /* ══════════════════════════════════════════
+     DESKTOP BASE (1280px) — UNTOUCHED
+  ══════════════════════════════════════════ */
+
   .il-section {
     position: relative;
     height: 100vh;
@@ -98,7 +101,6 @@ const CSS = `
     font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
-  /* ── Title ── */
   .il-title {
     flex-shrink: 0;
     font-size: clamp(22px, 2.8vw, 38px);
@@ -110,7 +112,6 @@ const CSS = `
     line-height: 1;
   }
 
-  /* ── Two rows fill remaining height ── */
   .il-rows {
     flex: 1;
     min-height: 0;
@@ -119,7 +120,6 @@ const CSS = `
     gap: 14px;
   }
 
-  /* ── Each row: images line up horizontally, height fills half of rows area ── */
   .il-row {
     flex: 1;
     min-height: 0;
@@ -130,7 +130,6 @@ const CSS = `
     justify-content: center;
   }
 
-  /* ── Card: no fixed width — grows to match image's natural ratio × row height ── */
   .il-card {
     flex-shrink: 0;
     border-radius: 2px;
@@ -140,7 +139,6 @@ const CSS = `
     height: 100%;
   }
 
-  /* ── Image: height = 100% of card, width = auto → preserves aspect ratio ── */
   .il-img {
     height: 100%;
     width: auto;
@@ -156,15 +154,14 @@ const CSS = `
     transform: scale(1.04);
   }
 
-  /* ── Tooltip: absolutely positioned, centered on cursor ── */
   .il-tip {
     position: absolute;
     pointer-events: none;
     z-index: 50;
     transform: translate(-50%, -50%);
-
     background: rgba(10, 10, 10, 0.84);
     -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
     color: #fff;
     font-size: 11px;
     font-weight: 700;
@@ -174,7 +171,6 @@ const CSS = `
     white-space: nowrap;
     border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
-
     opacity: 0;
     scale: 0.76;
     transition:
@@ -188,27 +184,335 @@ const CSS = `
     scale: 1;
   }
 
-  /* ── Responsive ── */
-  @media (max-width: 900px) {
-    .il-section { padding: 36px 32px; }
+
+  /* ══════════════════════════════════════════
+     ULTRA-WIDE (1440px – 1600px)
+  ══════════════════════════════════════════ */
+  @media (min-width: 1440px) {
+    .il-section {
+      padding: 56px 100px;
+    }
+
+    .il-title {
+      font-size: clamp(26px, 2.6vw, 42px);
+      margin-bottom: 28px;
+    }
+
+    .il-rows {
+      gap: 16px;
+    }
+
+    .il-row {
+      gap: 16px;
+    }
   }
 
-  @media (max-width: 640px) {
+
+  /* ══════════════════════════════════════════
+     ULTRA-WIDE (1920px+)
+  ══════════════════════════════════════════ */
+  @media (min-width: 1920px) {
+    .il-section {
+      max-width: 1920px;
+      margin: 0 auto;
+      padding: 64px 120px;
+    }
+
+    .il-title {
+      font-size: clamp(30px, 2.4vw, 48px);
+      margin-bottom: 32px;
+    }
+
+    .il-rows {
+      gap: 20px;
+    }
+
+    .il-row {
+      gap: 20px;
+    }
+
+    .il-card {
+      border-radius: 4px;
+    }
+  }
+
+
+  /* ══════════════════════════════════════════
+     TABLET LANDSCAPE (1024px – 1279px)
+  ══════════════════════════════════════════ */
+  @media (min-width: 1024px) and (max-width: 1279px) {
+    .il-section {
+      padding: 44px 60px;
+    }
+
+    .il-title {
+      font-size: clamp(22px, 3vw, 34px);
+      margin-bottom: 20px;
+    }
+
+    .il-rows {
+      gap: 12px;
+    }
+
+    .il-row {
+      gap: 12px;
+    }
+  }
+
+
+  /* ══════════════════════════════════════════
+     TABLET PORTRAIT (768px – 1023px)
+  ══════════════════════════════════════════ */
+  @media (min-width: 768px) and (max-width: 1023px) {
     .il-section {
       height: auto;
-      padding: 32px 16px;
-      cursor: auto;
+      min-height: unset;
+      padding: 48px 40px 56px;
       overflow: visible;
+      cursor: auto;
     }
-    .il-tip  { display: none; }
-    .il-rows { gap: 10px; flex: unset; }
-    .il-row  {
+
+    .il-tip {
+      display: none;
+    }
+
+    .il-title {
+      font-size: clamp(26px, 4.5vw, 36px);
+      margin-bottom: 24px;
+      padding-left: 4px;
+    }
+
+    .il-rows {
+      flex: unset;
+      gap: 14px;
+    }
+
+    /* Each row: two images side-by-side, equal width */
+    .il-row {
       flex: unset;
       height: auto;
-      flex-direction: column;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
       align-items: stretch;
+      justify-content: unset;
     }
-    .il-card { height: auto; border-radius: 12px; }
-    .il-img  { height: auto; width: 100%; }
+
+    .il-card {
+      height: auto;
+      border-radius: 14px;
+      width: 100%;
+    }
+
+    .il-img {
+      height: auto;
+      width: 100%;
+      object-fit: cover;
+      aspect-ratio: 4 / 3;
+    }
+  }
+
+
+  /* ══════════════════════════════════════════
+     MOBILE — ALL DEVICES (≤ 767px)
+  ══════════════════════════════════════════ */
+  @media (max-width: 767px) {
+    .il-section {
+      height: auto;
+      min-height: unset;
+      padding: 44px 20px 52px;
+      overflow: visible;
+      cursor: auto;
+    }
+
+    .il-tip {
+      display: none;
+    }
+
+    .il-title {
+      font-size: clamp(22px, 6.5vw, 30px);
+      margin-bottom: 18px;
+      padding-left: 4px;
+    }
+
+    .il-rows {
+      flex: unset;
+      gap: 10px;
+    }
+
+    /* Two images side-by-side per row on mobile */
+    .il-row {
+      flex: unset;
+      height: auto;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      align-items: stretch;
+      justify-content: unset;
+    }
+
+    .il-card {
+      height: auto;
+      border-radius: 12px;
+      width: 100%;
+    }
+
+    .il-img {
+      height: auto;
+      width: 100%;
+      object-fit: cover;
+      aspect-ratio: 4 / 3;
+    }
+
+    /* Disable hover scale on touch */
+    .il-card:hover .il-img {
+      transform: none;
+    }
+  }
+
+
+  /* ══════════════════════════════════════════
+     SMALL MOBILE (≤ 375px) — iPhone SE,
+     Galaxy A-series small, 320px devices
+  ══════════════════════════════════════════ */
+  @media (max-width: 375px) {
+    .il-section {
+      padding: 36px 14px 44px;
+    }
+
+    .il-title {
+      font-size: clamp(20px, 7vw, 26px);
+      margin-bottom: 14px;
+    }
+
+    .il-rows {
+      gap: 8px;
+    }
+
+    .il-row {
+      gap: 8px;
+    }
+
+    .il-card {
+      border-radius: 10px;
+    }
+
+    .il-img {
+      aspect-ratio: 1 / 1;
+    }
+  }
+
+
+  /* ══════════════════════════════════════════
+     TINY SCREENS (≤ 320px)
+  ══════════════════════════════════════════ */
+  @media (max-width: 320px) {
+    .il-section {
+      padding: 32px 12px 40px;
+    }
+
+    .il-title {
+      font-size: 18px;
+      margin-bottom: 12px;
+    }
+
+    .il-rows {
+      gap: 6px;
+    }
+
+    .il-row {
+      gap: 6px;
+    }
+
+    .il-card {
+      border-radius: 8px;
+    }
+
+    .il-img {
+      aspect-ratio: 1 / 1;
+    }
+  }
+
+
+  /* ══════════════════════════════════════════
+     LARGE MOBILE (428px+) — iPhone 14 Pro Max,
+     Galaxy S Ultra, Pixel XL
+  ══════════════════════════════════════════ */
+  @media (min-width: 428px) and (max-width: 767px) {
+    .il-section {
+      padding: 48px 24px 56px;
+    }
+
+    .il-title {
+      font-size: clamp(24px, 6vw, 32px);
+      margin-bottom: 20px;
+    }
+
+    .il-rows {
+      gap: 12px;
+    }
+
+    .il-row {
+      gap: 12px;
+    }
+
+    .il-card {
+      border-radius: 14px;
+    }
+
+    .il-img {
+      aspect-ratio: 4 / 3;
+    }
+  }
+
+
+  /* ══════════════════════════════════════════
+     iOS SAFE AREA — notch / Dynamic Island /
+     home indicator support
+  ══════════════════════════════════════════ */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    @media (max-width: 767px) {
+      .il-section {
+        padding-bottom: calc(52px + env(safe-area-inset-bottom));
+        padding-left:   calc(20px + env(safe-area-inset-left));
+        padding-right:  calc(20px + env(safe-area-inset-right));
+      }
+    }
+
+    @media (min-width: 428px) and (max-width: 767px) {
+      .il-section {
+        padding-bottom: calc(56px + env(safe-area-inset-bottom));
+        padding-left:   calc(24px + env(safe-area-inset-left));
+        padding-right:  calc(24px + env(safe-area-inset-right));
+      }
+    }
+
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .il-section {
+        padding-bottom: calc(56px + env(safe-area-inset-bottom));
+        padding-left:   calc(40px + env(safe-area-inset-left));
+        padding-right:  calc(40px + env(safe-area-inset-right));
+      }
+    }
+  }
+
+
+  /* ══════════════════════════════════════════
+     TOUCH DEVICE — clean active feedback,
+     no sticky hover states
+  ══════════════════════════════════════════ */
+  @media (hover: none) and (pointer: coarse) {
+    .il-card:hover .il-img {
+      transform: none;
+    }
+
+    .il-card:active .il-img {
+      transform: scale(1.02);
+      transition: transform 0.18s ease;
+    }
+
+    .il-tip {
+      display: none !important;
+    }
   }
 `;

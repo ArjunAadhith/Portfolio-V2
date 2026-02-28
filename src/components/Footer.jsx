@@ -14,6 +14,21 @@ const ICONS = [
   { id:'dragme', src:'/f-icons/Drag me.png',   link:null,                   xPct:0.874, w:156, h:60  },
 ];
 
+/* ── Scale icon dimensions for smaller containers ─────────────────── */
+function getScaledIcons(containerW) {
+  if (containerW >= 1024) return ICONS;
+  const scale =
+    containerW >= 768 ? 0.80 :
+    containerW >= 600 ? 0.68 :
+    containerW >= 428 ? 0.56 :
+    containerW >= 360 ? 0.48 : 0.40;
+  return ICONS.map(ic => ({
+    ...ic,
+    w: Math.round(ic.w * scale),
+    h: Math.round(ic.h * scale),
+  }));
+}
+
 function loadMatter() {
   return new Promise((resolve, reject) => {
     if (window.Matter) { resolve(window.Matter); return; }
@@ -25,6 +40,84 @@ function loadMatter() {
   });
 }
 
+/* ── Tap-detection hook ───────────────────────────────────────────────
+   Matter.js captures pointer events on its canvas, which prevents the
+   native onClick from firing on mobile. We attach raw touchstart /
+   touchend listeners directly on each icon span.
+
+   A touch is treated as a TAP (and the link is opened) when:
+     • finger stayed within 10 px of where it landed
+     • the whole gesture lasted < 300 ms
+
+   This fires synchronously before Matter processes anything.
+─────────────────────────────────────────────────────────────────────── */
+const TAP_MAX_MS   = 300;
+const TAP_MAX_MOVE = 10;
+
+function useTapLink(link) {
+  const t0  = useRef(null);
+  const pos = useRef({ x: 0, y: 0 });
+
+  const onTouchStart = useCallback((e) => {
+    if (!link) return;
+    const touch = e.touches[0];
+    t0.current  = Date.now();
+    pos.current = { x: touch.clientX, y: touch.clientY };
+  }, [link]);
+
+  const onTouchEnd = useCallback((e) => {
+    if (!link || t0.current === null) return;
+    const elapsed = Date.now() - t0.current;
+    const touch   = e.changedTouches[0];
+    const dx      = Math.abs(touch.clientX - pos.current.x);
+    const dy      = Math.abs(touch.clientY - pos.current.y);
+    if (elapsed < TAP_MAX_MS && dx < TAP_MAX_MOVE && dy < TAP_MAX_MOVE) {
+      /* Stop Matter from absorbing this touch end as a drag release */
+      e.stopPropagation();
+      window.open(link, '_blank', 'noopener,noreferrer');
+    }
+    t0.current = null;
+  }, [link]);
+
+  return { onTouchStart, onTouchEnd };
+}
+
+/* ── Single icon span ─────────────────────────────────────────────── */
+function IconSpan({ icon, onMouseEnter, onMouseMove, onMouseLeave }) {
+  const { onTouchStart, onTouchEnd } = useTapLink(icon.link);
+
+  /* Desktop click fallback */
+  const handleClick = useCallback((e) => {
+    if (icon.link) {
+      e.stopPropagation();
+      window.open(icon.link, '_blank', 'noopener,noreferrer');
+    }
+  }, [icon.link]);
+
+  return (
+    <span
+      className="fi-icon"
+      style={{ opacity: 0 }}
+      /* Desktop */
+      onMouseEnter={onMouseEnter}
+      onMouseMove={onMouseMove}
+      onMouseLeave={onMouseLeave}
+      onClick={handleClick}
+      /* Mobile tap — fires BEFORE Matter absorbs the event */
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
+      <img
+        src={icon.src}
+        alt={icon.id}
+        draggable={false}
+        className="fi-icon-img"
+      />
+    </span>
+  );
+}
+
+/* ── Main component ───────────────────────────────────────────────── */
 export default function ContactSection() {
   const containerRef = useRef(null);
   const iconsWrapRef = useRef(null);
@@ -59,6 +152,8 @@ export default function ContactSection() {
       if (!container) return;
       const { width: W, height: H } = container.getBoundingClientRect();
 
+      const scaledIcons = getScaledIcons(W);
+
       const engine = Engine.create();
       engine.world.gravity.y = 0.9;
 
@@ -80,7 +175,7 @@ export default function ContactSection() {
 
       const iconSpans  = iconsWrapRef.current.querySelectorAll('.fi-icon');
       const iconBodies = [...iconSpans].map((elem, i) => {
-        const cfg    = ICONS[i];
+        const cfg    = scaledIcons[i];
         const spawnX = W * cfg.xPct;
         const spawnY = 40 + i * 24;
 
@@ -110,12 +205,10 @@ export default function ContactSection() {
 
       const mouse = Mouse.create(container);
 
-      /* ── FIX: Matter.js adds a mousewheel listener that calls
-         preventDefault(), which hijacks page scroll.
-         Remove it immediately after Mouse.create().             ── */
-      mouse.element.removeEventListener('mousewheel',    mouse.mousewheel);
+      /* Remove Matter's scroll-hijacking wheel listener */
+      mouse.element.removeEventListener('mousewheel',     mouse.mousewheel);
       mouse.element.removeEventListener('DOMMouseScroll', mouse.mousewheel);
-      mouse.element.removeEventListener('wheel',         mouse.mousewheel);
+      mouse.element.removeEventListener('wheel',          mouse.mousewheel);
 
       const mc = MouseConstraint.create(engine, {
         mouse,
@@ -154,7 +247,7 @@ export default function ContactSection() {
     return () => { cancelled = true; cleanupRef.current?.(); };
   }, [triggered]);
 
-  /* Tooltip */
+  /* Desktop tooltip */
   const showTip = useCallback((e, text) => {
     const t = tipRef.current;
     const r = containerRef.current?.getBoundingClientRect();
@@ -186,7 +279,9 @@ export default function ContactSection() {
           <div className="fi-mq-outer" aria-hidden="true">
             <div className="fi-mq-track">
               {[0,1,2,3].map(i => (
-                <span key={i} className="fi-mq-text">ARJUN&nbsp;AADHITH&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                <span key={i} className="fi-mq-text">
+                  ARJUN&nbsp;AADHITH&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                </span>
               ))}
             </div>
           </div>
@@ -197,22 +292,13 @@ export default function ContactSection() {
 
           <div ref={iconsWrapRef} className="fi-icons-wrap">
             {ICONS.map((icon) => (
-              <span
+              <IconSpan
                 key={icon.id}
-                className="fi-icon"
-                style={{ opacity: 0 }}
-                onMouseEnter={e => showTip(e, icon.link ? 'Let’s Connect ↗' : 'Drag Me')}
+                icon={icon}
+                onMouseEnter={e => showTip(e, icon.link ? 'Let\u2019s Connect \u2197' : 'Drag Me')}
                 onMouseMove={moveTip}
                 onMouseLeave={hideTip}
-                onClick={() => icon.link && window.open(icon.link, '_blank', 'noopener,noreferrer')}
-              >
-                <img
-                  src={icon.src}
-                  alt={icon.id}
-                  draggable={false}
-                  className="fi-icon-img"
-                />
-              </span>
+              />
             ))}
           </div>
 
@@ -228,18 +314,20 @@ export default function ContactSection() {
 const CSS = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* ── Page: NO top padding — container sits flush against whatever is above ── */
+  /* ══════════════════════════════════════════
+     DESKTOP BASE (1280px) — UNTOUCHED
+  ══════════════════════════════════════════ */
+
   .fi-page {
     width: 100%;
     background: #fff;
     display: flex;
     align-items: stretch;
     justify-content: center;
-    padding: 0 24px 24px;     /* top=0, sides=24px, bottom=24px */
+    padding: 0 24px 24px;
     font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
-  /* ── Black container ── */
   .fi-section {
     position: relative;
     width: min(1480px, 100%);
@@ -252,7 +340,6 @@ const CSS = `
     flex-shrink: 0;
     cursor: grab;
     user-select: none;
-    /* Allow native scroll to pass through when not dragging an icon */
     touch-action: pan-y;
   }
   .fi-section:active { cursor: grabbing; }
@@ -325,6 +412,8 @@ const CSS = `
     will-change: transform, left, top;
     transform-origin: center center;
     cursor: grab;
+    min-width: 44px;
+    min-height: 44px;
   }
   .fi-icon:active { cursor: grabbing; }
 
@@ -364,14 +453,202 @@ const CSS = `
     transform: translateY(-50%);
   }
 
-  @media (max-width: 768px) {
-    .fi-page    { padding: 0 12px 16px; }
-    .fi-section { height: 80vh; border-radius: 20px; }
-    .fi-hl      { font-size: 44px; }
-    .fi-mq-text { font-size: 68px; }
+
+  /* ══════════════════════════════════════════
+     ULTRA-WIDE (1440px – 1600px)
+  ══════════════════════════════════════════ */
+  @media (min-width: 1440px) {
+    .fi-page    { padding: 0 28px 28px; }
+    .fi-section { border-radius: 32px; }
+    .fi-hl      { font-size: clamp(64px, 9.5vw, 130px); }
+    .fi-mq-outer { height: 240px; }
   }
-  @media (max-width: 480px) {
-    .fi-section { height: 88vh; }
-    .fi-hl      { font-size: 34px; }
+
+  /* ══════════════════════════════════════════
+     ULTRA-WIDE (1920px+)
+  ══════════════════════════════════════════ */
+  @media (min-width: 1920px) {
+    .fi-page    { padding: 0 32px 32px; }
+    .fi-section {
+      height: 90vh;
+      max-height: 1000px;
+      border-radius: 36px;
+    }
+    .fi-hl       { font-size: clamp(72px, 8.5vw, 140px); }
+    .fi-mq-text  { font-size: clamp(80px, 12vw, 190px); }
+    .fi-mq-outer { height: 260px; }
+  }
+
+  /* ══════════════════════════════════════════
+     TABLET LANDSCAPE (1024px – 1279px)
+  ══════════════════════════════════════════ */
+  @media (min-width: 1024px) and (max-width: 1279px) {
+    .fi-page    { padding: 0 20px 20px; }
+    .fi-section { height: 92vh; border-radius: 26px; }
+    .fi-hl      { font-size: clamp(52px, 10vw, 110px); }
+    .fi-mq-text { font-size: clamp(60px, 13vw, 150px); }
+    .fi-mq-outer { height: 200px; }
+  }
+
+  /* ══════════════════════════════════════════
+     TABLET PORTRAIT (768px – 1023px)
+  ══════════════════════════════════════════ */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .fi-page    { padding: 0 16px 20px; }
+    .fi-section {
+      height: 72vh;
+      min-height: 500px;
+      max-height: 720px;
+      border-radius: 22px;
+    }
+    .fi-hl       { font-size: clamp(44px, 9.5vw, 88px); letter-spacing: -0.042em; }
+    .fi-mq-text  { font-size: clamp(52px, 12vw, 110px); }
+    .fi-mq-outer { height: 160px; }
+    .fi-tooltip  { display: none; }
+    .fi-section  { cursor: default; }
+    .fi-icon     { cursor: default; }
+  }
+
+
+  /* ══════════════════════════════════════════
+     MOBILE — ALL (≤ 767px)
+  ══════════════════════════════════════════ */
+  @media (max-width: 767px) {
+    .fi-page {
+      padding: 0 12px 16px;
+    }
+
+    /* ↓ Reduced height — compact but spacious enough for physics play */
+    .fi-section {
+      height: 65vh;
+      min-height: 340px;
+      max-height: 520px;
+      border-radius: 20px;
+      touch-action: pan-y;
+      cursor: default;
+    }
+
+    .fi-hl-wrap {
+      width: 92%;
+      transform: translate(-50%, -58%);
+    }
+
+    .fi-hl {
+      font-size: clamp(32px, 9.5vw, 52px);
+      letter-spacing: -0.038em;
+      line-height: 1.06;
+    }
+
+    .fi-mq-text  { font-size: clamp(38px, 13vw, 68px); }
+    .fi-mq-outer { height: 120px; }
+
+    /* Tooltip hidden — no hover on touch */
+    .fi-tooltip { display: none !important; }
+
+    /* Default cursor on all icons */
+    .fi-icon       { cursor: default; }
+    .fi-icon:active{ cursor: default; }
+  }
+
+  /* ══════════════════════════════════════════
+     STANDARD MOBILE (360px – 414px)
+     Galaxy S / Pixel / OnePlus / Xiaomi
+  ══════════════════════════════════════════ */
+  @media (min-width: 360px) and (max-width: 414px) {
+    .fi-section {
+      height: 62vh;
+      min-height: 320px;
+      max-height: 480px;
+      border-radius: 18px;
+    }
+    .fi-hl       { font-size: clamp(30px, 9vw, 46px); }
+    .fi-mq-text  { font-size: clamp(36px, 12.5vw, 60px); }
+    .fi-mq-outer { height: 112px; }
+  }
+
+  /* ══════════════════════════════════════════
+     LARGE MOBILE (428px+)
+     iPhone 14 Pro Max, Galaxy S Ultra etc.
+  ══════════════════════════════════════════ */
+  @media (min-width: 428px) and (max-width: 767px) {
+    .fi-page    { padding: 0 14px 18px; }
+    .fi-section {
+      height: 64vh;
+      min-height: 340px;
+      max-height: 500px;
+      border-radius: 22px;
+    }
+    .fi-hl       { font-size: clamp(34px, 9.5vw, 52px); }
+    .fi-mq-text  { font-size: clamp(40px, 12vw, 68px); }
+    .fi-mq-outer { height: 118px; }
+  }
+
+  /* ══════════════════════════════════════════
+     SMALL MOBILE (≤ 375px)
+     iPhone SE / Galaxy A-series / 320px
+  ══════════════════════════════════════════ */
+  @media (max-width: 375px) {
+    .fi-page    { padding: 0 10px 14px; }
+    .fi-section {
+      height: 60vh;
+      min-height: 300px;
+      max-height: 440px;
+      border-radius: 16px;
+    }
+    .fi-hl       { font-size: clamp(26px, 9vw, 40px); letter-spacing: -0.032em; }
+    .fi-mq-text  { font-size: clamp(30px, 12vw, 52px); }
+    .fi-mq-outer { height: 100px; }
+  }
+
+  /* ══════════════════════════════════════════
+     TINY (≤ 320px)
+  ══════════════════════════════════════════ */
+  @media (max-width: 320px) {
+    .fi-page    { padding: 0 8px 12px; }
+    .fi-section {
+      height: 58vh;
+      min-height: 280px;
+      max-height: 400px;
+      border-radius: 14px;
+    }
+    .fi-hl       { font-size: 22px; letter-spacing: -0.026em; }
+    .fi-mq-text  { font-size: 28px; }
+    .fi-mq-outer { height: 88px; }
+  }
+
+
+  /* ══════════════════════════════════════════
+     iOS SAFE AREA
+  ══════════════════════════════════════════ */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    @media (max-width: 767px) {
+      .fi-page {
+        padding-bottom: calc(16px + env(safe-area-inset-bottom));
+        padding-left:   calc(12px + env(safe-area-inset-left));
+        padding-right:  calc(12px + env(safe-area-inset-right));
+      }
+    }
+    @media (min-width: 428px) and (max-width: 767px) {
+      .fi-page {
+        padding-bottom: calc(18px + env(safe-area-inset-bottom));
+        padding-left:   calc(14px + env(safe-area-inset-left));
+        padding-right:  calc(14px + env(safe-area-inset-right));
+      }
+    }
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .fi-page {
+        padding-bottom: calc(20px + env(safe-area-inset-bottom));
+        padding-left:   calc(16px + env(safe-area-inset-left));
+        padding-right:  calc(16px + env(safe-area-inset-right));
+      }
+    }
+  }
+
+
+  /* ══════════════════════════════════════════
+     REDUCED MOTION
+  ══════════════════════════════════════════ */
+  @media (prefers-reduced-motion: reduce) {
+    .fi-mq-track { animation-duration: 60s; }
   }
 `;
