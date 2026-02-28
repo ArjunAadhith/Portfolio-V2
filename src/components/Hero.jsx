@@ -294,8 +294,8 @@ export default function Hero() {
             top: 0; bottom: 0; left: 0; right: 0;
             padding-left: 5.5%;
             padding-right: 5.5%;
-            /* ↑ Shifted 10px upward from previous 40vh */
-            padding-top: calc(40vh - 10px);
+            /* ↑ Pushed significantly higher — content starts at 26vh */
+            padding-top: 26vh;
             padding-bottom: 0;
             display: flex;
             flex-direction: column;
@@ -303,9 +303,9 @@ export default function Hero() {
             align-items: flex-start;
           }
 
-          /* ↑ Scroll icon 10px higher than previous 52px */
+          /* ↑ Scroll icon raised — well above bottom edge */
           .scroll-wrap {
-            bottom: 62px;
+            bottom: 90px;
           }
 
           .hero-headline {
@@ -348,8 +348,8 @@ export default function Hero() {
           .hero-content {
             padding-left: 5%;
             padding-right: 5%;
-            /* Keep the same -10px shift at small sizes */
-            padding-top: calc(40vh - 10px);
+            /* Same higher position for tiny screens */
+            padding-top: 26vh;
           }
           .hero-badge-wrap   { margin-bottom: 20px; }
           .hero-tagline-wrap { margin-top: 18px; gap: 10px; }
@@ -358,7 +358,7 @@ export default function Hero() {
           .avail-btn         { padding: 10px 20px 10px 14px; }
           .avail-label       { font-size: 9.5px; letter-spacing: 0.1em; }
           /* ↑ Also 10px higher for tiny screens */
-          .scroll-wrap       { bottom: 54px; }
+          .scroll-wrap       { bottom: 82px; }
         }
 
         /* ─── iOS Safe Area ──────────────────────────── */
@@ -372,9 +372,9 @@ export default function Hero() {
 
           @media (max-width: 767px) {
             .hero-content { padding-bottom: 0; }
-            /* Maintain the +10px raise inside safe-area calc */
+            /* Maintain raised position inside safe-area calc */
             .scroll-wrap {
-              bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+              bottom: calc(90px + env(safe-area-inset-bottom, 0px));
             }
           }
 
@@ -384,7 +384,7 @@ export default function Hero() {
 
           @media (max-width: 359px) {
             .scroll-wrap {
-              bottom: calc(54px + env(safe-area-inset-bottom, 0px));
+              bottom: calc(82px + env(safe-area-inset-bottom, 0px));
             }
           }
         }
