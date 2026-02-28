@@ -336,9 +336,9 @@ export default function Hero() {
             align-items: flex-start;
           }
 
-          /* Scroll: tight to bottom — 15px only */
+          /* Scroll: moved up from bottom edge */
           .scroll-wrap {
-            bottom: 15px;
+            bottom: 52px;
           }
 
           /* Large wrapping text — matches the reference screenshot style */
@@ -427,7 +427,7 @@ export default function Hero() {
             letter-spacing: 0.1em;
           }
           .scroll-wrap {
-            bottom: 12px;
+            bottom: 44px;
           }
         }
 
@@ -447,7 +447,7 @@ export default function Hero() {
               padding-bottom: 0;
             }
             .scroll-wrap {
-              bottom: calc(15px + env(safe-area-inset-bottom, 0px));
+              bottom: calc(52px + env(safe-area-inset-bottom, 0px));
             }
           }
 
@@ -459,7 +459,7 @@ export default function Hero() {
 
           @media (max-width: 359px) {
             .scroll-wrap {
-              bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+              bottom: calc(44px + env(safe-area-inset-bottom, 0px));
             }
           }
         }
