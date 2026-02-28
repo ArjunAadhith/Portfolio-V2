@@ -71,7 +71,6 @@ export default function About() {
   const [moreOpen, setMoreOpen] = useState(false);
   const typedTitle = useTypewriter(TITLES);
 
-  // FIX 1: Lower threshold + rootMargin so mobile column-reverse layout triggers correctly
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -86,24 +85,15 @@ export default function About() {
     return () => observer.disconnect();
   }, []);
 
-  // FIX 2: Fallback for mobile — if section already visible on mount, trigger immediately
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
-
     const check = () => {
       const rect = el.getBoundingClientRect();
       const inView = rect.top < window.innerHeight && rect.bottom > 0;
-      if (inView) {
-        setVisible(true);
-        setImgVisible(true);
-      }
+      if (inView) { setVisible(true); setImgVisible(true); }
     };
-
-    // Check immediately on mount
     check();
-
-    // Also check after a short delay (handles cases where layout shifts on mobile)
     const timer = setTimeout(check, 100);
     return () => clearTimeout(timer);
   }, []);
@@ -117,12 +107,11 @@ export default function About() {
         @font-face { font-family:'SF Pro Text'; src:url('/src/assets/fonts/SF-Pro-Text-Regular.otf') format('opentype'); font-weight:400; }
         @font-face { font-family:'SF Pro Text'; src:url('/src/assets/fonts/SF-Pro-Text-Light.otf') format('opentype'); font-weight:300; }
 
-        *,
-        *::before,
-        *::after {
-          box-sizing: border-box;
-        }
+        *, *::before, *::after { box-sizing: border-box; }
 
+        /* ═══════════════════════════════════════════
+           DESKTOP BASE — UNTOUCHED
+        ═══════════════════════════════════════════ */
         .about-section {
           width: 100%;
           min-height: 100vh;
@@ -235,6 +224,8 @@ export default function About() {
           -webkit-font-smoothing: antialiased;
           flex-shrink: 0;
         }
+
+        /* ── Shuffle component visibility ── */
         .hname-shuffle .shuffle-parent {
           visibility: hidden;
           display: inline-block;
@@ -454,33 +445,69 @@ export default function About() {
             letter-spacing: -0.025em;
             width: 100%;
             max-width: 100%;
+            /* Ensure the heading never clips its children */
+            overflow: visible;
           }
 
+          /* ── heading-line1: stack "I'm" and name on separate lines
+             on very narrow screens, side by side where it fits ── */
           .heading-line1 {
-            white-space: normal;
-            flex-wrap: wrap;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;           /* wraps only when needed */
             align-items: baseline;
             gap: 0;
             padding-bottom: 2px;
             width: 100%;
+            white-space: normal;
+            overflow: visible;
           }
 
-          .him { white-space: nowrap; flex-shrink: 0; }
+          .him {
+            white-space: nowrap;
+            flex-shrink: 0;
+            /* small right gap between "I'm" and name */
+            margin-right: 0.18em;
+          }
 
+          /* ── CORE FIX: the name wrapper must stretch full width
+             so the Shuffle component has room to render ── */
           .hname-shuffle-wrap {
             display: inline-flex;
             flex-wrap: nowrap;
             align-items: baseline;
+            /* Allow it to take all remaining space on the line */
+            flex: 1 1 auto;
             min-width: 0;
-            max-width: 100%;
+            overflow: visible;
           }
 
           .hname-shuffle {
             font-size: clamp(30px, 8vw, 44px);
             white-space: nowrap;
-            max-width: 100%;
+            overflow: visible;
+            /* Never clip the shuffle text */
+            min-width: 0;
+            flex-shrink: 1;
           }
-          .hname-comma { font-size: clamp(30px, 8vw, 44px); }
+          .hname-comma { font-size: clamp(30px, 8vw, 44px); flex-shrink: 0; }
+
+          /* ── CRITICAL: force Shuffle's inner span visible on mobile.
+             On touch/mobile GSAP's IntersectionObserver may not fire,
+             keeping .shuffle-parent at visibility:hidden forever.
+             We force it visible after a safe delay via CSS animation. ── */
+          .hname-shuffle .shuffle-parent {
+            /* Fallback: become visible after 400ms regardless of GSAP */
+            animation: shuffleFallback 0s linear 400ms forwards;
+          }
+          @keyframes shuffleFallback {
+            to { visibility: visible; }
+          }
+          /* If GSAP does fire, .is-ready overrides immediately */
+          .hname-shuffle .shuffle-parent.is-ready {
+            visibility: visible;
+            animation: none;
+          }
 
           .typewriter-line {
             white-space: normal;
@@ -504,7 +531,7 @@ export default function About() {
             white-space: normal;
           }
 
-          /* FIX 3: Force ScrollReveal word animations visible on mobile */
+          /* Force ScrollReveal animations visible on mobile */
           .about-para-wrap span[style],
           .about-para-wrap div[style] {
             opacity: 1 !important;
@@ -551,7 +578,6 @@ export default function About() {
           .about-btns { gap: 10px; }
           .btn-pill { height: 48px; min-height: 48px; padding: 0 22px; font-size: 14px; }
 
-          /* FIX 3 extended for small mobile */
           .about-para-wrap span[style],
           .about-para-wrap div[style] {
             opacity: 1 !important;
@@ -576,6 +602,13 @@ export default function About() {
           .hname-comma { font-size: clamp(25px, 7.2vw, 34px); }
           .btn-pill { height: 46px; min-height: 46px; padding: 0 20px; font-size: 13.5px; }
           .about-btns { gap: 9px; }
+
+          /* On ≤390px "I'm Arjun Aadhith," may be wide — let it wrap
+             naturally so both words remain fully visible */
+          .heading-line1 {
+            flex-wrap: wrap;
+            row-gap: 0.08em;
+          }
         }
 
         /* ═══════════════════════════════════════════
@@ -620,7 +653,15 @@ export default function About() {
           .about-btns { gap: 10px; flex-direction: row; flex-wrap: nowrap; }
           .btn-pill { height: 40px; min-height: 40px; padding: 0 18px; font-size: 13px; }
 
-          /* FIX 3 for landscape too */
+          /* Shuffle fallback for landscape too */
+          .hname-shuffle .shuffle-parent {
+            animation: shuffleFallback 0s linear 400ms forwards;
+          }
+          .hname-shuffle .shuffle-parent.is-ready {
+            visibility: visible;
+            animation: none;
+          }
+
           .about-para-wrap span[style],
           .about-para-wrap div[style] {
             opacity: 1 !important;
