@@ -71,16 +71,41 @@ export default function About() {
   const [moreOpen, setMoreOpen] = useState(false);
   const typedTitle = useTypewriter(TITLES);
 
+  // FIX 1: Lower threshold + rootMargin so mobile column-reverse layout triggers correctly
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) setVisible(true);
-        setImgVisible(entry.isIntersecting);
+        if (entry.isIntersecting) {
+          setVisible(true);
+          setImgVisible(true);
+        }
       },
-      { threshold: 0.12 }
+      { threshold: 0.05, rootMargin: "0px 0px -30px 0px" }
     );
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
+  }, []);
+
+  // FIX 2: Fallback for mobile — if section already visible on mount, trigger immediately
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+
+    const check = () => {
+      const rect = el.getBoundingClientRect();
+      const inView = rect.top < window.innerHeight && rect.bottom > 0;
+      if (inView) {
+        setVisible(true);
+        setImgVisible(true);
+      }
+    };
+
+    // Check immediately on mount
+    check();
+
+    // Also check after a short delay (handles cases where layout shifts on mobile)
+    const timer = setTimeout(check, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   return (
@@ -92,14 +117,12 @@ export default function About() {
         @font-face { font-family:'SF Pro Text'; src:url('/src/assets/fonts/SF-Pro-Text-Regular.otf') format('opentype'); font-weight:400; }
         @font-face { font-family:'SF Pro Text'; src:url('/src/assets/fonts/SF-Pro-Text-Light.otf') format('opentype'); font-weight:300; }
 
-        /* ─── GLOBAL RESET (prevents horizontal overflow everywhere) ─── */
         *,
         *::before,
         *::after {
           box-sizing: border-box;
         }
 
-        /* ─── BASE / DESKTOP (1280px reference — untouched) ─── */
         .about-section {
           width: 100%;
           min-height: 100vh;
@@ -126,7 +149,6 @@ export default function About() {
           flex-direction: column;
           align-items: flex-start;
           margin-left: -25px;
-          /* Prevent flex child from overflowing its track */
           min-width: 0;
         }
         .about-heading {
@@ -140,13 +162,11 @@ export default function About() {
           color: #111;
           -webkit-font-smoothing: antialiased;
           overflow: visible;
-          /* Prevents long words / names from blowing the layout */
           word-break: break-word;
           overflow-wrap: break-word;
           width: 100%;
         }
 
-        /* ─── REVEAL ANIMATION ─── */
         .reveal-block {
           display: block;
           overflow: visible;
@@ -167,7 +187,6 @@ export default function About() {
         .reveal-inner.d5 { transition-delay: 0.60s; }
         .reveal-inner.visible { opacity: 1; transform: translateY(0); }
 
-        /* ─── HEADING LINE 1: "I'm Arjun Aadhith," ─── */
         .him {
           font-style: italic;
           color: #111;
@@ -179,7 +198,7 @@ export default function About() {
           display: flex;
           align-items: baseline;
           gap: 0;
-          white-space: nowrap;   /* desktop: single line */
+          white-space: nowrap;
           overflow: visible;
           padding-bottom: 6px;
         }
@@ -187,7 +206,6 @@ export default function About() {
           display: inline-flex;
           align-items: baseline;
           overflow: visible;
-          /* Allows the name to shrink on small screens */
           min-width: 0;
           flex-shrink: 1;
         }
@@ -232,13 +250,12 @@ export default function About() {
         }
         .hname-shuffle .shuffle-parent.is-ready { visibility: visible; }
 
-        /* ─── TYPEWRITER LINE ─── */
         .typewriter-line {
           display: block;
           color: #111;
           font-weight: 800;
           font-style: normal;
-          white-space: nowrap;   /* desktop: single line */
+          white-space: nowrap;
           width: 100%;
         }
         .tw-cursor {
@@ -253,24 +270,20 @@ export default function About() {
         }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
-        /* ─── PARAGRAPH ─── */
         .about-para-wrap {
           width: 100%;
           max-width: 520px;
         }
-        /* Ensure ScrollReveal word spans wrap correctly */
         .about-para-wrap * {
           word-break: break-word;
           overflow-wrap: break-word;
         }
 
-        /* ─── BUTTONS ─── */
         .about-btns {
           display: flex;
           flex-direction: row;
           align-items: center;
           gap: 14px;
-          /* Override the display:block from .reveal-inner */
           width: 100%;
         }
         .btn-pill {
@@ -314,7 +327,6 @@ export default function About() {
         .btn-pill:hover { color: #ffffff; border-color: #111111; }
         .btn-icon-svg { display: block; flex-shrink: 0; }
 
-        /* ─── IMAGE SIDE ─── */
         .about-right {
           flex: 0 0 auto;
           width: 50%;
@@ -393,7 +405,6 @@ export default function About() {
           }
           .hname-shuffle { font-size: clamp(38px, 5.5vw, 56px); }
           .hname-comma { font-size: clamp(38px, 5.5vw, 56px); }
-          /* Allow heading to wrap on tablet portrait */
           .heading-line1 { white-space: normal; flex-wrap: wrap; }
           .typewriter-line { white-space: normal; }
           .about-para-wrap { max-width: 100%; }
@@ -402,7 +413,7 @@ export default function About() {
         }
 
         /* ═══════════════════════════════════════════
-           MOBILE: ≤ 767px  (all modern phones)
+           MOBILE: ≤ 767px
         ═══════════════════════════════════════════ */
         @media (max-width: 767px) {
           .about-section {
@@ -431,24 +442,20 @@ export default function About() {
             align-self: center;
           }
 
-          /* ── IMAGE ── */
           .about-img-outer {
             width: min(72vw, 280px);
             max-width: 280px;
           }
           .about-img { width: 100%; height: auto; }
 
-          /* ── HEADING ── */
           .about-heading {
             font-size: clamp(30px, 8vw, 44px);
             margin-bottom: 20px;
             letter-spacing: -0.025em;
-            /* Critical: allow the heading block to use full available width */
             width: 100%;
             max-width: 100%;
           }
 
-          /* Line 1: wrap "I'm" + "Arjun Aadhith," across two lines if needed */
           .heading-line1 {
             white-space: normal;
             flex-wrap: wrap;
@@ -458,10 +465,8 @@ export default function About() {
             width: 100%;
           }
 
-          /* "I'm" keeps nowrap so it stays together */
           .him { white-space: nowrap; flex-shrink: 0; }
 
-          /* Name wrapper: allow natural width, no forced nowrap clipping */
           .hname-shuffle-wrap {
             display: inline-flex;
             flex-wrap: nowrap;
@@ -470,7 +475,6 @@ export default function About() {
             max-width: 100%;
           }
 
-          /* The Shuffle inner span — font size controlled via heading */
           .hname-shuffle {
             font-size: clamp(30px, 8vw, 44px);
             white-space: nowrap;
@@ -478,7 +482,6 @@ export default function About() {
           }
           .hname-comma { font-size: clamp(30px, 8vw, 44px); }
 
-          /* Typewriter: allow wrapping so long titles don't overflow */
           .typewriter-line {
             white-space: normal;
             word-break: break-word;
@@ -487,12 +490,10 @@ export default function About() {
             max-width: 100%;
           }
 
-          /* ── PARAGRAPH ── */
           .about-para-wrap {
             width: 100%;
             max-width: 100%;
           }
-          /* Make sure ScrollReveal word-spans don't cause overflow */
           .about-para-wrap,
           .about-para-wrap p,
           .about-para-wrap span,
@@ -503,7 +504,15 @@ export default function About() {
             white-space: normal;
           }
 
-          /* ── REVEAL INNER — ensure it doesn't clip text ── */
+          /* FIX 3: Force ScrollReveal word animations visible on mobile */
+          .about-para-wrap span[style],
+          .about-para-wrap div[style] {
+            opacity: 1 !important;
+            filter: blur(0px) !important;
+            transform: none !important;
+            transition: opacity 0.6s ease, filter 0.6s ease !important;
+          }
+
           .reveal-block { overflow: visible; }
           .reveal-inner {
             overflow: visible;
@@ -511,7 +520,6 @@ export default function About() {
             max-width: 100%;
           }
 
-          /* ── BUTTONS ── */
           .about-btns {
             display: flex;
             flex-direction: row;
@@ -529,7 +537,6 @@ export default function About() {
 
         /* ═══════════════════════════════════════════
            SMALL MOBILE: ≤ 480px
-           iPhone 12 mini, SE 2/3, Galaxy A-series, Pixel 4a
         ═══════════════════════════════════════════ */
         @media (max-width: 480px) {
           .about-inner {
@@ -543,11 +550,19 @@ export default function About() {
           .hname-comma { font-size: clamp(27px, 7.5vw, 38px); }
           .about-btns { gap: 10px; }
           .btn-pill { height: 48px; min-height: 48px; padding: 0 22px; font-size: 14px; }
+
+          /* FIX 3 extended for small mobile */
+          .about-para-wrap span[style],
+          .about-para-wrap div[style] {
+            opacity: 1 !important;
+            filter: blur(0px) !important;
+            transform: none !important;
+            transition: opacity 0.6s ease, filter 0.6s ease !important;
+          }
         }
 
         /* ═══════════════════════════════════════════
            STANDARD MOBILE: ≤ 390px
-           iPhone 13/14/15, Galaxy S-series, Pixel 6/7
         ═══════════════════════════════════════════ */
         @media (max-width: 390px) {
           .about-inner { padding: 48px 5.5% 48px; gap: 28px; }
@@ -565,7 +580,6 @@ export default function About() {
 
         /* ═══════════════════════════════════════════
            TINY SCREENS: ≤ 320px
-           iPhone SE 1st gen, small Android
         ═══════════════════════════════════════════ */
         @media (max-width: 320px) {
           .about-inner { padding: 44px 5% 44px; gap: 24px; }
@@ -581,7 +595,7 @@ export default function About() {
         }
 
         /* ═══════════════════════════════════════════
-           LANDSCAPE PHONE: short height, wide width
+           LANDSCAPE PHONE
         ═══════════════════════════════════════════ */
         @media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
           .about-inner {
@@ -601,11 +615,19 @@ export default function About() {
           }
           .hname-shuffle { font-size: clamp(20px, 3.8vw, 30px); }
           .hname-comma { font-size: clamp(20px, 3.8vw, 30px); }
-          /* In landscape, allow single-line heading */
           .heading-line1 { white-space: nowrap; flex-wrap: nowrap; }
           .typewriter-line { white-space: nowrap; }
           .about-btns { gap: 10px; flex-direction: row; flex-wrap: nowrap; }
           .btn-pill { height: 40px; min-height: 40px; padding: 0 18px; font-size: 13px; }
+
+          /* FIX 3 for landscape too */
+          .about-para-wrap span[style],
+          .about-para-wrap div[style] {
+            opacity: 1 !important;
+            filter: blur(0px) !important;
+            transform: none !important;
+            transition: opacity 0.6s ease, filter 0.6s ease !important;
+          }
         }
       `}</style>
 
