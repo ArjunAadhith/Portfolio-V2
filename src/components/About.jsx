@@ -92,6 +92,13 @@ export default function About() {
         @font-face { font-family:'SF Pro Text'; src:url('/src/assets/fonts/SF-Pro-Text-Regular.otf') format('opentype'); font-weight:400; }
         @font-face { font-family:'SF Pro Text'; src:url('/src/assets/fonts/SF-Pro-Text-Light.otf') format('opentype'); font-weight:300; }
 
+        /* ─── GLOBAL RESET (prevents horizontal overflow everywhere) ─── */
+        *,
+        *::before,
+        *::after {
+          box-sizing: border-box;
+        }
+
         /* ─── BASE / DESKTOP (1280px reference — untouched) ─── */
         .about-section {
           width: 100%;
@@ -119,6 +126,8 @@ export default function About() {
           flex-direction: column;
           align-items: flex-start;
           margin-left: -25px;
+          /* Prevent flex child from overflowing its track */
+          min-width: 0;
         }
         .about-heading {
           margin: 0 0 40px 0;
@@ -131,14 +140,25 @@ export default function About() {
           color: #111;
           -webkit-font-smoothing: antialiased;
           overflow: visible;
+          /* Prevents long words / names from blowing the layout */
+          word-break: break-word;
+          overflow-wrap: break-word;
+          width: 100%;
         }
-        .reveal-block { display: block; overflow: visible; }
+
+        /* ─── REVEAL ANIMATION ─── */
+        .reveal-block {
+          display: block;
+          overflow: visible;
+          width: 100%;
+        }
         .reveal-inner {
           display: block;
           opacity: 0;
           transform: translateY(52px);
           overflow: visible;
           transition: opacity 0.75s cubic-bezier(0.22,1,0.36,1), transform 0.75s cubic-bezier(0.22,1,0.36,1);
+          width: 100%;
         }
         .reveal-inner.d1 { transition-delay: 0.05s; }
         .reveal-inner.d2 { transition-delay: 0.20s; }
@@ -147,16 +167,30 @@ export default function About() {
         .reveal-inner.d5 { transition-delay: 0.60s; }
         .reveal-inner.visible { opacity: 1; transform: translateY(0); }
 
-        .him { font-style: italic; color: #111; font-weight: 800; white-space: nowrap; }
+        /* ─── HEADING LINE 1: "I'm Arjun Aadhith," ─── */
+        .him {
+          font-style: italic;
+          color: #111;
+          font-weight: 800;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
         .heading-line1 {
           display: flex;
           align-items: baseline;
           gap: 0;
-          white-space: nowrap;
+          white-space: nowrap;   /* desktop: single line */
           overflow: visible;
           padding-bottom: 6px;
         }
-        .hname-shuffle-wrap { display: inline-flex; align-items: baseline; overflow: visible; }
+        .hname-shuffle-wrap {
+          display: inline-flex;
+          align-items: baseline;
+          overflow: visible;
+          /* Allows the name to shrink on small screens */
+          min-width: 0;
+          flex-shrink: 1;
+        }
         .hname-shuffle {
           display: inline-block;
           color: #6E6E6E;
@@ -181,6 +215,7 @@ export default function About() {
           line-height: 1.06;
           letter-spacing: -0.03em;
           -webkit-font-smoothing: antialiased;
+          flex-shrink: 0;
         }
         .hname-shuffle .shuffle-parent {
           visibility: hidden;
@@ -197,12 +232,14 @@ export default function About() {
         }
         .hname-shuffle .shuffle-parent.is-ready { visibility: visible; }
 
+        /* ─── TYPEWRITER LINE ─── */
         .typewriter-line {
           display: block;
           color: #111;
           font-weight: 800;
           font-style: normal;
-          white-space: nowrap;
+          white-space: nowrap;   /* desktop: single line */
+          width: 100%;
         }
         .tw-cursor {
           display: inline-block;
@@ -216,10 +253,26 @@ export default function About() {
         }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
-        .about-para-wrap { width: 100%; max-width: 520px; }
+        /* ─── PARAGRAPH ─── */
+        .about-para-wrap {
+          width: 100%;
+          max-width: 520px;
+        }
+        /* Ensure ScrollReveal word spans wrap correctly */
+        .about-para-wrap * {
+          word-break: break-word;
+          overflow-wrap: break-word;
+        }
 
-        .about-btns { display: flex; flex-direction: row; align-items: center; gap: 14px; }
-
+        /* ─── BUTTONS ─── */
+        .about-btns {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          gap: 14px;
+          /* Override the display:block from .reveal-inner */
+          width: 100%;
+        }
         .btn-pill {
           position: relative;
           height: 46px;
@@ -241,10 +294,10 @@ export default function About() {
           overflow: hidden;
           -webkit-font-smoothing: antialiased;
           transition: color 0.40s cubic-bezier(0.16,1,0.3,1), border-color 0.40s cubic-bezier(0.16,1,0.3,1);
-          /* Ensure thumb-friendly tap targets on mobile */
           min-height: 44px;
           -webkit-tap-highlight-color: transparent;
           touch-action: manipulation;
+          flex-shrink: 0;
         }
         .btn-pill::before {
           content: "";
@@ -261,6 +314,7 @@ export default function About() {
         .btn-pill:hover { color: #ffffff; border-color: #111111; }
         .btn-icon-svg { display: block; flex-shrink: 0; }
 
+        /* ─── IMAGE SIDE ─── */
         .about-right {
           flex: 0 0 auto;
           width: 50%;
@@ -279,64 +333,49 @@ export default function About() {
         .about-img-outer.visible { opacity: 1; transform: translateY(0); }
         .about-img { display: block; max-width: 100%; height: auto; position: relative; z-index: 1; }
 
-        /* ─── ULTRA-WIDE (1440px–1600px) ─── */
+        /* ═══════════════════════════════════════════
+           ULTRA-WIDE: 1440px – 1599px
+        ═══════════════════════════════════════════ */
         @media (min-width: 1440px) and (max-width: 1599px) {
-          .about-inner {
-            padding: 0 8%;
-          }
+          .about-inner { padding: 0 8%; }
         }
 
-        /* ─── ULTRA-WIDE (1600px–1920px) ─── */
+        /* ═══════════════════════════════════════════
+           ULTRA-WIDE: 1600px – 1919px
+        ═══════════════════════════════════════════ */
         @media (min-width: 1600px) and (max-width: 1919px) {
-          .about-inner {
-            max-width: 1600px;
-            padding: 0 7%;
-          }
+          .about-inner { max-width: 1600px; padding: 0 7%; }
           .about-left { margin-left: -20px; }
           .about-right { margin-right: -6%; }
         }
 
-        /* ─── ULTRA-WIDE (1920px+) ─── */
+        /* ═══════════════════════════════════════════
+           ULTRA-WIDE: 1920px+
+        ═══════════════════════════════════════════ */
         @media (min-width: 1920px) {
-          .about-inner {
-            max-width: 1800px;
-            padding: 0 6%;
-          }
+          .about-inner { max-width: 1800px; padding: 0 6%; }
           .about-left { margin-left: 0; }
           .about-right { margin-right: -4%; }
           .about-para-wrap { max-width: 580px; }
         }
 
-        /* ─── TABLET LANDSCAPE (1024px–1199px) ─── */
+        /* ═══════════════════════════════════════════
+           TABLET LANDSCAPE: 1024px – 1199px
+        ═══════════════════════════════════════════ */
         @media (min-width: 1024px) and (max-width: 1199px) {
-          .about-inner {
-            padding: 0 6%;
-          }
-          .about-left {
-            width: 46%;
-            margin-left: -10px;
-          }
-          .about-right {
-            width: 48%;
-            margin-right: -5%;
-          }
-          .about-heading {
-            font-size: clamp(40px, 4.4vw, 60px);
-            margin-bottom: 32px;
-          }
-          .hname-shuffle {
-            font-size: clamp(40px, 4.4vw, 60px);
-          }
-          .hname-comma {
-            font-size: clamp(40px, 4.4vw, 60px);
-          }
+          .about-inner { padding: 0 6%; }
+          .about-left { width: 46%; margin-left: -10px; }
+          .about-right { width: 48%; margin-right: -5%; }
+          .about-heading { font-size: clamp(40px, 4.4vw, 60px); margin-bottom: 32px; }
+          .hname-shuffle { font-size: clamp(40px, 4.4vw, 60px); }
+          .hname-comma { font-size: clamp(40px, 4.4vw, 60px); }
         }
 
-        /* ─── TABLET PORTRAIT + LANDSCAPE (768px–1023px) ─── */
+        /* ═══════════════════════════════════════════
+           TABLET PORTRAIT & LANDSCAPE: 768px – 1023px
+        ═══════════════════════════════════════════ */
         @media (min-width: 768px) and (max-width: 1023px) {
-          .about-section {
-            align-items: flex-start;
-          }
+          .about-section { align-items: flex-start; }
           .about-inner {
             flex-direction: column-reverse;
             padding: 80px 6% 72px;
@@ -344,57 +383,41 @@ export default function About() {
             min-height: auto;
             align-items: center;
           }
-          .about-left {
-            width: 100%;
-            margin-left: 0;
-            align-items: flex-start;
-          }
-          .about-right {
-            width: 100%;
-            justify-content: center;
-            margin-right: 0;
-          }
-          .about-img-outer {
-            max-width: 420px;
-            width: 100%;
-          }
-          .about-img {
-            width: 100%;
-            max-width: 420px;
-          }
+          .about-left { width: 100%; margin-left: 0; }
+          .about-right { width: 100%; justify-content: center; margin-right: 0; }
+          .about-img-outer { max-width: 420px; width: 100%; }
+          .about-img { width: 100%; max-width: 420px; }
           .about-heading {
             font-size: clamp(38px, 5.5vw, 56px);
             margin-bottom: 28px;
           }
-          .hname-shuffle {
-            font-size: clamp(38px, 5.5vw, 56px);
-          }
-          .hname-comma {
-            font-size: clamp(38px, 5.5vw, 56px);
-          }
-          .typewriter-line { white-space: normal; }
+          .hname-shuffle { font-size: clamp(38px, 5.5vw, 56px); }
+          .hname-comma { font-size: clamp(38px, 5.5vw, 56px); }
+          /* Allow heading to wrap on tablet portrait */
           .heading-line1 { white-space: normal; flex-wrap: wrap; }
+          .typewriter-line { white-space: normal; }
           .about-para-wrap { max-width: 100%; }
           .about-btns { gap: 12px; }
           .btn-pill { height: 48px; font-size: 15px; }
         }
 
-        /* ─── MOBILE BREAKPOINT START (max-width: 767px) ─── */
+        /* ═══════════════════════════════════════════
+           MOBILE: ≤ 767px  (all modern phones)
+        ═══════════════════════════════════════════ */
         @media (max-width: 767px) {
           .about-section {
             align-items: flex-start;
-            /* Safe area support for iOS notch/dynamic island */
             padding-top: env(safe-area-inset-top, 0px);
             padding-bottom: env(safe-area-inset-bottom, 0px);
           }
           .about-inner {
             flex-direction: column-reverse;
-            padding: 64px 5% 60px;
-            gap: 40px;
-            min-height: 100dvh; /* dynamic viewport height — avoids mobile browser chrome issues */
-            align-items: center;
+            padding: 64px 6% 60px;
+            gap: 36px;
+            min-height: 100dvh;
+            align-items: flex-start;
             justify-content: center;
-            box-sizing: border-box;
+            width: 100%;
           }
           .about-left {
             width: 100%;
@@ -405,171 +428,183 @@ export default function About() {
             width: 100%;
             justify-content: center;
             margin-right: 0;
+            align-self: center;
           }
+
+          /* ── IMAGE ── */
           .about-img-outer {
-            width: min(72vw, 300px);
-            max-width: 300px;
+            width: min(72vw, 280px);
+            max-width: 280px;
           }
-          .about-img {
-            width: 100%;
-            height: auto;
-          }
+          .about-img { width: 100%; height: auto; }
+
+          /* ── HEADING ── */
           .about-heading {
-            font-size: clamp(34px, 8.5vw, 48px);
-            margin-bottom: 24px;
+            font-size: clamp(30px, 8vw, 44px);
+            margin-bottom: 20px;
             letter-spacing: -0.025em;
+            /* Critical: allow the heading block to use full available width */
+            width: 100%;
+            max-width: 100%;
           }
-          .hname-shuffle {
-            font-size: clamp(34px, 8.5vw, 48px);
-          }
-          .hname-comma {
-            font-size: clamp(34px, 8.5vw, 48px);
-          }
-          .typewriter-line { white-space: normal; }
+
+          /* Line 1: wrap "I'm" + "Arjun Aadhith," across two lines if needed */
           .heading-line1 {
             white-space: normal;
             flex-wrap: wrap;
+            align-items: baseline;
             gap: 0;
-            padding-bottom: 4px;
+            padding-bottom: 2px;
+            width: 100%;
           }
-          .about-para-wrap { max-width: 100%; }
+
+          /* "I'm" keeps nowrap so it stays together */
+          .him { white-space: nowrap; flex-shrink: 0; }
+
+          /* Name wrapper: allow natural width, no forced nowrap clipping */
+          .hname-shuffle-wrap {
+            display: inline-flex;
+            flex-wrap: nowrap;
+            align-items: baseline;
+            min-width: 0;
+            max-width: 100%;
+          }
+
+          /* The Shuffle inner span — font size controlled via heading */
+          .hname-shuffle {
+            font-size: clamp(30px, 8vw, 44px);
+            white-space: nowrap;
+            max-width: 100%;
+          }
+          .hname-comma { font-size: clamp(30px, 8vw, 44px); }
+
+          /* Typewriter: allow wrapping so long titles don't overflow */
+          .typewriter-line {
+            white-space: normal;
+            word-break: break-word;
+            display: block;
+            width: 100%;
+            max-width: 100%;
+          }
+
+          /* ── PARAGRAPH ── */
+          .about-para-wrap {
+            width: 100%;
+            max-width: 100%;
+          }
+          /* Make sure ScrollReveal word-spans don't cause overflow */
+          .about-para-wrap,
+          .about-para-wrap p,
+          .about-para-wrap span,
+          .about-para-wrap div {
+            max-width: 100%;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+          }
+
+          /* ── REVEAL INNER — ensure it doesn't clip text ── */
+          .reveal-block { overflow: visible; }
+          .reveal-inner {
+            overflow: visible;
+            width: 100%;
+            max-width: 100%;
+          }
+
+          /* ── BUTTONS ── */
           .about-btns {
+            display: flex;
             flex-direction: row;
             flex-wrap: wrap;
             gap: 10px;
+            width: 100%;
           }
           .btn-pill {
             height: 48px;
+            min-height: 48px;
             padding: 0 24px;
             font-size: 14px;
-            min-height: 48px;
           }
         }
 
-        /* ─── SMALL MOBILE (max-width: 480px — covers most iPhone/Samsung/Pixel) ─── */
+        /* ═══════════════════════════════════════════
+           SMALL MOBILE: ≤ 480px
+           iPhone 12 mini, SE 2/3, Galaxy A-series, Pixel 4a
+        ═══════════════════════════════════════════ */
         @media (max-width: 480px) {
           .about-inner {
             padding: 56px 5.5% 52px;
-            gap: 36px;
-            /* Ensures content doesn't bleed under nav/bottom bars */
             padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
-          }
-          .about-img-outer {
-            width: min(68vw, 260px);
-            max-width: 260px;
-          }
-          .about-heading {
-            font-size: clamp(30px, 8vw, 40px);
-            margin-bottom: 20px;
-          }
-          .hname-shuffle {
-            font-size: clamp(30px, 8vw, 40px);
-          }
-          .hname-comma {
-            font-size: clamp(30px, 8vw, 40px);
-          }
-          .about-btns { gap: 10px; }
-          .btn-pill {
-            height: 48px;
-            min-height: 48px;
-            padding: 0 22px;
-            font-size: 14px;
-          }
-        }
-
-        /* ─── VERY SMALL MOBILE (max-width: 390px — iPhone SE, small Android) ─── */
-        @media (max-width: 390px) {
-          .about-inner {
-            padding: 48px 5% 48px;
             gap: 32px;
           }
-          .about-img-outer {
-            width: min(66vw, 240px);
-            max-width: 240px;
-          }
+          .about-img-outer { width: min(68vw, 240px); max-width: 240px; }
+          .about-heading { font-size: clamp(27px, 7.5vw, 38px); margin-bottom: 18px; }
+          .hname-shuffle { font-size: clamp(27px, 7.5vw, 38px); }
+          .hname-comma { font-size: clamp(27px, 7.5vw, 38px); }
+          .about-btns { gap: 10px; }
+          .btn-pill { height: 48px; min-height: 48px; padding: 0 22px; font-size: 14px; }
+        }
+
+        /* ═══════════════════════════════════════════
+           STANDARD MOBILE: ≤ 390px
+           iPhone 13/14/15, Galaxy S-series, Pixel 6/7
+        ═══════════════════════════════════════════ */
+        @media (max-width: 390px) {
+          .about-inner { padding: 48px 5.5% 48px; gap: 28px; }
+          .about-img-outer { width: min(65vw, 220px); max-width: 220px; }
           .about-heading {
-            font-size: clamp(28px, 7.8vw, 36px);
+            font-size: clamp(25px, 7.2vw, 34px);
             margin-bottom: 16px;
-            letter-spacing: -0.02em;
+            letter-spacing: -0.022em;
           }
-          .hname-shuffle {
-            font-size: clamp(28px, 7.8vw, 36px);
-          }
-          .hname-comma {
-            font-size: clamp(28px, 7.8vw, 36px);
-          }
-          .btn-pill {
-            height: 46px;
-            min-height: 46px;
-            padding: 0 20px;
-            font-size: 13.5px;
-          }
+          .hname-shuffle { font-size: clamp(25px, 7.2vw, 34px); }
+          .hname-comma { font-size: clamp(25px, 7.2vw, 34px); }
+          .btn-pill { height: 46px; min-height: 46px; padding: 0 20px; font-size: 13.5px; }
           .about-btns { gap: 9px; }
         }
 
-        /* ─── TINY SCREENS (max-width: 320px — iPhone SE 1st gen) ─── */
+        /* ═══════════════════════════════════════════
+           TINY SCREENS: ≤ 320px
+           iPhone SE 1st gen, small Android
+        ═══════════════════════════════════════════ */
         @media (max-width: 320px) {
-          .about-inner {
-            padding: 44px 4.5% 44px;
-            gap: 28px;
-          }
-          .about-img-outer {
-            width: min(64vw, 200px);
-            max-width: 200px;
-          }
+          .about-inner { padding: 44px 5% 44px; gap: 24px; }
+          .about-img-outer { width: min(60vw, 190px); max-width: 190px; }
           .about-heading {
-            font-size: clamp(24px, 7.5vw, 30px);
+            font-size: clamp(22px, 6.8vw, 28px);
             margin-bottom: 14px;
           }
-          .hname-shuffle {
-            font-size: clamp(24px, 7.5vw, 30px);
-          }
-          .hname-comma {
-            font-size: clamp(24px, 7.5vw, 30px);
-          }
-          .btn-pill {
-            height: 44px;
-            min-height: 44px;
-            padding: 0 18px;
-            font-size: 13px;
-          }
+          .hname-shuffle { font-size: clamp(22px, 6.8vw, 28px); }
+          .hname-comma { font-size: clamp(22px, 6.8vw, 28px); }
+          .btn-pill { height: 44px; min-height: 44px; padding: 0 18px; font-size: 13px; }
           .about-btns { gap: 8px; flex-wrap: wrap; }
         }
 
-        /* ─── LANDSCAPE MOBILE (short viewport, wide width) ─── */
+        /* ═══════════════════════════════════════════
+           LANDSCAPE PHONE: short height, wide width
+        ═══════════════════════════════════════════ */
         @media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
           .about-inner {
             flex-direction: row;
-            padding: 32px 5%;
-            gap: 32px;
+            padding: 28px 5%;
+            gap: 28px;
             min-height: 100dvh;
             align-items: center;
             justify-content: space-between;
           }
-          .about-left {
-            width: 55%;
-            margin-left: 0;
-          }
-          .about-right {
-            width: 40%;
-            justify-content: center;
-            margin-right: 0;
-          }
-          .about-img-outer {
-            width: min(36vw, 200px);
-            max-width: 200px;
-          }
+          .about-left { width: 55%; margin-left: 0; }
+          .about-right { width: 40%; justify-content: center; margin-right: 0; }
+          .about-img-outer { width: min(34vw, 190px); max-width: 190px; }
           .about-heading {
-            font-size: clamp(22px, 4.2vw, 34px);
-            margin-bottom: 14px;
+            font-size: clamp(20px, 3.8vw, 30px);
+            margin-bottom: 12px;
           }
-          .hname-shuffle {
-            font-size: clamp(22px, 4.2vw, 34px);
-          }
-          .hname-comma {
-            font-size: clamp(22px, 4.2vw, 34px);
-          }
-          .about-btns { gap: 10px; flex-direction: row; }
+          .hname-shuffle { font-size: clamp(20px, 3.8vw, 30px); }
+          .hname-comma { font-size: clamp(20px, 3.8vw, 30px); }
+          /* In landscape, allow single-line heading */
+          .heading-line1 { white-space: nowrap; flex-wrap: nowrap; }
+          .typewriter-line { white-space: nowrap; }
+          .about-btns { gap: 10px; flex-direction: row; flex-wrap: nowrap; }
           .btn-pill { height: 40px; min-height: 40px; padding: 0 18px; font-size: 13px; }
         }
       `}</style>
