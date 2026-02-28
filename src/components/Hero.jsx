@@ -272,19 +272,17 @@ export default function Hero() {
 
         /* ─── Tablet Portrait (768px – 1023px) ──────── */
         @media (min-width: 768px) and (max-width: 1023px) {
-          /* Allow text to wrap large — like the reference image but for tablet */
           .hero-headline {
             font-size: 9.5vw;
             letter-spacing: -0.036em;
             line-height: 1.05;
             word-break: normal;
             overflow-wrap: break-word;
+            width: 100%;
           }
-          /* On tablet, allow lines to wrap — remove y-clip constraint */
           .hl-line {
             overflow: visible;
           }
-          /* Swap reveal animation to fadeUp (no overflow:hidden needed) */
           .hl-inner.a1 {
             animation: fadeUp 1.1s cubic-bezier(0.16, 1, 0.3, 1) 380ms both;
           }
@@ -292,10 +290,21 @@ export default function Hero() {
             animation: fadeUp 1.1s cubic-bezier(0.16, 1, 0.3, 1) 580ms both;
             -webkit-text-stroke: 1.2px #000 !important;
           }
+          /* Content starts from ~38% down on tablet */
           .hero-content {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
             padding-left: 6%;
             padding-right: 6%;
-            padding-bottom: 110px;
+            padding-top: 38vh;
+            padding-bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-start;
           }
           .hero-badge-wrap {
             margin-bottom: 32px;
@@ -304,12 +313,34 @@ export default function Hero() {
             margin-top: 28px;
           }
           .scroll-wrap {
-            bottom: 36px;
+            bottom: 20px;
           }
         }
 
         /* ─── All Mobile (≤ 767px) — shared base ──── */
         @media (max-width: 767px) {
+          /* Content starts from ~40% down — matching the marked line */
+          .hero-content {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding-left: 5.5%;
+            padding-right: 5.5%;
+            padding-top: 40vh;
+            padding-bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-start;
+          }
+
+          /* Scroll: tight to bottom — 15px only */
+          .scroll-wrap {
+            bottom: 15px;
+          }
+
           /* Large wrapping text — matches the reference screenshot style */
           .hero-headline {
             font-size: 13vw;
@@ -317,6 +348,7 @@ export default function Hero() {
             line-height: 1.06;
             word-break: normal;
             overflow-wrap: break-word;
+            width: 100%;
           }
 
           /* CRITICAL: remove overflow:hidden so text wraps without clipping */
@@ -324,7 +356,7 @@ export default function Hero() {
             overflow: visible;
           }
 
-          /* Switch to fadeUp — no longer needs overflow:hidden clip to work */
+          /* Switch to fadeUp — works without overflow:hidden */
           .hl-inner.a1 {
             animation: fadeUp 1.1s cubic-bezier(0.16, 1, 0.3, 1) 380ms both;
           }
@@ -333,11 +365,6 @@ export default function Hero() {
             -webkit-text-stroke: 1px #000 !important;
           }
 
-          .hero-content {
-            padding-left: 5.5%;
-            padding-right: 5.5%;
-            padding-bottom: 88px;
-          }
           .hero-badge-wrap {
             margin-bottom: 24px;
           }
@@ -349,9 +376,6 @@ export default function Hero() {
             font-size: 10px;
             letter-spacing: 0.07em;
           }
-          .scroll-wrap {
-            bottom: 30px;
-          }
         }
 
         /* ─── Large Mobile (428px – 767px) ──────────── */
@@ -360,7 +384,8 @@ export default function Hero() {
             font-size: 12.5vw;
           }
           .hero-content {
-            padding-bottom: 92px;
+            padding-left: 6%;
+            padding-right: 6%;
           }
           .hero-tagline-wrap {
             margin-top: 22px;
@@ -379,7 +404,6 @@ export default function Hero() {
           .hero-content {
             padding-left: 5%;
             padding-right: 5%;
-            padding-bottom: 76px;
           }
           .hero-badge-wrap {
             margin-bottom: 20px;
@@ -403,12 +427,13 @@ export default function Hero() {
             letter-spacing: 0.1em;
           }
           .scroll-wrap {
-            bottom: 22px;
+            bottom: 12px;
           }
         }
 
         /* ─── iOS Safe Area (notch / Dynamic Island) ── */
         @supports (padding: env(safe-area-inset-bottom)) {
+          /* Desktop: safe area for bottom padding */
           .hero-content {
             padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
           }
@@ -416,18 +441,25 @@ export default function Hero() {
             bottom: calc(44px + env(safe-area-inset-bottom, 0px));
           }
 
+          /* Mobile: padding-top based, scroll gets safe area */
           @media (max-width: 767px) {
             .hero-content {
-              padding-bottom: calc(82px + env(safe-area-inset-bottom, 0px));
+              padding-bottom: 0;
             }
             .scroll-wrap {
-              bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+              bottom: calc(15px + env(safe-area-inset-bottom, 0px));
+            }
+          }
+
+          @media (min-width: 768px) and (max-width: 1023px) {
+            .hero-content {
+              padding-bottom: 0;
             }
           }
 
           @media (max-width: 359px) {
-            .hero-content {
-              padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+            .scroll-wrap {
+              bottom: calc(12px + env(safe-area-inset-bottom, 0px));
             }
           }
         }
@@ -447,16 +479,18 @@ export default function Hero() {
           .hl-inner.a2 {
             animation: fadeUp 1.1s cubic-bezier(0.16, 1, 0.3, 1) 580ms both;
           }
+          /* Content starts ~35% down in landscape */
           .hero-content {
-            padding-bottom: 70px;
             padding-left: 6%;
             padding-right: 6%;
+            padding-top: 35vh;
+            padding-bottom: 0;
           }
           .hero-badge-wrap {
-            margin-bottom: 16px;
+            margin-bottom: 14px;
           }
           .hero-tagline-wrap {
-            margin-top: 14px;
+            margin-top: 12px;
           }
           .scroll-wrap {
             display: none;
