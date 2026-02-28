@@ -6,12 +6,12 @@ const ICONS = [
   { id:'bolt',   src:'/f-icons/Thunder.png',   link:null,                   xPct:0.316, w:100,  h:100  },
   { id:'mail',   src:'/f-icons/Mail.png',      link:'https://mail.google.com/mail/u/3/#inbox?compose=DmwnWstzWPGTbGNcDDvHphJRdnjVmrkLqnNbXxXGMkvpvBnJMcqddfGPMThXHjVPMPVfwWjnQKqQ', xPct:0.220, w:160, h:160 },
   { id:'smile',  src:'/f-icons/Smile.png',     link:null,                   xPct:0.375, w:120,  h:120  },
-  { id:'otw',    src:'/f-icons/OTW.png',       link:null,                   xPct:0.474, w:220, h:100  },
+  { id:'otw',    src:'/f-icons/OTW.png',       link:null,                   xPct:0.474, w:220,  h:100  },
   { id:'gear',   src:'/f-icons/Setting.png',   link:null,                   xPct:0.530, w:120,  h:120  },
   { id:'github', src:'/f-icons/Git.png',       link:'https://github.com/ArjunAadhith',   xPct:0.632, w:160,  h:160  },
   { id:'arrow',  src:'/f-icons/Arrow.png',     link:null,                   xPct:0.716, w:100,  h:100  },
-  { id:'arrow2', src:'/f-icons/Cursor.png',    link:null,                   xPct:0.760, w:80,  h:80  },
-  { id:'dragme', src:'/f-icons/Drag me.png',   link:null,                   xPct:0.874, w:156, h:60  },
+  { id:'arrow2', src:'/f-icons/Cursor.png',    link:null,                   xPct:0.760, w:80,   h:80   },
+  { id:'dragme', src:'/f-icons/Drag me.png',   link:null,                   xPct:0.874, w:156,  h:60   },
 ];
 
 /* ── Scale icon dimensions for smaller containers ─────────────────── */
@@ -48,8 +48,6 @@ function loadMatter() {
    A touch is treated as a TAP (and the link is opened) when:
      • finger stayed within 10 px of where it landed
      • the whole gesture lasted < 300 ms
-
-   This fires synchronously before Matter processes anything.
 ─────────────────────────────────────────────────────────────────────── */
 const TAP_MAX_MS   = 300;
 const TAP_MAX_MOVE = 10;
@@ -72,7 +70,6 @@ function useTapLink(link) {
     const dx      = Math.abs(touch.clientX - pos.current.x);
     const dy      = Math.abs(touch.clientY - pos.current.y);
     if (elapsed < TAP_MAX_MS && dx < TAP_MAX_MOVE && dy < TAP_MAX_MOVE) {
-      /* Stop Matter from absorbing this touch end as a drag release */
       e.stopPropagation();
       window.open(link, '_blank', 'noopener,noreferrer');
     }
@@ -86,7 +83,6 @@ function useTapLink(link) {
 function IconSpan({ icon, onMouseEnter, onMouseMove, onMouseLeave }) {
   const { onTouchStart, onTouchEnd } = useTapLink(icon.link);
 
-  /* Desktop click fallback */
   const handleClick = useCallback((e) => {
     if (icon.link) {
       e.stopPropagation();
@@ -98,12 +94,10 @@ function IconSpan({ icon, onMouseEnter, onMouseMove, onMouseLeave }) {
     <span
       className="fi-icon"
       style={{ opacity: 0 }}
-      /* Desktop */
       onMouseEnter={onMouseEnter}
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
       onClick={handleClick}
-      /* Mobile tap — fires BEFORE Matter absorbs the event */
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
@@ -116,6 +110,10 @@ function IconSpan({ icon, onMouseEnter, onMouseMove, onMouseLeave }) {
     </span>
   );
 }
+
+/* ── Detect touch device ─────────────────────────────────────────── */
+const isTouchDevice = () =>
+  typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
 /* ── Main component ───────────────────────────────────────────────── */
 export default function ContactSection() {
@@ -205,10 +203,25 @@ export default function ContactSection() {
 
       const mouse = Mouse.create(container);
 
-      /* Remove Matter's scroll-hijacking wheel listener */
+      /* ── Remove Matter's scroll-hijacking wheel listener ── */
       mouse.element.removeEventListener('mousewheel',     mouse.mousewheel);
       mouse.element.removeEventListener('DOMMouseScroll', mouse.mousewheel);
       mouse.element.removeEventListener('wheel',          mouse.mousewheel);
+
+      /* ── KEY FIX: On touch devices, Matter.js registers touchstart /
+         touchmove / touchend on the container WITHOUT the passive flag,
+         meaning they call preventDefault() internally and completely
+         block native page scrolling.
+
+         We remove them here so the browser's native scroll is never
+         interrupted. The physics simulation still runs perfectly —
+         icons fall and bounce — the only thing lost is icon-dragging
+         on mobile, which is replaced by our tap-to-link UX above.   ── */
+      if (isTouchDevice()) {
+        mouse.element.removeEventListener('touchstart', mouse.mousedown);
+        mouse.element.removeEventListener('touchmove',  mouse.mousemove);
+        mouse.element.removeEventListener('touchend',   mouse.mouseup);
+      }
 
       const mc = MouseConstraint.create(engine, {
         mouse,
@@ -217,8 +230,11 @@ export default function ContactSection() {
       render.mouse = mouse;
       World.add(engine.world, mc);
 
-      Events.on(mc, 'startdrag', () => container.style.cursor = 'grabbing');
-      Events.on(mc, 'enddrag',   () => container.style.cursor = 'grab');
+      /* Only show grab cursor on non-touch (desktop) */
+      if (!isTouchDevice()) {
+        Events.on(mc, 'startdrag', () => container.style.cursor = 'grabbing');
+        Events.on(mc, 'enddrag',   () => container.style.cursor = 'grab');
+      }
 
       const runner = Runner.create();
       Runner.run(runner, engine);
@@ -511,20 +527,41 @@ const CSS = `
 
 
   /* ══════════════════════════════════════════
-     MOBILE — ALL (≤ 767px)
+     MOBILE — ALL (≤ 768px)
+
+     SCROLL FIX NOTES:
+     The CSS alone cannot fix scroll on touch devices because
+     Matter.js registers non-passive touchstart/touchmove listeners
+     on the container that call preventDefault() internally, freezing
+     the page. The actual fix is in the JS above:
+
+       mouse.element.removeEventListener('touchstart', mouse.mousedown);
+       mouse.element.removeEventListener('touchmove',  mouse.mousemove);
+       mouse.element.removeEventListener('touchend',   mouse.mouseup);
+
+     These CSS rules complement the JS fix by ensuring no CSS
+     property accidentally re-blocks scroll.
   ══════════════════════════════════════════ */
-  @media (max-width: 767px) {
+  @media (max-width: 768px) {
     .fi-page {
       padding: 0 12px 16px;
+      /* Never block vertical scroll at the wrapper level */
+      overflow: visible;
     }
 
-    /* ↓ Reduced height — compact but spacious enough for physics play */
     .fi-section {
       height: 65vh;
       min-height: 340px;
       max-height: 520px;
       border-radius: 20px;
+
+      /* ✅ Allow vertical scroll to pass through to the page */
       touch-action: pan-y;
+
+      /* ✅ Never use position: fixed or overflow-y: hidden here */
+      overflow: hidden; /* visual clipping only — does NOT block page scroll */
+
+      /* ✅ No height: 100vh locking */
       cursor: default;
     }
 
@@ -545,14 +582,18 @@ const CSS = `
     /* Tooltip hidden — no hover on touch */
     .fi-tooltip { display: none !important; }
 
-    /* Default cursor on all icons */
-    .fi-icon       { cursor: default; }
+    /* Icons: pass scroll through when not tapping a link */
+    .fi-icon       { cursor: default; touch-action: pan-y; }
     .fi-icon:active{ cursor: default; }
+
+    /* Icons wrap: never block scroll */
+    .fi-icons-wrap {
+      touch-action: pan-y;
+    }
   }
 
   /* ══════════════════════════════════════════
      STANDARD MOBILE (360px – 414px)
-     Galaxy S / Pixel / OnePlus / Xiaomi
   ══════════════════════════════════════════ */
   @media (min-width: 360px) and (max-width: 414px) {
     .fi-section {
@@ -568,7 +609,6 @@ const CSS = `
 
   /* ══════════════════════════════════════════
      LARGE MOBILE (428px+)
-     iPhone 14 Pro Max, Galaxy S Ultra etc.
   ══════════════════════════════════════════ */
   @media (min-width: 428px) and (max-width: 767px) {
     .fi-page    { padding: 0 14px 18px; }
@@ -585,7 +625,6 @@ const CSS = `
 
   /* ══════════════════════════════════════════
      SMALL MOBILE (≤ 375px)
-     iPhone SE / Galaxy A-series / 320px
   ══════════════════════════════════════════ */
   @media (max-width: 375px) {
     .fi-page    { padding: 0 10px 14px; }
@@ -621,7 +660,7 @@ const CSS = `
      iOS SAFE AREA
   ══════════════════════════════════════════ */
   @supports (padding-bottom: env(safe-area-inset-bottom)) {
-    @media (max-width: 767px) {
+    @media (max-width: 768px) {
       .fi-page {
         padding-bottom: calc(16px + env(safe-area-inset-bottom));
         padding-left:   calc(12px + env(safe-area-inset-left));
