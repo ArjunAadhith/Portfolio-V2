@@ -29,7 +29,9 @@ export default function Projects() {
           font-weight: 800;
         }
 
-        /* ════════════ DESKTOP — untouched ════════════ */
+        /* ════════════════════════════════════════
+           DESKTOP — completely untouched
+        ════════════════════════════════════════ */
         #pj-header {
           position: relative;
           background: #000;
@@ -153,7 +155,9 @@ export default function Projects() {
           transform: scale(1) translateY(0);
         }
 
-        /* ════════════ TABLET LANDSCAPE 1024–1199px ════════════ */
+        /* ════════════════════════════════════════
+           TABLET LANDSCAPE 1024–1199px
+        ════════════════════════════════════════ */
         @media (min-width: 1024px) and (max-width: 1199px) {
           .pj-card {
             width: calc(100vw - 48px);
@@ -166,19 +170,21 @@ export default function Projects() {
           .pj-card.init    { transform: translateY(0); }
         }
 
-        /* ════════════ TABLET PORTRAIT 768–1023px ════════════ */
+        /* ════════════════════════════════════════
+           TABLET PORTRAIT 768–1023px
+        ════════════════════════════════════════ */
         @media (min-width: 768px) and (max-width: 1023px) {
           .pj-label {
             position: relative;
             top: auto; left: auto;
             text-align: center;
-            padding-top: 36px;
+            padding-top: 40px;
             font-size: 14px;
           }
           .pj-heading {
-            margin-top: 14px;
+            margin-top: 10px;
             white-space: normal;
-            padding: 0 24px 20px;
+            padding: 0 24px 24px;
           }
           .pj-card {
             width: calc(100vw - 40px);
@@ -194,44 +200,58 @@ export default function Projects() {
           .pj-tip { display: none; }
         }
 
-        /* ════════════════════════════════════════════════════
-           MOBILE ≤ 767px
-           - #pj-outer height = N × card-slot-height
-           - Each slot = card height + 28px top + 28px bottom gap
-           - Card height = (100vw - 24px) × 10/16
-           - Slot ≈ (100vw - 24px) × 0.625 + 56px
-           - Using 48vh per card slot (tight, just card + tiny breath)
-        ════════════════════════════════════════════════════ */
+        /* ════════════════════════════════════════
+           MOBILE BASE ≤ 767px
+           Header: generous top padding, clear gap
+           between label and heading.
+           Cards: tight slot so no black void.
+        ════════════════════════════════════════ */
         @media (max-width: 767px) {
-          /* Compact header */
+
+          /* ── Header wrapper ── */
           #pj-header {
+            align-items: center;
             padding-bottom: 0;
           }
+
+          /*
+            Pull label out of absolute positioning.
+            Give a real top padding so text starts
+            well below the top edge of the screen.
+          */
           .pj-label {
             position: relative;
-            top: auto; left: auto;
+            top: auto;
+            left: auto;
             text-align: center;
-            padding-top: 20px;
+            padding-top: 44px;       /* comfortable top space */
             font-size: 14px;
+            font-weight: 500;
+            line-height: 1.6;
+            color: #fff;
+            letter-spacing: 0;
           }
+
+          /*
+            Clear gap between label ("Let's Explore…")
+            and heading ("The Art of Frontend").
+            margin-top controls the space between them.
+          */
           .pj-heading {
-            margin-top: 6px;
+            margin-top: 14px;        /* gap between two text blocks */
             white-space: normal;
             text-align: center;
-            padding: 0 20px 16px;
+            padding: 0 20px 24px;   /* bottom padding before cards start */
             font-size: clamp(28px, 8vw, 42px);
             letter-spacing: -0.032em;
+            line-height: 1.08;
           }
 
-          /* Tight scroll container — just enough for sticky scroll feel */
-          #pj-outer {
-            height: ${N * 48}vh;
-          }
-          .pj-wrapper {
-            height: 48vh;
-          }
+          /* Tight scroll container */
+          #pj-outer  { height: ${N * 48}vh; }
+          .pj-wrapper { height: 48vh; }
 
-          /* Card fills its slot with minimal breathing room */
+          /* Card centered in slot */
           .pj-card {
             width: calc(100vw - 24px);
             height: auto;
@@ -248,14 +268,19 @@ export default function Projects() {
           .pj-tip { display: none; }
         }
 
-        /* ════════════ ≤ 480px ════════════ */
+        /* ════════════ ≤ 480px — iPhone mini, SE2/3, Galaxy A, Pixel 4a ════════════ */
         @media (max-width: 480px) {
           #pj-outer   { height: ${N * 46}vh; }
           .pj-wrapper  { height: 46vh; }
-          .pj-label   { font-size: 13px; padding-top: 18px; }
+
+          .pj-label {
+            padding-top: 40px;
+            font-size: 13.5px;
+          }
           .pj-heading {
+            margin-top: 12px;
             font-size: clamp(26px, 7.5vw, 36px);
-            padding: 0 16px 14px;
+            padding: 0 18px 20px;
           }
           .pj-card {
             width: calc(100vw - 20px);
@@ -265,15 +290,30 @@ export default function Projects() {
           }
         }
 
-        /* ════════════ ≤ 390px — iPhone 13/14/15, Galaxy S, Pixel ════════════ */
+        /* ════════════ ≤ 414px — iPhone Plus / Max, large Android ════════════ */
+        @media (max-width: 414px) {
+          .pj-label   { padding-top: 38px; font-size: 13.5px; }
+          .pj-heading {
+            margin-top: 12px;
+            font-size: clamp(26px, 7.5vw, 36px);
+            padding: 0 18px 20px;
+          }
+        }
+
+        /* ════════════ ≤ 390px — iPhone 13/14/15, Galaxy S23, Pixel 7 ════════════ */
         @media (max-width: 390px) {
           #pj-outer   { height: ${N * 44}vh; }
           .pj-wrapper  { height: 44vh; }
-          .pj-label   { font-size: 13px; padding-top: 16px; }
+
+          .pj-label {
+            padding-top: 36px;
+            font-size: 13px;
+          }
           .pj-heading {
+            margin-top: 10px;
             font-size: clamp(24px, 7vw, 32px);
-            padding: 0 14px 12px;
-            letter-spacing: -0.025em;
+            padding: 0 16px 18px;
+            letter-spacing: -0.026em;
           }
           .pj-card {
             width: calc(100vw - 16px);
@@ -283,14 +323,49 @@ export default function Projects() {
           }
         }
 
-        /* ════════════ ≤ 320px — SE 1st gen, tiny Android ════════════ */
+        /* ════════════ ≤ 375px — iPhone SE3, 12 mini, Galaxy S21 ════════════ */
+        @media (max-width: 375px) {
+          .pj-label   { padding-top: 34px; font-size: 13px; }
+          .pj-heading {
+            margin-top: 10px;
+            font-size: clamp(24px, 7vw, 30px);
+            padding: 0 14px 16px;
+          }
+        }
+
+        /* ════════════ ≤ 360px — Galaxy S22/S20, Xiaomi, Redmi, OnePlus Nord ════════════ */
+        @media (max-width: 360px) {
+          #pj-outer   { height: ${N * 43}vh; }
+          .pj-wrapper  { height: 43vh; }
+
+          .pj-label   { padding-top: 32px; font-size: 13px; }
+          .pj-heading {
+            margin-top: 10px;
+            font-size: clamp(23px, 6.8vw, 30px);
+            padding: 0 14px 16px;
+            letter-spacing: -0.024em;
+          }
+          .pj-card {
+            width: calc(100vw - 16px);
+            left: 8px;
+            margin-top: calc((100vw - 16px) * -5 / 16);
+            border-radius: 15px;
+          }
+        }
+
+        /* ════════════ ≤ 320px — iPhone SE 1st gen, tiny Android ════════════ */
         @media (max-width: 320px) {
           #pj-outer   { height: ${N * 42}vh; }
           .pj-wrapper  { height: 42vh; }
-          .pj-label   { font-size: 12px; padding-top: 14px; }
+
+          .pj-label {
+            padding-top: 28px;
+            font-size: 12px;
+          }
           .pj-heading {
+            margin-top: 8px;
             font-size: clamp(22px, 6.8vw, 28px);
-            padding: 0 12px 10px;
+            padding: 0 12px 14px;
             letter-spacing: -0.022em;
           }
           .pj-card {
@@ -305,15 +380,16 @@ export default function Projects() {
         @media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
           #pj-outer   { height: ${N * 88}vh; }
           .pj-wrapper  { height: 88vh; }
+
           .pj-label {
             position: relative;
             top: auto; left: auto;
             text-align: center;
             font-size: 13px;
-            padding-top: 12px;
+            padding-top: 14px;
           }
           .pj-heading {
-            margin-top: 4px;
+            margin-top: 6px;
             white-space: normal;
             padding: 0 20px 10px;
             font-size: clamp(22px, 5vw, 36px);
@@ -334,11 +410,21 @@ export default function Projects() {
           .pj-tip { display: none; }
         }
 
-        /* iOS notch / Dynamic Island */
+        /* ════════════ iOS notch / Dynamic Island ════════════ */
         @supports (padding: env(safe-area-inset-top)) {
           @media (max-width: 767px) {
-            #pj-header {
-              padding-top: env(safe-area-inset-top, 0px);
+            .pj-label {
+              padding-top: calc(44px + env(safe-area-inset-top, 0px));
+            }
+          }
+          @media (max-width: 390px) {
+            .pj-label {
+              padding-top: calc(36px + env(safe-area-inset-top, 0px));
+            }
+          }
+          @media (max-width: 320px) {
+            .pj-label {
+              padding-top: calc(28px + env(safe-area-inset-top, 0px));
             }
           }
         }
