@@ -272,112 +272,120 @@ export default function Hero() {
 
         /* ─── Tablet Portrait (768px – 1023px) ──────── */
         @media (min-width: 768px) and (max-width: 1023px) {
+          /* Allow text to wrap large — like the reference image but for tablet */
           .hero-headline {
-            font-size: clamp(44px, 6.5vw, 72px);
+            font-size: 9.5vw;
             letter-spacing: -0.036em;
+            line-height: 1.05;
+            word-break: normal;
+            overflow-wrap: break-word;
+          }
+          /* On tablet, allow lines to wrap — remove y-clip constraint */
+          .hl-line {
+            overflow: visible;
+          }
+          /* Swap reveal animation to fadeUp (no overflow:hidden needed) */
+          .hl-inner.a1 {
+            animation: fadeUp 1.1s cubic-bezier(0.16, 1, 0.3, 1) 380ms both;
+          }
+          .hl-inner.a2 {
+            animation: fadeUp 1.1s cubic-bezier(0.16, 1, 0.3, 1) 580ms both;
+            -webkit-text-stroke: 1.2px #000 !important;
           }
           .hero-content {
-            padding-left: 8%;
-            padding-right: 8%;
-            padding-bottom: 100px;
+            padding-left: 6%;
+            padding-right: 6%;
+            padding-bottom: 110px;
           }
           .hero-badge-wrap {
-            margin-bottom: 36px;
+            margin-bottom: 32px;
           }
           .hero-tagline-wrap {
-            margin-top: 32px;
+            margin-top: 28px;
           }
           .scroll-wrap {
             bottom: 36px;
           }
         }
 
-        /* ─── Large Mobile (428px – 767px) ──────────── */
-        @media (min-width: 428px) and (max-width: 767px) {
+        /* ─── All Mobile (≤ 767px) — shared base ──── */
+        @media (max-width: 767px) {
+          /* Large wrapping text — matches the reference screenshot style */
           .hero-headline {
-            font-size: clamp(36px, 8.5vw, 54px);
+            font-size: 13vw;
             letter-spacing: -0.03em;
             line-height: 1.06;
+            word-break: normal;
+            overflow-wrap: break-word;
           }
-          .hero-content {
-            padding-left: 6.5%;
-            padding-right: 6.5%;
-            padding-bottom: 90px;
+
+          /* CRITICAL: remove overflow:hidden so text wraps without clipping */
+          .hl-line {
+            overflow: visible;
           }
-          .hero-badge-wrap {
-            margin-bottom: 28px;
+
+          /* Switch to fadeUp — no longer needs overflow:hidden clip to work */
+          .hl-inner.a1 {
+            animation: fadeUp 1.1s cubic-bezier(0.16, 1, 0.3, 1) 380ms both;
           }
-          .hero-tagline-wrap {
-            margin-top: 24px;
-            gap: 14px;
-          }
-          .hero-sub {
-            font-size: 10.5px;
-          }
-          .scroll-wrap {
-            bottom: 30px;
-          }
-          /* Outline stroke thinner on smaller headline */
           .hl-inner.a2 {
+            animation: fadeUp 1.1s cubic-bezier(0.16, 1, 0.3, 1) 580ms both;
             -webkit-text-stroke: 1px #000 !important;
           }
-        }
 
-        /* ─── Standard Mobile (360px – 427px) ───────── */
-        @media (min-width: 360px) and (max-width: 427px) {
-          .hero-headline {
-            font-size: clamp(32px, 8.8vw, 46px);
-            letter-spacing: -0.028em;
-            line-height: 1.07;
-          }
           .hero-content {
-            padding-left: 6%;
-            padding-right: 6%;
-            padding-bottom: 84px;
+            padding-left: 5.5%;
+            padding-right: 5.5%;
+            padding-bottom: 88px;
           }
           .hero-badge-wrap {
-            margin-bottom: 26px;
+            margin-bottom: 24px;
           }
           .hero-tagline-wrap {
-            margin-top: 22px;
+            margin-top: 20px;
             gap: 12px;
-          }
-          .hero-divider {
-            width: 28px;
           }
           .hero-sub {
             font-size: 10px;
             letter-spacing: 0.07em;
           }
-          .avail-label {
-            font-size: 10px;
-            letter-spacing: 0.12em;
-          }
           .scroll-wrap {
-            bottom: 28px;
-          }
-          .hl-inner.a2 {
-            -webkit-text-stroke: 1px #000 !important;
+            bottom: 30px;
           }
         }
 
-        /* ─── Small Mobile (320px – 359px) ──────────── */
-        @media (max-width: 359px) {
+        /* ─── Large Mobile (428px – 767px) ──────────── */
+        @media (min-width: 428px) and (max-width: 767px) {
           .hero-headline {
-            font-size: 28px;
-            letter-spacing: -0.024em;
-            line-height: 1.08;
+            font-size: 12.5vw;
           }
           .hero-content {
-            padding-left: 5.5%;
-            padding-right: 5.5%;
+            padding-bottom: 92px;
+          }
+          .hero-tagline-wrap {
+            margin-top: 22px;
+          }
+        }
+
+        /* ─── Small Mobile (≤ 359px) ────────────────── */
+        @media (max-width: 359px) {
+          .hero-headline {
+            font-size: 13.5vw;
+            letter-spacing: -0.026em;
+          }
+          .hl-inner.a2 {
+            -webkit-text-stroke: 0.8px #000 !important;
+          }
+          .hero-content {
+            padding-left: 5%;
+            padding-right: 5%;
             padding-bottom: 76px;
           }
           .hero-badge-wrap {
-            margin-bottom: 22px;
+            margin-bottom: 20px;
           }
           .hero-tagline-wrap {
-            margin-top: 20px;
+            margin-top: 18px;
             gap: 10px;
           }
           .hero-divider {
@@ -395,10 +403,7 @@ export default function Hero() {
             letter-spacing: 0.1em;
           }
           .scroll-wrap {
-            bottom: 24px;
-          }
-          .hl-inner.a2 {
-            -webkit-text-stroke: 0.8px #000 !important;
+            bottom: 22px;
           }
         }
 
@@ -413,7 +418,7 @@ export default function Hero() {
 
           @media (max-width: 767px) {
             .hero-content {
-              padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+              padding-bottom: calc(82px + env(safe-area-inset-bottom, 0px));
             }
             .scroll-wrap {
               bottom: calc(28px + env(safe-area-inset-bottom, 0px));
@@ -430,8 +435,17 @@ export default function Hero() {
         /* ─── Landscape mobile (short height) ───────── */
         @media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
           .hero-headline {
-            font-size: clamp(26px, 5.5vw, 48px);
+            font-size: 7.5vw;
             line-height: 1.05;
+          }
+          .hl-line {
+            overflow: visible;
+          }
+          .hl-inner.a1 {
+            animation: fadeUp 1.1s cubic-bezier(0.16, 1, 0.3, 1) 380ms both;
+          }
+          .hl-inner.a2 {
+            animation: fadeUp 1.1s cubic-bezier(0.16, 1, 0.3, 1) 580ms both;
           }
           .hero-content {
             padding-bottom: 70px;
@@ -439,13 +453,13 @@ export default function Hero() {
             padding-right: 6%;
           }
           .hero-badge-wrap {
-            margin-bottom: 18px;
+            margin-bottom: 16px;
           }
           .hero-tagline-wrap {
-            margin-top: 16px;
+            margin-top: 14px;
           }
           .scroll-wrap {
-            display: none; /* hide scroll hint in short landscape */
+            display: none;
           }
         }
       `}</style>
