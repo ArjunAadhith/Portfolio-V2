@@ -59,6 +59,8 @@ export default function Hero() {
           position: relative;
           width: 100%;
           height: 100vh;
+          /* iOS safe area support */
+          min-height: -webkit-fill-available;
           background: #ffffff;
           overflow: hidden;
         }
@@ -83,10 +85,12 @@ export default function Hero() {
           border: none;
           border-radius: 100px;
           cursor: default;
+          /* Thumb-friendly: min 44px height */
+          min-height: 44px;
           animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 150ms both;
         }
 
-        /* Dot — same color as the label text (#EEEEEE) */
+        /* Dot */
         .avail-dot {
           width: 7px;
           height: 7px;
@@ -203,11 +207,252 @@ export default function Hero() {
           border-radius: 2px;
           animation: scrollBob 1.7s ease-in-out infinite;
         }
+
+        /* ─── Main Content Container ─────────────────── */
+        .hero-content {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          z-index: 10;
+          padding-left: 7.5%;
+          padding-right: 7.5%;
+          padding-bottom: 120px;
+        }
+
+        .hero-badge-wrap {
+          margin-bottom: 46px;
+        }
+
+        .hero-tagline-wrap {
+          display: flex;
+          align-items: center;
+          gap: 18px;
+          margin-top: 44px;
+        }
+
+        /* ─── Ultra-wide (1440px+) ───────────────────── */
+        @media (min-width: 1440px) {
+          .hero-content {
+            max-width: 1920px;
+            margin-left: auto;
+            margin-right: auto;
+            /* Keep percentage-based padding but ensure no over-stretch */
+            padding-left: clamp(7.5%, calc((100vw - 1600px) / 2 + 7.5%), 14%);
+            padding-right: clamp(7.5%, calc((100vw - 1600px) / 2 + 7.5%), 14%);
+          }
+        }
+
+        @media (min-width: 1920px) {
+          .hero-content {
+            padding-left: 10%;
+            padding-right: 10%;
+            padding-bottom: 140px;
+          }
+          .hero-badge-wrap {
+            margin-bottom: 52px;
+          }
+          .hero-tagline-wrap {
+            margin-top: 52px;
+          }
+          .scroll-wrap {
+            bottom: 52px;
+          }
+        }
+
+        /* ─── Tablet Landscape (1024px – 1279px) ─────── */
+        @media (min-width: 1024px) and (max-width: 1279px) {
+          .hero-headline {
+            font-size: clamp(58px, 6.8vw, 90px);
+          }
+          .hero-content {
+            padding-bottom: 100px;
+          }
+        }
+
+        /* ─── Tablet Portrait (768px – 1023px) ──────── */
+        @media (min-width: 768px) and (max-width: 1023px) {
+          .hero-headline {
+            font-size: clamp(44px, 6.5vw, 72px);
+            letter-spacing: -0.036em;
+          }
+          .hero-content {
+            padding-left: 8%;
+            padding-right: 8%;
+            padding-bottom: 100px;
+          }
+          .hero-badge-wrap {
+            margin-bottom: 36px;
+          }
+          .hero-tagline-wrap {
+            margin-top: 32px;
+          }
+          .scroll-wrap {
+            bottom: 36px;
+          }
+        }
+
+        /* ─── Large Mobile (428px – 767px) ──────────── */
+        @media (min-width: 428px) and (max-width: 767px) {
+          .hero-headline {
+            font-size: clamp(36px, 8.5vw, 54px);
+            letter-spacing: -0.03em;
+            line-height: 1.06;
+          }
+          .hero-content {
+            padding-left: 6.5%;
+            padding-right: 6.5%;
+            padding-bottom: 90px;
+          }
+          .hero-badge-wrap {
+            margin-bottom: 28px;
+          }
+          .hero-tagline-wrap {
+            margin-top: 24px;
+            gap: 14px;
+          }
+          .hero-sub {
+            font-size: 10.5px;
+          }
+          .scroll-wrap {
+            bottom: 30px;
+          }
+          /* Outline stroke thinner on smaller headline */
+          .hl-inner.a2 {
+            -webkit-text-stroke: 1px #000 !important;
+          }
+        }
+
+        /* ─── Standard Mobile (360px – 427px) ───────── */
+        @media (min-width: 360px) and (max-width: 427px) {
+          .hero-headline {
+            font-size: clamp(32px, 8.8vw, 46px);
+            letter-spacing: -0.028em;
+            line-height: 1.07;
+          }
+          .hero-content {
+            padding-left: 6%;
+            padding-right: 6%;
+            padding-bottom: 84px;
+          }
+          .hero-badge-wrap {
+            margin-bottom: 26px;
+          }
+          .hero-tagline-wrap {
+            margin-top: 22px;
+            gap: 12px;
+          }
+          .hero-divider {
+            width: 28px;
+          }
+          .hero-sub {
+            font-size: 10px;
+            letter-spacing: 0.07em;
+          }
+          .avail-label {
+            font-size: 10px;
+            letter-spacing: 0.12em;
+          }
+          .scroll-wrap {
+            bottom: 28px;
+          }
+          .hl-inner.a2 {
+            -webkit-text-stroke: 1px #000 !important;
+          }
+        }
+
+        /* ─── Small Mobile (320px – 359px) ──────────── */
+        @media (max-width: 359px) {
+          .hero-headline {
+            font-size: 28px;
+            letter-spacing: -0.024em;
+            line-height: 1.08;
+          }
+          .hero-content {
+            padding-left: 5.5%;
+            padding-right: 5.5%;
+            padding-bottom: 76px;
+          }
+          .hero-badge-wrap {
+            margin-bottom: 22px;
+          }
+          .hero-tagline-wrap {
+            margin-top: 20px;
+            gap: 10px;
+          }
+          .hero-divider {
+            width: 22px;
+          }
+          .hero-sub {
+            font-size: 9.5px;
+            letter-spacing: 0.06em;
+          }
+          .avail-btn {
+            padding: 10px 20px 10px 14px;
+          }
+          .avail-label {
+            font-size: 9.5px;
+            letter-spacing: 0.1em;
+          }
+          .scroll-wrap {
+            bottom: 24px;
+          }
+          .hl-inner.a2 {
+            -webkit-text-stroke: 0.8px #000 !important;
+          }
+        }
+
+        /* ─── iOS Safe Area (notch / Dynamic Island) ── */
+        @supports (padding: env(safe-area-inset-bottom)) {
+          .hero-content {
+            padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+          }
+          .scroll-wrap {
+            bottom: calc(44px + env(safe-area-inset-bottom, 0px));
+          }
+
+          @media (max-width: 767px) {
+            .hero-content {
+              padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+            }
+            .scroll-wrap {
+              bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+            }
+          }
+
+          @media (max-width: 359px) {
+            .hero-content {
+              padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+            }
+          }
+        }
+
+        /* ─── Landscape mobile (short height) ───────── */
+        @media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
+          .hero-headline {
+            font-size: clamp(26px, 5.5vw, 48px);
+            line-height: 1.05;
+          }
+          .hero-content {
+            padding-bottom: 70px;
+            padding-left: 6%;
+            padding-right: 6%;
+          }
+          .hero-badge-wrap {
+            margin-bottom: 18px;
+          }
+          .hero-tagline-wrap {
+            margin-top: 16px;
+          }
+          .scroll-wrap {
+            display: none; /* hide scroll hint in short landscape */
+          }
+        }
       `}</style>
 
       <div className="hero-root">
 
-        {/* ── SVG Grid Background (from second code) ───── */}
+        {/* ── SVG Grid Background ───── */}
         <svg className="grid-svg" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <pattern id="g40" width="40" height="40" patternUnits="userSpaceOnUse">
@@ -236,20 +481,9 @@ export default function Hero() {
         </svg>
 
         {/* ── Main Content ─────────────────────────────── */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            zIndex: 10,
-            paddingLeft: "7.5%",
-            paddingRight: "7.5%",
-            paddingBottom: "120px",
-          }}
-        >
+        <div className="hero-content">
           {/* Available for Work badge */}
-          <div style={{ marginBottom: "46px" }}>
+          <div className="hero-badge-wrap">
             <button className="avail-btn">
               <span className="avail-dot" />
               <span className="avail-label">Available for Work</span>
@@ -275,14 +509,7 @@ export default function Hero() {
           </h1>
 
           {/* Rule + Tagline */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 18,
-              marginTop: 44,
-            }}
-          >
+          <div className="hero-tagline-wrap">
             <div className="hero-divider" />
             <span className="hero-sub">Craft · Clarity · Confidence</span>
           </div>
