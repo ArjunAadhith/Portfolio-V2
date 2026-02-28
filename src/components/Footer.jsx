@@ -14,7 +14,6 @@ const ICONS = [
   { id:'dragme', src:'/f-icons/Drag me.png',   link:null,                   xPct:0.874, w:156,  h:60   },
 ];
 
-/* ── Scale icon dimensions for smaller containers ─────────────────── */
 function getScaledIcons(containerW) {
   if (containerW >= 1024) return ICONS;
   const scale =
@@ -40,14 +39,13 @@ function loadMatter() {
   });
 }
 
-/* ── Tap-detection hook ───────────────────────────────────────────────
-   Matter.js captures pointer events on its canvas, which prevents the
-   native onClick from firing on mobile. We attach raw touchstart /
-   touchend listeners directly on each icon span.
+const isTouchDevice = () =>
+  typeof window !== 'undefined' &&
+  ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
-   A touch is treated as a TAP (and the link is opened) when:
-     • finger stayed within 10 px of where it landed
-     • the whole gesture lasted < 300 ms
+/* ── Tap-detection for link icons ────────────────────────────────────
+   Opens the link only when: finger moved < 10px AND held < 300ms.
+   Distinguishes a tap from a drag so links don't open while dragging.
 ─────────────────────────────────────────────────────────────────────── */
 const TAP_MAX_MS   = 300;
 const TAP_MAX_MOVE = 10;
@@ -58,19 +56,18 @@ function useTapLink(link) {
 
   const onTouchStart = useCallback((e) => {
     if (!link) return;
-    const touch = e.touches[0];
+    const t = e.touches[0];
     t0.current  = Date.now();
-    pos.current = { x: touch.clientX, y: touch.clientY };
+    pos.current = { x: t.clientX, y: t.clientY };
   }, [link]);
 
   const onTouchEnd = useCallback((e) => {
     if (!link || t0.current === null) return;
     const elapsed = Date.now() - t0.current;
-    const touch   = e.changedTouches[0];
-    const dx      = Math.abs(touch.clientX - pos.current.x);
-    const dy      = Math.abs(touch.clientY - pos.current.y);
+    const t  = e.changedTouches[0];
+    const dx = Math.abs(t.clientX - pos.current.x);
+    const dy = Math.abs(t.clientY - pos.current.y);
     if (elapsed < TAP_MAX_MS && dx < TAP_MAX_MOVE && dy < TAP_MAX_MOVE) {
-      e.stopPropagation();
       window.open(link, '_blank', 'noopener,noreferrer');
     }
     t0.current = null;
@@ -79,7 +76,6 @@ function useTapLink(link) {
   return { onTouchStart, onTouchEnd };
 }
 
-/* ── Single icon span ─────────────────────────────────────────────── */
 function IconSpan({ icon, onMouseEnter, onMouseMove, onMouseLeave }) {
   const { onTouchStart, onTouchEnd } = useTapLink(icon.link);
 
@@ -101,21 +97,11 @@ function IconSpan({ icon, onMouseEnter, onMouseMove, onMouseLeave }) {
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <img
-        src={icon.src}
-        alt={icon.id}
-        draggable={false}
-        className="fi-icon-img"
-      />
+      <img src={icon.src} alt={icon.id} draggable={false} className="fi-icon-img" />
     </span>
   );
 }
 
-/* ── Detect touch device ─────────────────────────────────────────── */
-const isTouchDevice = () =>
-  typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-
-/* ── Main component ───────────────────────────────────────────────── */
 export default function ContactSection() {
   const containerRef = useRef(null);
   const iconsWrapRef = useRef(null);
@@ -124,7 +110,6 @@ export default function ContactSection() {
   const cleanupRef   = useRef(null);
   const [triggered, setTriggered] = useState(false);
 
-  /* Scroll trigger */
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -135,7 +120,6 @@ export default function ContactSection() {
     return () => obs.disconnect();
   }, []);
 
-  /* Physics */
   useEffect(() => {
     if (!triggered) return;
     let cancelled = false;
@@ -144,12 +128,11 @@ export default function ContactSection() {
       const M = await loadMatter();
       if (cancelled) return;
 
-      const { Engine, Render, World, Bodies, Runner, Mouse, MouseConstraint, Events, Body } = M;
+      const { Engine, Render, World, Bodies, Runner, Mouse, MouseConstraint, Events, Body, Query } = M;
 
       const container = containerRef.current;
       if (!container) return;
       const { width: W, height: H } = container.getBoundingClientRect();
-
       const scaledIcons = getScaledIcons(W);
 
       const engine = Engine.create();
@@ -203,24 +186,74 @@ export default function ContactSection() {
 
       const mouse = Mouse.create(container);
 
-      /* ── Remove Matter's scroll-hijacking wheel listener ── */
+      /* Always remove wheel hijack */
       mouse.element.removeEventListener('mousewheel',     mouse.mousewheel);
       mouse.element.removeEventListener('DOMMouseScroll', mouse.mousewheel);
       mouse.element.removeEventListener('wheel',          mouse.mousewheel);
 
-      /* ── KEY FIX: On touch devices, Matter.js registers touchstart /
-         touchmove / touchend on the container WITHOUT the passive flag,
-         meaning they call preventDefault() internally and completely
-         block native page scrolling.
+      /* ── SMART TOUCH: drag icons AND allow page scroll ───────────────
+         Problem: Matter registers non-passive touchstart/touchmove that
+         call preventDefault(), which freezes the entire page scroll.
 
-         We remove them here so the browser's native scroll is never
-         interrupted. The physics simulation still runs perfectly —
-         icons fall and bounce — the only thing lost is icon-dragging
-         on mobile, which is replaced by our tap-to-link UX above.   ── */
+         Solution:
+         1. Remove Matter's built-in touch listeners.
+         2. Add our own smart listeners:
+            - touchstart: check if finger landed ON a physics body.
+              • If YES → feed event into Matter, preventDefault (icon drag).
+              • If NO  → do nothing (browser handles it as normal scroll).
+            - touchmove: only feed to Matter while actively dragging icon.
+              Scrolling on empty space is completely unblocked.
+            - touchend: release Matter drag if one was active.
+      ─────────────────────────────────────────────────────────────────── */
       if (isTouchDevice()) {
         mouse.element.removeEventListener('touchstart', mouse.mousedown);
         mouse.element.removeEventListener('touchmove',  mouse.mousemove);
         mouse.element.removeEventListener('touchend',   mouse.mouseup);
+
+        let draggingIcon = false;
+
+        /* Construct a synthetic event compatible with Matter's mouse handlers */
+        const toEvt = (touch) => ({
+          clientX:        touch.clientX,
+          clientY:        touch.clientY,
+          button:         0,
+          preventDefault: () => {},
+        });
+
+        container.addEventListener('touchstart', (e) => {
+          const touch = e.touches[0];
+          const rect  = container.getBoundingClientRect();
+          const pt    = {
+            x: touch.clientX - rect.left,
+            y: touch.clientY - rect.top,
+          };
+
+          /* Check if the finger landed on any physics body */
+          const hit = Query.point(iconBodies.map(ib => ib.body), pt);
+
+          if (hit.length > 0) {
+            /* Finger is ON an icon — intercept for dragging */
+            draggingIcon = true;
+            mouse.mousedown(toEvt(touch));
+            e.preventDefault(); /* block scroll ONLY when grabbing icon */
+          } else {
+            /* Finger is on empty space — let browser scroll freely */
+            draggingIcon = false;
+          }
+        }, { passive: false });
+
+        container.addEventListener('touchmove', (e) => {
+          if (!draggingIcon) return; /* empty-space swipe → free scroll */
+          mouse.mousemove(toEvt(e.touches[0]));
+          e.preventDefault(); /* keep icon following finger */
+        }, { passive: false });
+
+        container.addEventListener('touchend', (e) => {
+          if (draggingIcon) {
+            mouse.mouseup(toEvt(e.changedTouches[0]));
+            draggingIcon = false;
+          }
+        }, { passive: true });
       }
 
       const mc = MouseConstraint.create(engine, {
@@ -230,7 +263,6 @@ export default function ContactSection() {
       render.mouse = mouse;
       World.add(engine.world, mc);
 
-      /* Only show grab cursor on non-touch (desktop) */
       if (!isTouchDevice()) {
         Events.on(mc, 'startdrag', () => container.style.cursor = 'grabbing');
         Events.on(mc, 'enddrag',   () => container.style.cursor = 'grab');
@@ -485,13 +517,9 @@ const CSS = `
   ══════════════════════════════════════════ */
   @media (min-width: 1920px) {
     .fi-page    { padding: 0 32px 32px; }
-    .fi-section {
-      height: 90vh;
-      max-height: 1000px;
-      border-radius: 36px;
-    }
-    .fi-hl       { font-size: clamp(72px, 8.5vw, 140px); }
-    .fi-mq-text  { font-size: clamp(80px, 12vw, 190px); }
+    .fi-section { height: 90vh; max-height: 1000px; border-radius: 36px; }
+    .fi-hl      { font-size: clamp(72px, 8.5vw, 140px); }
+    .fi-mq-text { font-size: clamp(80px, 12vw, 190px); }
     .fi-mq-outer { height: 260px; }
   }
 
@@ -513,55 +541,39 @@ const CSS = `
     .fi-page    { padding: 0 16px 20px; }
     .fi-section {
       height: 72vh;
-      min-height: 500px;
-      max-height: 720px;
+      min-height: 460px;
+      max-height: 680px;
       border-radius: 22px;
     }
-    .fi-hl       { font-size: clamp(44px, 9.5vw, 88px); letter-spacing: -0.042em; }
-    .fi-mq-text  { font-size: clamp(52px, 12vw, 110px); }
+    .fi-hl      { font-size: clamp(44px, 9.5vw, 88px); letter-spacing: -0.042em; }
+    .fi-mq-text { font-size: clamp(52px, 12vw, 110px); }
     .fi-mq-outer { height: 160px; }
-    .fi-tooltip  { display: none; }
-    .fi-section  { cursor: default; }
-    .fi-icon     { cursor: default; }
+    .fi-tooltip { display: none; }
+    .fi-section { cursor: default; }
+    .fi-icon    { cursor: default; }
   }
 
 
   /* ══════════════════════════════════════════
-     MOBILE — ALL (≤ 768px)
-
-     SCROLL FIX NOTES:
-     The CSS alone cannot fix scroll on touch devices because
-     Matter.js registers non-passive touchstart/touchmove listeners
-     on the container that call preventDefault() internally, freezing
-     the page. The actual fix is in the JS above:
-
-       mouse.element.removeEventListener('touchstart', mouse.mousedown);
-       mouse.element.removeEventListener('touchmove',  mouse.mousemove);
-       mouse.element.removeEventListener('touchend',   mouse.mouseup);
-
-     These CSS rules complement the JS fix by ensuring no CSS
-     property accidentally re-blocks scroll.
+     MOBILE — ALL (≤ 767px)
+     • Scroll: JS handles (smart touch listeners)
+     • Drag:   works via Query.point hit test
+     • Height: reduced
   ══════════════════════════════════════════ */
-  @media (max-width: 768px) {
+  @media (max-width: 767px) {
     .fi-page {
       padding: 0 12px 16px;
-      /* Never block vertical scroll at the wrapper level */
       overflow: visible;
     }
 
     .fi-section {
-      height: 65vh;
-      min-height: 340px;
-      max-height: 520px;
+      /* ↓ Reduced height */
+      height: 52vh;
+      min-height: 280px;
+      max-height: 420px;
       border-radius: 20px;
-
-      /* ✅ Allow vertical scroll to pass through to the page */
+      overflow: hidden;
       touch-action: pan-y;
-
-      /* ✅ Never use position: fixed or overflow-y: hidden here */
-      overflow: hidden; /* visual clipping only — does NOT block page scroll */
-
-      /* ✅ No height: 100vh locking */
       cursor: default;
     }
 
@@ -571,25 +583,17 @@ const CSS = `
     }
 
     .fi-hl {
-      font-size: clamp(32px, 9.5vw, 52px);
-      letter-spacing: -0.038em;
+      font-size: clamp(28px, 8.5vw, 46px);
+      letter-spacing: -0.036em;
       line-height: 1.06;
     }
 
-    .fi-mq-text  { font-size: clamp(38px, 13vw, 68px); }
-    .fi-mq-outer { height: 120px; }
-
-    /* Tooltip hidden — no hover on touch */
-    .fi-tooltip { display: none !important; }
-
-    /* Icons: pass scroll through when not tapping a link */
-    .fi-icon       { cursor: default; touch-action: pan-y; }
-    .fi-icon:active{ cursor: default; }
-
-    /* Icons wrap: never block scroll */
-    .fi-icons-wrap {
-      touch-action: pan-y;
-    }
+    .fi-mq-text  { font-size: clamp(32px, 11vw, 58px); }
+    .fi-mq-outer { height: 100px; }
+    .fi-tooltip  { display: none !important; }
+    .fi-icon     { cursor: default; }
+    .fi-icon:active { cursor: default; }
+    .fi-icons-wrap  { touch-action: pan-y; }
   }
 
   /* ══════════════════════════════════════════
@@ -597,14 +601,14 @@ const CSS = `
   ══════════════════════════════════════════ */
   @media (min-width: 360px) and (max-width: 414px) {
     .fi-section {
-      height: 62vh;
-      min-height: 320px;
-      max-height: 480px;
+      height: 50vh;
+      min-height: 260px;
+      max-height: 400px;
       border-radius: 18px;
     }
-    .fi-hl       { font-size: clamp(30px, 9vw, 46px); }
-    .fi-mq-text  { font-size: clamp(36px, 12.5vw, 60px); }
-    .fi-mq-outer { height: 112px; }
+    .fi-hl      { font-size: clamp(26px, 8vw, 40px); }
+    .fi-mq-text { font-size: clamp(30px, 11vw, 52px); }
+    .fi-mq-outer { height: 92px; }
   }
 
   /* ══════════════════════════════════════════
@@ -613,14 +617,14 @@ const CSS = `
   @media (min-width: 428px) and (max-width: 767px) {
     .fi-page    { padding: 0 14px 18px; }
     .fi-section {
-      height: 64vh;
-      min-height: 340px;
-      max-height: 500px;
+      height: 51vh;
+      min-height: 270px;
+      max-height: 410px;
       border-radius: 22px;
     }
-    .fi-hl       { font-size: clamp(34px, 9.5vw, 52px); }
-    .fi-mq-text  { font-size: clamp(40px, 12vw, 68px); }
-    .fi-mq-outer { height: 118px; }
+    .fi-hl      { font-size: clamp(28px, 8.5vw, 44px); }
+    .fi-mq-text { font-size: clamp(32px, 11vw, 56px); }
+    .fi-mq-outer { height: 96px; }
   }
 
   /* ══════════════════════════════════════════
@@ -629,14 +633,14 @@ const CSS = `
   @media (max-width: 375px) {
     .fi-page    { padding: 0 10px 14px; }
     .fi-section {
-      height: 60vh;
-      min-height: 300px;
-      max-height: 440px;
+      height: 50vh;
+      min-height: 240px;
+      max-height: 360px;
       border-radius: 16px;
     }
-    .fi-hl       { font-size: clamp(26px, 9vw, 40px); letter-spacing: -0.032em; }
-    .fi-mq-text  { font-size: clamp(30px, 12vw, 52px); }
-    .fi-mq-outer { height: 100px; }
+    .fi-hl      { font-size: clamp(22px, 8vw, 34px); letter-spacing: -0.030em; }
+    .fi-mq-text { font-size: clamp(26px, 10.5vw, 44px); }
+    .fi-mq-outer { height: 84px; }
   }
 
   /* ══════════════════════════════════════════
@@ -645,14 +649,14 @@ const CSS = `
   @media (max-width: 320px) {
     .fi-page    { padding: 0 8px 12px; }
     .fi-section {
-      height: 58vh;
-      min-height: 280px;
-      max-height: 400px;
+      height: 48vh;
+      min-height: 220px;
+      max-height: 320px;
       border-radius: 14px;
     }
-    .fi-hl       { font-size: 22px; letter-spacing: -0.026em; }
-    .fi-mq-text  { font-size: 28px; }
-    .fi-mq-outer { height: 88px; }
+    .fi-hl      { font-size: 20px; letter-spacing: -0.024em; }
+    .fi-mq-text { font-size: 24px; }
+    .fi-mq-outer { height: 72px; }
   }
 
 
@@ -660,7 +664,7 @@ const CSS = `
      iOS SAFE AREA
   ══════════════════════════════════════════ */
   @supports (padding-bottom: env(safe-area-inset-bottom)) {
-    @media (max-width: 768px) {
+    @media (max-width: 767px) {
       .fi-page {
         padding-bottom: calc(16px + env(safe-area-inset-bottom));
         padding-left:   calc(12px + env(safe-area-inset-left));
@@ -682,7 +686,6 @@ const CSS = `
       }
     }
   }
-
 
   /* ══════════════════════════════════════════
      REDUCED MOTION
