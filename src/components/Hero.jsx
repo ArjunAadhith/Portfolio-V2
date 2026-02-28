@@ -1,4 +1,13 @@
+import { useState } from "react";
+
 export default function Hero() {
+  /* ── Badge toggle ───────────────────────────────────────────────
+     false = "Available for Work"  (default)
+     true  = "Scroll Down ↓"      (after first tap / click)
+  ─────────────────────────────────────────────────────────────── */
+  const [toggled, setToggled] = useState(false);
+  const handleBadgeClick = () => setToggled(prev => !prev);
+
   return (
     <>
       <style>{`
@@ -27,31 +36,31 @@ export default function Hero() {
           from { opacity: 0; transform: translateY(105%); }
           to   { opacity: 1; transform: translateY(0); }
         }
-
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(16px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-
         @keyframes fadeIn {
           from { opacity: 0; }
           to   { opacity: 1; }
         }
-
         @keyframes lineGrow {
           from { transform: scaleX(0); opacity: 0; }
           to   { transform: scaleX(1); opacity: 1; }
         }
-
         @keyframes scrollBob {
           0%, 100% { transform: translateX(-50%) translateY(0);   opacity: 1;   }
           50%       { transform: translateX(-50%) translateY(7px); opacity: 0.2; }
         }
-
         @keyframes pulse {
           0%   { box-shadow: 0 0 0 0   rgba(238,238,238,0.6); }
           65%  { box-shadow: 0 0 0 6px rgba(238,238,238,0);   }
           100% { box-shadow: 0 0 0 0   rgba(238,238,238,0);   }
+        }
+        /* Badge text swap fade */
+        @keyframes labelSwap {
+          from { opacity: 0; transform: translateY(4px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
 
         /* ─── Root ──────────────────────────────────── */
@@ -83,11 +92,21 @@ export default function Hero() {
           background: #000;
           border: none;
           border-radius: 100px;
-          cursor: default;
+          cursor: pointer;
           min-height: 44px;
           animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 150ms both;
+          transition: background 0.3s ease, transform 0.18s ease;
+          -webkit-tap-highlight-color: transparent;
+          outline: none;
+        }
+        .avail-btn:hover {
+          background: #111;
+        }
+        .avail-btn:active {
+          transform: scale(0.96);
         }
 
+        /* Dot — changes to arrow when scrolled */
         .avail-dot {
           width: 7px;
           height: 7px;
@@ -95,7 +114,9 @@ export default function Hero() {
           background: #EEEEEE;
           flex-shrink: 0;
           animation: pulse 2s ease 1.2s infinite;
+          transition: all 0.3s ease;
         }
+        /* dot pulses always */
 
         .avail-label {
           font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont,
@@ -106,6 +127,7 @@ export default function Hero() {
           text-transform: uppercase;
           color: #EEEEEE;
           -webkit-font-smoothing: antialiased;
+          animation: labelSwap 0.28s ease both;
         }
 
         /* ─── Headline ──────────────────────────────── */
@@ -121,10 +143,8 @@ export default function Hero() {
           font-feature-settings: "kern" 1;
           text-rendering: optimizeLegibility;
         }
-
         .hl-line  { display: block; }
         .hl-inner { display: block; }
-
         .hl-inner.a1 {
           animation: wordReveal 1.1s cubic-bezier(0.16, 1, 0.3, 1) 380ms both;
         }
@@ -141,7 +161,6 @@ export default function Hero() {
           flex-shrink: 0;
           animation: lineGrow 0.7s cubic-bezier(0.16, 1, 0.3, 1) 900ms both;
         }
-
         .hero-sub {
           font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont,
             "Helvetica Neue", sans-serif;
@@ -167,7 +186,6 @@ export default function Hero() {
           gap: 9px;
           animation: fadeIn 1s ease 1300ms both;
         }
-
         .scroll-label {
           font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont,
             "Helvetica Neue", sans-serif;
@@ -178,7 +196,6 @@ export default function Hero() {
           color: #000;
           opacity: 0.22;
         }
-
         .mouse {
           position: relative;
           width: 18px;
@@ -186,7 +203,6 @@ export default function Hero() {
           border: 1.5px solid rgba(0, 0, 0, 0.22);
           border-radius: 9px;
         }
-
         .mouse-dot {
           position: absolute;
           top: 5px;
@@ -210,9 +226,7 @@ export default function Hero() {
           padding-right: 7.5%;
           padding-bottom: 120px;
         }
-
         .hero-badge-wrap   { margin-bottom: 46px; }
-
         .hero-tagline-wrap {
           display: flex;
           align-items: center;
@@ -230,7 +244,6 @@ export default function Hero() {
             padding-right: clamp(7.5%, calc((100vw - 1600px) / 2 + 7.5%), 14%);
           }
         }
-
         @media (min-width: 1920px) {
           .hero-content {
             padding-left: 10%;
@@ -244,12 +257,8 @@ export default function Hero() {
 
         /* ─── Tablet Landscape (1024px – 1279px) ─────── */
         @media (min-width: 1024px) and (max-width: 1279px) {
-          .hero-headline {
-            font-size: clamp(58px, 6.8vw, 90px);
-          }
-          .hero-content {
-            padding-bottom: 100px;
-          }
+          .hero-headline { font-size: clamp(58px, 6.8vw, 90px); }
+          .hero-content  { padding-bottom: 100px; }
         }
 
         /* ─── Tablet Portrait (768px – 1023px) ──────── */
@@ -294,8 +303,7 @@ export default function Hero() {
             top: 0; bottom: 0; left: 0; right: 0;
             padding-left: 5.5%;
             padding-right: 5.5%;
-            /* ↑ Pushed significantly higher — content starts at 26vh */
-            padding-top: 26vh;
+            padding-top: 34vh;   /* moved down — closes gap above scroll icon */
             padding-bottom: 0;
             display: flex;
             flex-direction: column;
@@ -303,7 +311,7 @@ export default function Hero() {
             align-items: flex-start;
           }
 
-          /* ↑ Scroll icon raised — well above bottom edge */
+          /* Scroll icon — position untouched */
           .scroll-wrap {
             bottom: 90px;
           }
@@ -331,8 +339,8 @@ export default function Hero() {
 
         /* ─── Large Mobile (428px – 767px) ──────────── */
         @media (min-width: 428px) and (max-width: 767px) {
-          .hero-headline { font-size: 12.5vw; }
-          .hero-content  { padding-left: 6%; padding-right: 6%; }
+          .hero-headline     { font-size: 12.5vw; }
+          .hero-content      { padding-left: 6%; padding-right: 6%; }
           .hero-tagline-wrap { margin-top: 22px; }
         }
 
@@ -348,8 +356,7 @@ export default function Hero() {
           .hero-content {
             padding-left: 5%;
             padding-right: 5%;
-            /* Same higher position for tiny screens */
-            padding-top: 26vh;
+            padding-top: 34vh;
           }
           .hero-badge-wrap   { margin-bottom: 20px; }
           .hero-tagline-wrap { margin-top: 18px; gap: 10px; }
@@ -357,7 +364,6 @@ export default function Hero() {
           .hero-sub          { font-size: 9.5px; letter-spacing: 0.06em; }
           .avail-btn         { padding: 10px 20px 10px 14px; }
           .avail-label       { font-size: 9.5px; letter-spacing: 0.1em; }
-          /* ↑ Also 10px higher for tiny screens */
           .scroll-wrap       { bottom: 82px; }
         }
 
@@ -369,23 +375,16 @@ export default function Hero() {
           .scroll-wrap {
             bottom: calc(44px + env(safe-area-inset-bottom, 0px));
           }
-
           @media (max-width: 767px) {
             .hero-content { padding-bottom: 0; }
-            /* Maintain raised position inside safe-area calc */
-            .scroll-wrap {
-              bottom: calc(90px + env(safe-area-inset-bottom, 0px));
-            }
+            /* vh-based bottom already adapts, safe-area handled separately */
+            .scroll-wrap  { bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
           }
-
           @media (min-width: 768px) and (max-width: 1023px) {
             .hero-content { padding-bottom: 0; }
           }
-
           @media (max-width: 359px) {
-            .scroll-wrap {
-              bottom: calc(82px + env(safe-area-inset-bottom, 0px));
-            }
+            .scroll-wrap { bottom: calc(82px + env(safe-area-inset-bottom, 0px)); }
           }
         }
 
@@ -443,13 +442,22 @@ export default function Hero() {
 
         {/* ── Main Content ─────────────────────────────── */}
         <div className="hero-content">
+
+          {/* ── Available for Work badge — click to toggle + scroll ── */}
           <div className="hero-badge-wrap">
-            <button className="avail-btn">
+            <button
+              className="avail-btn"
+              onClick={handleBadgeClick}
+              aria-label={toggled ? "Discover the Craft" : "Available for Work"}
+            >
               <span className="avail-dot" />
-              <span className="avail-label">Available for Work</span>
+              <span className="avail-label" key={toggled ? "craft" : "avail"}>
+                {toggled ? "Discover the Craft" : "Available for Work"}
+              </span>
             </button>
           </div>
 
+          {/* ── Headline ── */}
           <h1 className="hero-headline">
             <span className="hl-line">
               <span className="hl-inner a1">Exceptional Design</span>
@@ -457,20 +465,19 @@ export default function Hero() {
             <span className="hl-line" style={{ marginTop: "0.05em" }}>
               <span
                 className="hl-inner a2"
-                style={{
-                  color: "transparent",
-                  WebkitTextStroke: "1.5px #000",
-                }}
+                style={{ color: "transparent", WebkitTextStroke: "1.5px #000" }}
               >
                 Needs No Explanation
               </span>
             </span>
           </h1>
 
+          {/* ── Tagline ── */}
           <div className="hero-tagline-wrap">
             <div className="hero-divider" />
             <span className="hero-sub">Craft · Clarity · Confidence</span>
           </div>
+
         </div>
 
         {/* ── Scroll Indicator ─────────────────────────── */}
