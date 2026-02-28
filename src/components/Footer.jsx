@@ -19,8 +19,8 @@ function getScaledIcons(containerW) {
   const scale =
     containerW >= 768 ? 0.80 :
     containerW >= 600 ? 0.68 :
-    containerW >= 428 ? 0.56 :
-    containerW >= 360 ? 0.48 : 0.40;
+    containerW >= 428 ? 0.60 :
+    containerW >= 360 ? 0.52 : 0.44;
   return ICONS.map(ic => ({
     ...ic,
     w: Math.round(ic.w * scale),
@@ -43,12 +43,9 @@ const isTouchDevice = () =>
   typeof window !== 'undefined' &&
   ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
-/* ── Tap-detection for link icons ────────────────────────────────────
-   Opens the link only when: finger moved < 10px AND held < 300ms.
-   Distinguishes a tap from a drag so links don't open while dragging.
-─────────────────────────────────────────────────────────────────────── */
-const TAP_MAX_MS   = 300;
-const TAP_MAX_MOVE = 10;
+/* ── Tap-to-link: fires only on short, stationary touches ─────────── */
+const TAP_MAX_MS   = 250;
+const TAP_MAX_MOVE = 8;
 
 function useTapLink(link) {
   const t0  = useRef(null);
@@ -110,6 +107,7 @@ export default function ContactSection() {
   const cleanupRef   = useRef(null);
   const [triggered, setTriggered] = useState(false);
 
+  /* Scroll-triggered initialisation */
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -120,6 +118,7 @@ export default function ContactSection() {
     return () => obs.disconnect();
   }, []);
 
+  /* Physics engine */
   useEffect(() => {
     if (!triggered) return;
     let cancelled = false;
@@ -128,7 +127,10 @@ export default function ContactSection() {
       const M = await loadMatter();
       if (cancelled) return;
 
-      const { Engine, Render, World, Bodies, Runner, Mouse, MouseConstraint, Events, Body, Query } = M;
+      const {
+        Engine, Render, World, Bodies, Runner,
+        Mouse, MouseConstraint, Events, Body, Query,
+      } = M;
 
       const container = containerRef.current;
       if (!container) return;
@@ -146,12 +148,12 @@ export default function ContactSection() {
       render.canvas.style.cssText =
         'position:absolute;inset:0;opacity:0;pointer-events:none;z-index:1;';
 
-      const S = { isStatic: true, render: { fillStyle: 'transparent' } };
+      const STATIC = { isStatic: true, render: { fillStyle: 'transparent' } };
       World.add(engine.world, [
-        Bodies.rectangle(W / 2,  H + 25, W + 100, 50,  S),
-        Bodies.rectangle(-25,    H / 2,  50,      H*2, S),
-        Bodies.rectangle(W + 25, H / 2,  50,      H*2, S),
-        Bodies.rectangle(W / 2, -25,     W + 100, 50,  S),
+        Bodies.rectangle(W / 2,  H + 25, W + 100, 50,  STATIC),
+        Bodies.rectangle(-25,    H / 2,  50,      H*2, STATIC),
+        Bodies.rectangle(W + 25, H / 2,  50,      H*2, STATIC),
+        Bodies.rectangle(W / 2, -25,     W + 100, 50,  STATIC),
       ]);
 
       const iconSpans  = iconsWrapRef.current.querySelectorAll('.fi-icon');
@@ -184,74 +186,72 @@ export default function ContactSection() {
 
       World.add(engine.world, iconBodies.map(ib => ib.body));
 
+      /* ── Mouse (desktop) ─────────────────────────────────────────── */
       const mouse = Mouse.create(container);
 
-      /* Always remove wheel hijack */
+      /* Remove wheel-scroll hijack */
       mouse.element.removeEventListener('mousewheel',     mouse.mousewheel);
       mouse.element.removeEventListener('DOMMouseScroll', mouse.mousewheel);
       mouse.element.removeEventListener('wheel',          mouse.mousewheel);
 
-      /* ── SMART TOUCH: drag icons AND allow page scroll ───────────────
-         Problem: Matter registers non-passive touchstart/touchmove that
-         call preventDefault(), which freezes the entire page scroll.
+      /* ── Smart touch (mobile): drag icons + free page scroll ────────
+         ROOT CAUSE OF PREVIOUS DRAG FAILURE:
+         We were building a synthetic event { clientX, clientY } but
+         Matter.js's _getRelativeMousePosition checks event.changedTouches
+         FIRST and reads pageX/pageY from it. A plain object with only
+         clientX/clientY has no changedTouches → Matter reads NaN → the
+         mouse constraint gets a null position → no drag.
 
-         Solution:
-         1. Remove Matter's built-in touch listeners.
-         2. Add our own smart listeners:
-            - touchstart: check if finger landed ON a physics body.
-              • If YES → feed event into Matter, preventDefault (icon drag).
-              • If NO  → do nothing (browser handles it as normal scroll).
-            - touchmove: only feed to Matter while actively dragging icon.
-              Scrolling on empty space is completely unblocked.
-            - touchend: release Matter drag if one was active.
-      ─────────────────────────────────────────────────────────────────── */
+         FIX: Pass the REAL native TouchEvent directly to Matter's
+         handlers. Real touch events always have changedTouches with
+         correct pageX/pageY that Matter.js expects.
+
+         HOW SCROLL IS PRESERVED:
+         On touchstart we do a Query.point hit-test. If the finger
+         landed ON a physics body we call preventDefault() and let
+         Matter drag it. If the finger is on EMPTY space we do nothing
+         and the browser handles it as normal page scroll.
+      ────────────────────────────────────────────────────────────────── */
       if (isTouchDevice()) {
+        /* Remove Matter's own non-passive touch listeners */
         mouse.element.removeEventListener('touchstart', mouse.mousedown);
         mouse.element.removeEventListener('touchmove',  mouse.mousemove);
         mouse.element.removeEventListener('touchend',   mouse.mouseup);
 
-        let draggingIcon = false;
-
-        /* Construct a synthetic event compatible with Matter's mouse handlers */
-        const toEvt = (touch) => ({
-          clientX:        touch.clientX,
-          clientY:        touch.clientY,
-          button:         0,
-          preventDefault: () => {},
-        });
+        let dragging = false;
 
         container.addEventListener('touchstart', (e) => {
           const touch = e.touches[0];
           const rect  = container.getBoundingClientRect();
-          const pt    = {
+          /* Position relative to the physics world origin */
+          const pt = {
             x: touch.clientX - rect.left,
             y: touch.clientY - rect.top,
           };
-
-          /* Check if the finger landed on any physics body */
-          const hit = Query.point(iconBodies.map(ib => ib.body), pt);
+          /* Hit-test: did the finger land on a physics body? */
+          const hit = Query.point(iconBodies.map(b => b.body), pt);
 
           if (hit.length > 0) {
-            /* Finger is ON an icon — intercept for dragging */
-            draggingIcon = true;
-            mouse.mousedown(toEvt(touch));
-            e.preventDefault(); /* block scroll ONLY when grabbing icon */
+            dragging = true;
+            /* Pass the REAL event — Matter reads e.changedTouches[0].pageX/Y */
+            mouse.mousedown(e);
+            e.preventDefault(); /* block scroll ONLY while grabbing an icon */
           } else {
-            /* Finger is on empty space — let browser scroll freely */
-            draggingIcon = false;
+            dragging = false;
+            /* Finger on empty space → browser scroll unblocked */
           }
         }, { passive: false });
 
         container.addEventListener('touchmove', (e) => {
-          if (!draggingIcon) return; /* empty-space swipe → free scroll */
-          mouse.mousemove(toEvt(e.touches[0]));
-          e.preventDefault(); /* keep icon following finger */
+          if (!dragging) return; /* swipe on empty space → free scroll */
+          mouse.mousemove(e);   /* pass REAL event so pageX/Y are correct */
+          e.preventDefault();
         }, { passive: false });
 
         container.addEventListener('touchend', (e) => {
-          if (draggingIcon) {
-            mouse.mouseup(toEvt(e.changedTouches[0]));
-            draggingIcon = false;
+          if (dragging) {
+            mouse.mouseup(e); /* pass REAL event */
+            dragging = false;
           }
         }, { passive: true });
       }
@@ -545,8 +545,8 @@ const CSS = `
       max-height: 680px;
       border-radius: 22px;
     }
-    .fi-hl      { font-size: clamp(44px, 9.5vw, 88px); letter-spacing: -0.042em; }
-    .fi-mq-text { font-size: clamp(52px, 12vw, 110px); }
+    .fi-hl      { font-size: clamp(48px, 9.5vw, 88px); letter-spacing: -0.042em; }
+    .fi-mq-text { font-size: clamp(56px, 12vw, 110px); }
     .fi-mq-outer { height: 160px; }
     .fi-tooltip { display: none; }
     .fi-section { cursor: default; }
@@ -556,9 +556,7 @@ const CSS = `
 
   /* ══════════════════════════════════════════
      MOBILE — ALL (≤ 767px)
-     • Scroll: JS handles (smart touch listeners)
-     • Drag:   works via Query.point hit test
-     • Height: reduced
+     Heights reduced, text enlarged
   ══════════════════════════════════════════ */
   @media (max-width: 767px) {
     .fi-page {
@@ -567,31 +565,34 @@ const CSS = `
     }
 
     .fi-section {
-      /* ↓ Reduced height */
-      height: 52vh;
-      min-height: 280px;
-      max-height: 420px;
+      height: 55vh;
+      min-height: 300px;
+      max-height: 460px;
       border-radius: 20px;
       overflow: hidden;
+      /* touch-action: pan-y allows finger swipe-to-scroll on empty areas.
+         Scroll on icon areas is blocked selectively via JS preventDefault */
       touch-action: pan-y;
       cursor: default;
     }
 
     .fi-hl-wrap {
-      width: 92%;
+      width: 94%;
       transform: translate(-50%, -58%);
     }
 
+    /* ↑ Text enlarged vs previous versions */
     .fi-hl {
-      font-size: clamp(28px, 8.5vw, 46px);
-      letter-spacing: -0.036em;
-      line-height: 1.06;
+      font-size: clamp(38px, 11vw, 60px);
+      letter-spacing: -0.040em;
+      line-height: 1.05;
     }
 
-    .fi-mq-text  { font-size: clamp(32px, 11vw, 58px); }
-    .fi-mq-outer { height: 100px; }
-    .fi-tooltip  { display: none !important; }
-    .fi-icon     { cursor: default; }
+    .fi-mq-text  { font-size: clamp(44px, 13.5vw, 72px); }
+    .fi-mq-outer { height: 110px; }
+
+    .fi-tooltip     { display: none !important; }
+    .fi-icon        { cursor: default; }
     .fi-icon:active { cursor: default; }
     .fi-icons-wrap  { touch-action: pan-y; }
   }
@@ -601,46 +602,48 @@ const CSS = `
   ══════════════════════════════════════════ */
   @media (min-width: 360px) and (max-width: 414px) {
     .fi-section {
-      height: 50vh;
-      min-height: 260px;
-      max-height: 400px;
+      height: 53vh;
+      min-height: 290px;
+      max-height: 430px;
       border-radius: 18px;
     }
-    .fi-hl      { font-size: clamp(26px, 8vw, 40px); }
-    .fi-mq-text { font-size: clamp(30px, 11vw, 52px); }
-    .fi-mq-outer { height: 92px; }
+    .fi-hl      { font-size: clamp(36px, 10.5vw, 54px); }
+    .fi-mq-text { font-size: clamp(40px, 13vw, 64px); }
+    .fi-mq-outer { height: 104px; }
   }
 
   /* ══════════════════════════════════════════
      LARGE MOBILE (428px+)
+     iPhone 14 Pro Max / Galaxy S Ultra
   ══════════════════════════════════════════ */
   @media (min-width: 428px) and (max-width: 767px) {
     .fi-page    { padding: 0 14px 18px; }
     .fi-section {
-      height: 51vh;
-      min-height: 270px;
-      max-height: 410px;
+      height: 54vh;
+      min-height: 300px;
+      max-height: 450px;
       border-radius: 22px;
     }
-    .fi-hl      { font-size: clamp(28px, 8.5vw, 44px); }
-    .fi-mq-text { font-size: clamp(32px, 11vw, 56px); }
-    .fi-mq-outer { height: 96px; }
+    .fi-hl      { font-size: clamp(40px, 11vw, 58px); }
+    .fi-mq-text { font-size: clamp(44px, 13.5vw, 70px); }
+    .fi-mq-outer { height: 108px; }
   }
 
   /* ══════════════════════════════════════════
      SMALL MOBILE (≤ 375px)
+     iPhone SE / Galaxy A / 320px
   ══════════════════════════════════════════ */
   @media (max-width: 375px) {
     .fi-page    { padding: 0 10px 14px; }
     .fi-section {
-      height: 50vh;
-      min-height: 240px;
-      max-height: 360px;
+      height: 52vh;
+      min-height: 270px;
+      max-height: 400px;
       border-radius: 16px;
     }
-    .fi-hl      { font-size: clamp(22px, 8vw, 34px); letter-spacing: -0.030em; }
-    .fi-mq-text { font-size: clamp(26px, 10.5vw, 44px); }
-    .fi-mq-outer { height: 84px; }
+    .fi-hl      { font-size: clamp(32px, 10vw, 48px); letter-spacing: -0.034em; }
+    .fi-mq-text { font-size: clamp(36px, 12.5vw, 58px); }
+    .fi-mq-outer { height: 96px; }
   }
 
   /* ══════════════════════════════════════════
@@ -649,14 +652,14 @@ const CSS = `
   @media (max-width: 320px) {
     .fi-page    { padding: 0 8px 12px; }
     .fi-section {
-      height: 48vh;
-      min-height: 220px;
-      max-height: 320px;
+      height: 50vh;
+      min-height: 250px;
+      max-height: 360px;
       border-radius: 14px;
     }
-    .fi-hl      { font-size: 20px; letter-spacing: -0.024em; }
-    .fi-mq-text { font-size: 24px; }
-    .fi-mq-outer { height: 72px; }
+    .fi-hl      { font-size: 28px; letter-spacing: -0.028em; }
+    .fi-mq-text { font-size: 30px; }
+    .fi-mq-outer { height: 84px; }
   }
 
 
