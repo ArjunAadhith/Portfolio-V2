@@ -117,7 +117,7 @@ const CATEGORIES = ["All", ..._dynamic];
 const INITIAL_LIMIT = 6;
 
 /* ══════════════════════════════════════════════════════════
-   HERO SECTION — Redesigned
+   HERO SECTION
    ══════════════════════════════════════════════════════════ */
 const SCHome = memo(function SCHome({ onScrollDown, scroller }) {
   const ref = useRef(null);
@@ -337,18 +337,15 @@ const SCProjects = memo(function SCProjects() {
 });
 
 /* ══════════════════════════════════════════════════════════
-   FOOTER — Redesigned with grey info rectangle
+   FOOTER
    ══════════════════════════════════════════════════════════ */
 const SCFooter = memo(function SCFooter({ onClose }) {
   return (
     <footer className="sc-footer">
-
-      {/* ── BIG GREY RECTANGLE — everything lives inside ── */}
       <div className="sc-footer-card">
         <div className="sc-footer-card-texture" aria-hidden="true" />
         <div className="sc-footer-card-watermark" aria-hidden="true">AA</div>
 
-        {/* Top meta row */}
         <div className="sc-footer-eyebrow-row">
           <span className="sc-footer-eyebrow">
             <span className="sc-footer-dot" />
@@ -357,17 +354,14 @@ const SCFooter = memo(function SCFooter({ onClose }) {
           <span className="sc-footer-year">2026</span>
         </div>
 
-        {/* Big headline */}
         <h2 className="sc-footer-headline">
           <span className="sc-fh-line">Think bold.</span>
           <span className="sc-fh-line sc-fh-accent">Design sharp.</span>
           <span className="sc-fh-line">Build right.</span>
         </h2>
 
-        {/* Divider */}
         <div className="sc-footer-rule" />
 
-        {/* Bottom row — back button + copyright */}
         <div className="sc-footer-card-bottom">
           <button className="sc-footer-back" onClick={onClose}>
             <span className="sc-footer-back-icon">
@@ -381,14 +375,11 @@ const SCFooter = memo(function SCFooter({ onClose }) {
           </button>
           <span className="sc-footer-copy">© 2026 Arjun Aadhith</span>
         </div>
-
       </div>
 
-      {/* Slim bottom bar */}
       <div className="sc-footer-bottom">
         <span className="sc-footer-built">Designed &amp; Built by Arjun</span>
       </div>
-
     </footer>
   );
 });
@@ -498,7 +489,7 @@ const CSS = `
   }
 
   /* ══════════════════════════════════════
-     HERO — Redesigned
+     HERO — Desktop (unchanged)
      ══════════════════════════════════════ */
   .sc-home {
     position: relative;
@@ -512,7 +503,6 @@ const CSS = `
     border-bottom: 1px solid #e8e8e8;
   }
 
-  /* Horizontal ruled lines */
   .sc-hero-rule {
     position: absolute;
     left: 0;
@@ -538,7 +528,6 @@ const CSS = `
     gap: 0;
   }
 
-  /* Meta row */
   .sc-hero-meta-row {
     display: flex;
     align-items: center;
@@ -564,12 +553,6 @@ const CSS = `
     letter-spacing: 0.08em;
   }
 
-  /*
-    3-TIER TYPOGRAPHIC HERO TITLE
-    Line 1: ghost/outlined giant text
-    Line 2: solid black giant text
-    Line 3: light italic subtitle
-  */
   .sc-home-name {
     margin: 0 0 26px;
     line-height: 0.9;
@@ -598,7 +581,6 @@ const CSS = `
     padding-top: 8px;
   }
 
-  /* Bottom row */
   .sc-hero-bottom-row {
     display: flex;
     align-items: center;
@@ -614,7 +596,6 @@ const CSS = `
     line-height: 1.5;
   }
 
-  /* CTA — filled black */
   .sc-home-cta {
     display: inline-flex;
     align-items: center;
@@ -643,7 +624,6 @@ const CSS = `
     justify-content: center;
   }
 
-  /* Ghost watermark — bottom right */
   .sc-home-watermark {
     position: absolute;
     bottom: -0.14em;
@@ -827,7 +807,7 @@ const CSS = `
   }
 
   /* ══════════════════════════════════════
-     FOOTER — all content inside grey card
+     FOOTER
      ══════════════════════════════════════ */
   .sc-footer {
     position: relative;
@@ -838,7 +818,6 @@ const CSS = `
     border-top: 1px solid #eeeeee;
   }
 
-  /* ── THE GREY RECTANGLE — full footer CTA ── */
   .sc-footer-card {
     position: relative;
     background: #ffffff;
@@ -852,7 +831,6 @@ const CSS = `
     min-height: 460px;
   }
 
-  /* Diagonal texture */
   .sc-footer-card-texture {
     position: absolute;
     inset: 0;
@@ -867,7 +845,6 @@ const CSS = `
     );
   }
 
-  /* "AA" ghost watermark inside card */
   .sc-footer-card-watermark {
     position: absolute;
     bottom: -0.11em;
@@ -920,7 +897,6 @@ const CSS = `
     letter-spacing: 0.06em;
   }
 
-  /* Big headline */
   .sc-footer-headline {
     font-size: clamp(44px, 7.5vw, 108px);
     font-weight: 900;
@@ -938,7 +914,6 @@ const CSS = `
   .sc-fh-line   { display: block; color: #111111; }
   .sc-fh-accent { color: rgba(0,0,0,0.22); font-style: italic; font-weight: 700; }
 
-  /* Hairline rule inside card */
   .sc-footer-rule {
     width: 100%;
     height: 1px;
@@ -948,7 +923,6 @@ const CSS = `
     z-index: 1;
   }
 
-  /* Bottom row inside card */
   .sc-footer-card-bottom {
     display: flex;
     align-items: center;
@@ -957,7 +931,6 @@ const CSS = `
     z-index: 1;
   }
 
-  /* Back button */
   .sc-footer-back {
     display: inline-flex;
     align-items: center;
@@ -1003,7 +976,6 @@ const CSS = `
     letter-spacing: 0.01em;
   }
 
-  /* Bottom bar below the card */
   .sc-footer-bottom {
     display: flex;
     align-items: center;
@@ -1028,17 +1000,45 @@ const CSS = `
     .sc-footer      { padding: 32px 48px 0; }
     .sc-footer-card { padding: 44px 48px; }
   }
+
+  /* ── MOBILE: pin content to the mid-rule line ── */
   @media (max-width: 768px) {
-    .sc-home              { padding: 0 28px 8vh; min-height: 100svh; }
+    /*
+      Switch from bottom-anchored flex to top-anchored,
+      with padding-top = 48% so content starts right at sc-rule-mid.
+      Use 100svh (small viewport height) so it fits snugly on
+      every mobile browser regardless of address-bar state.
+    */
+    .sc-home {
+      align-items: flex-start;
+      padding: calc(54% + 80px) 28px 6vh;
+      min-height: 100svh;
+      height: 100svh;
+    }
+
+    /* Keep the rules visible; top rule stays near top, mid rule at 48% */
+    .sc-rule-top { top: 56px; }
+    .sc-rule-mid { top: 48%; }
+
+    /* Slightly tighter title sizes for narrow screens */
     .sc-name-outlined,
-    .sc-name-filled       { font-size: clamp(52px, 14vw, 100px); }
-    .sc-name-sub-italic   { font-size: clamp(18px, 5vw, 36px); }
+    .sc-name-filled       { font-size: clamp(48px, 13.5vw, 96px); }
+    .sc-name-sub-italic   { font-size: clamp(16px, 5vw, 32px); }
+
+    /* Stack CTA below disciplines text */
     .sc-hero-bottom-row   { flex-direction: column; align-items: flex-start; gap: 16px; }
-    .sc-scroll-indicator  { display: none; }
+
+    /* Tighten spacing between meta row and title */
+    .sc-hero-meta-row     { margin-bottom: 14px; }
+    .sc-home-name         { margin-bottom: 20px; }
+
+    /* Filter bar & grid */
     .sc-filter-bar        { padding: 12px 20px; }
     .sc-grid-outer        { padding: 24px 20px 0; }
     .sc-grid              { gap: 12px; }
     .sc-strip-text        { padding: 12px 20px; }
+
+    /* Footer */
     .sc-footer            { padding: 24px 28px 0; }
     .sc-footer-card       { padding: 36px 32px; min-height: 380px; border-radius: 18px; }
     .sc-footer-headline   { font-size: clamp(36px, 10vw, 64px); }
@@ -1046,9 +1046,20 @@ const CSS = `
     .sc-footer-card-bottom { flex-direction: column; align-items: flex-start; gap: 16px; }
     .sc-footer-built      { display: none; }
   }
+
+  /* Extra small phones (iPhone SE, Galaxy A-series, etc.) */
+  @media (max-width: 390px) {
+    .sc-home {
+      padding-top: calc(52% + 80px);
+    }
+    .sc-name-outlined,
+    .sc-name-filled     { font-size: clamp(44px, 14vw, 80px); }
+    .sc-name-sub-italic { font-size: clamp(15px, 5.5vw, 28px); }
+  }
+
   @media (max-width: 520px) {
     .sc-grid              { grid-template-columns: 1fr; }
-    .sc-home-watermark    { display: none; }
+    .sc-home-watermark    { font-size: clamp(160px, 52vw, 320px); }
     .sc-footer-watermark  { display: none; }
     .sc-hero-rule         { display: none; }
   }
