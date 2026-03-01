@@ -7,10 +7,11 @@ const ROW_1 = [
   { id: 4, src: "/illustration/i4.png", alt: "Colourful characters" },
 ];
 const ROW_2 = [
-  { id: 5, src: "/illustration/l0.jpg", alt: "Colourful characters" },
-  { id: 6, src: "/illustration/i5.png", alt: "People crowd" },
-  { id: 7, src: "/illustration/l01.jpg", alt: "Colourful characters" },
-  { id: 8, src: "/illustration/i6.png", alt: "Woman with phone" },
+  { id: 5, src: "/illustration/i5.png", alt: "Colourful characters" },
+  { id: 6, src: "/illustration/i6.png", alt: "People crowd" },
+  { id: 7, src: "/illustration/i7.jpg", alt: "Colourful characters" },
+  { id: 8, src: "/illustration/i8.jpg", alt: "Woman with phone" },
+  { id: 9, src: "/illustration/i9.png", alt: "Abstract guitar" }
 ];
 
 export default function Illustrations() {
