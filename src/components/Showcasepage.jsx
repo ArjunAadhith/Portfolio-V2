@@ -96,6 +96,30 @@ const ALL_PROJECTS = [
     label: "Game Development",
     link: "https://mini-car-game.netlify.app/",
   },
+  {
+    id: 12,
+    src: "/multidisciplinary/old portfolio.png",
+    title: "Previous Portfolio Website",
+    category: "Others",
+    label: "Portfolio Website",
+    link: "https://arjun-aadhith-portfolio-arjun-aadhith.vercel.app/",
+  },
+  {
+    id: 13,
+    src: "/multidisciplinary/Duplicate finder pro.png",
+    title: "Duplicate Finder Pro",
+    category: "Others",
+    label: "Frontend Development",
+    link: "https://duplicate-finder-pro.vercel.app/",
+  },
+  {
+    id: 14,
+    src: "/multidisciplinary/DDDAS App.png",
+    title: "Duplicate Finder Pro App",
+    category: "Others",
+    label: "App Development",
+    link: "https://play.google.com/store/apps/details?id=com.nikocomet.duplicatefinderpro",
+  },
 ];
 
 const CATEGORY_ORDER = ["Graphic Design", "Logos", "3D Model", "Game", "Wallpapers", "Others"];
