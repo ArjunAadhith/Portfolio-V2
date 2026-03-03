@@ -3,12 +3,12 @@ import { useState, useCallback, useRef } from "react";
 const ROW_1 = [
   { id: 1, src: "/illustration/i1.png", alt: "Illustration 1" },
   { id: 2, src: "/illustration/i2.png", alt: "Illustration 2" },
-  { id: 3, src: "/illustration/i3.png", alt: "Illustration 3" },
+  { id: 3, src: "/illustration/i3.jpg", alt: "Illustration 3" },
   { id: 4, src: "/illustration/i4.png", alt: "Illustration 4" },
 ];
 const ROW_2 = [
   { id: 5, src: "/illustration/i5.png", alt: "Illustration 5" },
-  { id: 6, src: "/illustration/i6.jpg", alt: "Illustration 6" },
+  { id: 6, src: "/illustration/i6.png", alt: "Illustration 6" },
   { id: 7, src: "/illustration/i7.jpg", alt: "Illustration 7" },
   { id: 8, src: "/illustration/i8.jpg", alt: "Illustration 8" },
 ];
