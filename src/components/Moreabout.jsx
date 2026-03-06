@@ -496,10 +496,15 @@ const ROTATIONS = [-12, 8, -6, 14, -9, 11, -4, 7, -13, 5];
 const MABeyondDesign = memo(function MABeyondDesign() {
   const sectionRef = useRef(null);
   const [imgs, setImgs] = useState([]);
+  const [isTouch, setIsTouch] = useState(false);
   const counterRef = useRef(0);
   const lastPos = useRef({ x: -999, y: -999 });
   const lastTime = useRef(0);
   const imgIndexRef = useRef(0);
+
+  useEffect(() => {
+    setIsTouch(window.matchMedia("(pointer: coarse)").matches);
+  }, []);
 
   const handleMouseMove = useCallback((e) => {
     const now = Date.now();
@@ -550,7 +555,7 @@ const MABeyondDesign = memo(function MABeyondDesign() {
         <RevealText delay={0.14}>
           <p className="ma-beyond-hint">
             <span className="ma-beyond-hint-dot" />
-            Move your cursor to explore
+            {isTouch ? "Tap to explore" : "Move your cursor to explore"}
           </p>
         </RevealText>
       </div>
