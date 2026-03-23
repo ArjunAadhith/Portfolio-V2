@@ -331,9 +331,9 @@ export default function Showcase() {
       z-index: 10;
       background: #ffffff;
       color: #111111;
-      font-family: 'Syne', sans-serif;
-      font-size: 10px; font-weight: 700;
-      letter-spacing: 0.14em; text-transform: uppercase;
+      font-family: 'SF Pro Display', -apple-system, sans-serif;
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 0.14em;
       padding: 8px 18px;
       border-radius: 100px;
       white-space: nowrap;

@@ -4,6 +4,7 @@ import About from "./components/About.jsx";
 import Skills from "./components/Skills.jsx";
 import Projects from "./components/Projects.jsx";
 import Mycreations from "./components/Mycreations.jsx";
+import CaseStudySection from "./components/CaseStudySection.jsx";
 import Multidisciplinary from "./components/Multidisciplinary.jsx";
 import Illustrations from "./components/Illustrations.jsx";
 import Education from "./components/Education.jsx";
@@ -71,6 +72,7 @@ export default function App() {
           <div id="projects">
             <Projects />
             <Mycreations />
+            <CaseStudySection />
             <Multidisciplinary />
             <Illustrations />
           </div>
