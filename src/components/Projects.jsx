@@ -202,9 +202,9 @@ export default function Projects() {
 
         /* ════════════════════════════════════════
            MOBILE BASE ≤ 767px
-           Header: generous top padding, clear gap
-           between label and heading.
-           Cards: tight slot so no black void.
+           Non-last wrappers use 38vh (reduced from 48vh).
+           Last wrapper retains the original 48vh.
+           Total outer height = (N-1)*38 + 48
         ════════════════════════════════════════ */
         @media (max-width: 767px) {
 
@@ -214,17 +214,12 @@ export default function Projects() {
             padding-bottom: 0;
           }
 
-          /*
-            Pull label out of absolute positioning.
-            Give a real top padding so text starts
-            well below the top edge of the screen.
-          */
           .pj-label {
             position: relative;
             top: auto;
             left: auto;
             text-align: center;
-            padding-top: 44px;       /* comfortable top space */
+            padding-top: 44px;
             font-size: 14px;
             font-weight: 500;
             line-height: 1.6;
@@ -232,24 +227,19 @@ export default function Projects() {
             letter-spacing: 0;
           }
 
-          /*
-            Clear gap between label ("Let's Explore…")
-            and heading ("The Art of Frontend").
-            margin-top controls the space between them.
-          */
           .pj-heading {
-            margin-top: 14px;        /* gap between two text blocks */
+            margin-top: 14px;
             white-space: normal;
             text-align: center;
-            padding: 0 20px 24px;   /* bottom padding before cards start */
+            padding: 0 20px 24px;
             font-size: clamp(28px, 8vw, 42px);
             letter-spacing: -0.032em;
             line-height: 1.08;
           }
 
-          /* Tight scroll container */
-          #pj-outer  { height: ${N * 48}vh; }
-          .pj-wrapper { height: 48vh; }
+          /* All wrappers uniform — no leftover scroll below last card */
+          #pj-outer  { height: ${N * 38}vh; }
+          .pj-wrapper { height: 38vh; }
 
           /* Card centered in slot */
           .pj-card {
@@ -270,8 +260,8 @@ export default function Projects() {
 
         /* ════════════ ≤ 480px — iPhone mini, SE2/3, Galaxy A, Pixel 4a ════════════ */
         @media (max-width: 480px) {
-          #pj-outer   { height: ${N * 46}vh; }
-          .pj-wrapper  { height: 46vh; }
+          #pj-outer   { height: ${N * 36}vh; }
+          .pj-wrapper  { height: 36vh; }
 
           .pj-label {
             padding-top: 40px;
@@ -302,8 +292,8 @@ export default function Projects() {
 
         /* ════════════ ≤ 390px — iPhone 13/14/15, Galaxy S23, Pixel 7 ════════════ */
         @media (max-width: 390px) {
-          #pj-outer   { height: ${N * 44}vh; }
-          .pj-wrapper  { height: 44vh; }
+          #pj-outer   { height: ${N * 34}vh; }
+          .pj-wrapper  { height: 34vh; }
 
           .pj-label {
             padding-top: 36px;
@@ -335,8 +325,8 @@ export default function Projects() {
 
         /* ════════════ ≤ 360px — Galaxy S22/S20, Xiaomi, Redmi, OnePlus Nord ════════════ */
         @media (max-width: 360px) {
-          #pj-outer   { height: ${N * 43}vh; }
-          .pj-wrapper  { height: 43vh; }
+          #pj-outer   { height: ${N * 33}vh; }
+          .pj-wrapper  { height: 33vh; }
 
           .pj-label   { padding-top: 32px; font-size: 13px; }
           .pj-heading {
@@ -355,8 +345,8 @@ export default function Projects() {
 
         /* ════════════ ≤ 320px — iPhone SE 1st gen, tiny Android ════════════ */
         @media (max-width: 320px) {
-          #pj-outer   { height: ${N * 42}vh; }
-          .pj-wrapper  { height: 42vh; }
+          #pj-outer   { height: ${N * 32}vh; }
+          .pj-wrapper  { height: 32vh; }
 
           .pj-label {
             padding-top: 28px;
@@ -378,8 +368,8 @@ export default function Projects() {
 
         /* ════════════ Landscape phone ════════════ */
         @media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
-          #pj-outer   { height: ${N * 88}vh; }
-          .pj-wrapper  { height: 88vh; }
+          #pj-outer   { height: ${N * 78}vh; }
+          .pj-wrapper  { height: 78vh; }
 
           .pj-label {
             position: relative;
@@ -396,11 +386,11 @@ export default function Projects() {
           }
           .pj-card {
             width: calc(100vw - 32px);
-            height: calc(88vh - 90px);
+            height: calc(78vh - 90px);
             aspect-ratio: unset;
             left: 16px;
             top: 50%;
-            margin-top: calc((88vh - 90px) / -2);
+            margin-top: calc((78vh - 90px) / -2);
             border-radius: 18px;
             transform: translateY(100%);
             cursor: pointer;
