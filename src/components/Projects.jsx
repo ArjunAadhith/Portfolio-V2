@@ -202,20 +202,29 @@ export default function Projects() {
 
         /* ════════════════════════════════════════
            MOBILE BASE ≤ 767px
+           Header: generous top padding, clear gap
+           between label and heading.
+           Cards: tight slot so no black void.
         ════════════════════════════════════════ */
         @media (max-width: 767px) {
 
+          /* ── Header wrapper ── */
           #pj-header {
             align-items: center;
             padding-bottom: 0;
           }
 
+          /*
+            Pull label out of absolute positioning.
+            Give a real top padding so text starts
+            well below the top edge of the screen.
+          */
           .pj-label {
             position: relative;
             top: auto;
             left: auto;
             text-align: center;
-            padding-top: 44px;
+            padding-top: 44px;       /* comfortable top space */
             font-size: 14px;
             font-weight: 500;
             line-height: 1.6;
@@ -223,27 +232,33 @@ export default function Projects() {
             letter-spacing: 0;
           }
 
+          /*
+            Clear gap between label ("Let's Explore…")
+            and heading ("The Art of Frontend").
+            margin-top controls the space between them.
+          */
           .pj-heading {
-            margin-top: 14px;
+            margin-top: 14px;        /* gap between two text blocks */
             white-space: normal;
             text-align: center;
-            padding: 0 20px 24px;
+            padding: 0 20px 24px;   /* bottom padding before cards start */
             font-size: clamp(28px, 8vw, 42px);
             letter-spacing: -0.032em;
             line-height: 1.08;
           }
 
-          #pj-outer  { height: ${(N - 1) * 38 + 40}vh; }
-          .pj-wrapper { height: 38vh; }
-          .pj-wrapper:last-child { height: 40vh; }
+          /* Tight scroll container */
+          #pj-outer  { height: ${N * 48}vh; }
+          .pj-wrapper { height: 48vh; }
 
+          /* Card centered in slot */
           .pj-card {
             width: calc(100vw - 24px);
             height: auto;
             aspect-ratio: 16 / 10;
             left: 12px;
-            top: 8px;
-            margin-top: 0;
+            top: 50%;
+            margin-top: calc((100vw - 24px) * -5 / 16);
             border-radius: 22px;
             transform: translateY(100%);
             cursor: pointer;
@@ -253,11 +268,10 @@ export default function Projects() {
           .pj-tip { display: none; }
         }
 
-        /* ════════════ ≤ 480px ════════════ */
+        /* ════════════ ≤ 480px — iPhone mini, SE2/3, Galaxy A, Pixel 4a ════════════ */
         @media (max-width: 480px) {
-          #pj-outer   { height: ${(N - 1) * 36 + 38}vh; }
-          .pj-wrapper  { height: 36vh; }
-          .pj-wrapper:last-child { height: 38vh; }
+          #pj-outer   { height: ${N * 46}vh; }
+          .pj-wrapper  { height: 46vh; }
 
           .pj-label {
             padding-top: 40px;
@@ -271,13 +285,12 @@ export default function Projects() {
           .pj-card {
             width: calc(100vw - 20px);
             left: 10px;
-            top: 8px;
-            margin-top: 0;
+            margin-top: calc((100vw - 20px) * -5 / 16);
             border-radius: 18px;
           }
         }
 
-        /* ════════════ ≤ 414px ════════════ */
+        /* ════════════ ≤ 414px — iPhone Plus / Max, large Android ════════════ */
         @media (max-width: 414px) {
           .pj-label   { padding-top: 38px; font-size: 13.5px; }
           .pj-heading {
@@ -287,11 +300,10 @@ export default function Projects() {
           }
         }
 
-        /* ════════════ ≤ 390px ════════════ */
+        /* ════════════ ≤ 390px — iPhone 13/14/15, Galaxy S23, Pixel 7 ════════════ */
         @media (max-width: 390px) {
-          #pj-outer   { height: ${(N - 1) * 34 + 36}vh; }
-          .pj-wrapper  { height: 34vh; }
-          .pj-wrapper:last-child { height: 36vh; }
+          #pj-outer   { height: ${N * 44}vh; }
+          .pj-wrapper  { height: 44vh; }
 
           .pj-label {
             padding-top: 36px;
@@ -306,12 +318,12 @@ export default function Projects() {
           .pj-card {
             width: calc(100vw - 16px);
             left: 8px;
-            top: 8px;
-            margin-top: 0;
+            margin-top: calc((100vw - 16px) * -5 / 16);
             border-radius: 16px;
           }
         }
 
+        /* ════════════ ≤ 375px — iPhone SE3, 12 mini, Galaxy S21 ════════════ */
         @media (max-width: 375px) {
           .pj-label   { padding-top: 34px; font-size: 13px; }
           .pj-heading {
@@ -321,11 +333,10 @@ export default function Projects() {
           }
         }
 
-        /* ════════════ ≤ 360px ════════════ */
+        /* ════════════ ≤ 360px — Galaxy S22/S20, Xiaomi, Redmi, OnePlus Nord ════════════ */
         @media (max-width: 360px) {
-          #pj-outer   { height: ${(N - 1) * 33 + 35}vh; }
-          .pj-wrapper  { height: 33vh; }
-          .pj-wrapper:last-child { height: 35vh; }
+          #pj-outer   { height: ${N * 43}vh; }
+          .pj-wrapper  { height: 43vh; }
 
           .pj-label   { padding-top: 32px; font-size: 13px; }
           .pj-heading {
@@ -337,17 +348,15 @@ export default function Projects() {
           .pj-card {
             width: calc(100vw - 16px);
             left: 8px;
-            top: 8px;
-            margin-top: 0;
+            margin-top: calc((100vw - 16px) * -5 / 16);
             border-radius: 15px;
           }
         }
 
-        /* ════════════ ≤ 320px ════════════ */
+        /* ════════════ ≤ 320px — iPhone SE 1st gen, tiny Android ════════════ */
         @media (max-width: 320px) {
-          #pj-outer   { height: ${(N - 1) * 32 + 34}vh; }
-          .pj-wrapper  { height: 32vh; }
-          .pj-wrapper:last-child { height: 34vh; }
+          #pj-outer   { height: ${N * 42}vh; }
+          .pj-wrapper  { height: 42vh; }
 
           .pj-label {
             padding-top: 28px;
@@ -362,8 +371,7 @@ export default function Projects() {
           .pj-card {
             width: calc(100vw - 14px);
             left: 7px;
-            top: 8px;
-            margin-top: 0;
+            margin-top: calc((100vw - 14px) * -5 / 16);
             border-radius: 14px;
           }
         }
