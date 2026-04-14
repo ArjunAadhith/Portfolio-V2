@@ -120,6 +120,14 @@ const ALL_PROJECTS = [
     label: "App Development",
     link: "https://play.google.com/store/apps/details?id=com.nikocomet.duplicatefinderpro",
   },
+  {
+    id: 15,
+    src: "/multidisciplinary/Lewis Wallpaper.png",
+    title: "44: The Legacy Frame",
+    category: "Wallpapers",
+    label: "Wallpaper",
+    link: "https://lewis-wallpaper.vercel.app/",
+  }
 ];
 
 const CATEGORY_ORDER = ["Graphic Design", "Logos", "3D Model", "Game", "Wallpapers", "Others"];
