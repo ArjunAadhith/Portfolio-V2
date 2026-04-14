@@ -20,6 +20,8 @@ const IMAGES = [
   { id: 16, src: "/case study/TNSTC/s16.png" },
   { id: 17, src: "/case study/TNSTC/s17.png" },
   { id: 18, src: "/case study/TNSTC/s18.png" },
+  { id: "vid", src: "/case study/TNSTC/vid.mp4" },
+  { id: 19, src: "/case study/TNSTC/s19.png" }
 ];
 
 function RevealImg({ src, index }) {
@@ -41,13 +43,24 @@ function RevealImg({ src, index }) {
     return () => io.disconnect();
   }, []);
 
+  const isVideo = src?.endsWith(".mp4");
+
   return (
     <div
       className="csp-img-wrap"
       ref={ref}
       style={{ "--stagger": `${Math.min(index * 0.05, 0.2)}s` }}
     >
-      {src ? (
+      {isVideo ? (
+        <video
+          src={src}
+          className="csp-img"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+      ) : src ? (
         <img
           src={src}
           alt={`Case study image ${index + 1}`}
