@@ -127,6 +127,14 @@ const ALL_PROJECTS = [
     category: "Wallpapers",
     label: "Wallpaper",
     link: "https://lewis-wallpaper.vercel.app/",
+  },
+  {
+    id: 16,
+    src: "/multidisciplinary/Gayle wallpaper.jpg",
+    title: "Gayle Wallpaper",
+    category: "Wallpapers",
+    label: "Wallpaper",
+    link: "https://gayle-wallpaper.vercel.app/",
   }
 ];
 
