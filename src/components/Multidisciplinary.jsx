@@ -12,6 +12,61 @@ const IMAGES = [
 // Lerp factor — lower = floatier/slower catch-up
 const LERP = 0.078;
 
+/* ─── Lazy Image ────────────────────────────────────────────────────── */
+function LazyImage({ src, alt, className }) {
+  const imgRef   = useRef(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const el = imgRef.current;
+    if (!el) return;
+
+    // If browser already decoded it (cache hit), mark loaded immediately
+    if (el.complete && el.naturalWidth > 0) {
+      setLoaded(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          // Set src only when the card is about to enter the viewport
+          if (el.dataset.src) {
+            el.src = el.dataset.src;
+            delete el.dataset.src;
+          }
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px 0px" } // start loading 200px before visible
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <img
+      ref={imgRef}
+      /* Use data-src so IntersectionObserver controls when src is set.
+         Native loading="lazy" is also set as a fallback for browsers
+         that don't need the observer approach. */
+      data-src={src}
+      src=""                // empty until observer fires
+      loading="lazy"        // native browser hint (fallback / progressive enhancement)
+      decoding="async"      // non-blocking decode
+      alt={alt}
+      className={className}
+      draggable={false}
+      onLoad={() => setLoaded(true)}
+      style={{
+        opacity:    loaded ? 1 : 0,
+        transition: loaded ? "opacity 0.45s ease" : "none",
+      }}
+    />
+  );
+}
+
 /* ─── Card ─────────────────────────────────────────────────────────── */
 function ShowcaseCard({ img }) {
   const cardRef    = useRef(null);
@@ -80,7 +135,10 @@ function ShowcaseCard({ img }) {
       rel="noopener noreferrer"
     >
       <div ref={tipRef} className="sc2-tip">Discover Now</div>
-      <img src={img.src} alt={img.label} className="sc2-card-img" draggable={false} />
+
+      {/* ↓ Replaced plain <img> with lazy-loading wrapper */}
+      <LazyImage src={img.src} alt={img.label} className="sc2-card-img" />
+
       <div className="sc2-card-overlay">
         <span className="sc2-card-label">{img.label}</span>
       </div>
@@ -740,11 +798,9 @@ const CSS = `
     .sc2-card {
       border-radius: 20px;
       cursor: pointer;
-      /* Keep hover animations off on touch — no :hover on mobile */
     }
 
     .sc2-card-overlay {
-      /* Always show label on mobile for better UX */
       opacity: 1;
       background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 45%);
     }
@@ -754,7 +810,6 @@ const CSS = `
       letter-spacing: 0.08em;
     }
 
-    /* Hide cursor tooltip on touch devices */
     .sc2-tip {
       display: none;
     }
@@ -762,8 +817,7 @@ const CSS = `
 
 
   /* ══════════════════════════════════════════
-     SMALL MOBILE (≤ 375px) — iPhone SE,
-     320px devices, Galaxy A-series small
+     SMALL MOBILE (≤ 375px)
   ══════════════════════════════════════════ */
   @media (max-width: 375px) {
     .sc2-left-inner {
@@ -836,8 +890,7 @@ const CSS = `
 
 
   /* ══════════════════════════════════════════
-     LARGE MOBILE (428px+) — iPhone 14 Pro Max,
-     Plus/Max models, large Android flagships
+     LARGE MOBILE (428px+)
   ══════════════════════════════════════════ */
   @media (min-width: 428px) and (max-width: 767px) {
     .sc2-left-inner {
@@ -865,8 +918,7 @@ const CSS = `
 
 
   /* ══════════════════════════════════════════
-     iOS SAFE AREA — notch / Dynamic Island /
-     home indicator support
+     iOS SAFE AREA
   ══════════════════════════════════════════ */
   @supports (padding-bottom: env(safe-area-inset-bottom)) {
     @media (max-width: 767px) {
@@ -895,8 +947,7 @@ const CSS = `
 
 
   /* ══════════════════════════════════════════
-     TOUCH DEVICE — disable hover states to
-     prevent sticky hover on tap
+     TOUCH DEVICE — disable hover states
   ══════════════════════════════════════════ */
   @media (hover: none) and (pointer: coarse) {
     .sc2-card:hover {
