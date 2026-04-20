@@ -11,6 +11,7 @@ const ROW_2 = [
   { id: 6, src: "/illustration/i6.png", alt: "Illustration 6" },
   { id: 7, src: "/illustration/i7.jpg", alt: "Illustration 7" },
   { id: 8, src: "/illustration/i8.jpg", alt: "Illustration 8" },
+  { id: 9, src: "/illustration/i9.png", alt: "Illustration 9" }
 ];
 
 // ── Lazy Image Hook ───────────────────────────────────────────────────────────
