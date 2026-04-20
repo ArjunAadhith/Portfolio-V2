@@ -30,7 +30,6 @@ function RevealImg({ src, index }) {
 
   const isVideo = src?.endsWith(".mp4");
 
-  /* Reveal animation + lazy-play for video */
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
@@ -38,9 +37,10 @@ function RevealImg({ src, index }) {
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
+          // Trigger reveal animation
           el.classList.add("csp-img--visible");
 
-          /* Lazy-load video src only when in view */
+          // Lazy-load video: inject src only when scrolled into view
           if (isVideo && videoRef.current) {
             const vid = videoRef.current;
             if (!vid.src) {
@@ -67,7 +67,7 @@ function RevealImg({ src, index }) {
       style={{ "--stagger": `${Math.min(index * 0.05, 0.2)}s` }}
     >
       {isVideo ? (
-        /* No src on mount — injected by IntersectionObserver above */
+        // No src on mount — injected by IntersectionObserver above
         <video
           ref={videoRef}
           className="csp-img"
@@ -82,8 +82,8 @@ function RevealImg({ src, index }) {
           src={src}
           alt={`Case study image ${index + 1}`}
           className="csp-img"
-          loading="lazy"          /* native lazy load */
-          decoding="async"        /* non-blocking decode */
+          loading="lazy"      // Native browser lazy loading
+          decoding="async"    // Non-blocking decode
           draggable={false}
         />
       ) : (
@@ -287,7 +287,7 @@ const CSS = `
     background: rgba(0,0,0,0.1);
   }
 
-  /* Pill button */
+  /* Pill button — bottom-to-top fill on hover */
   .csp-back-btn {
     position: relative;
     display: inline-flex;
