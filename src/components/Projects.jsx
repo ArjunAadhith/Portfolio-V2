@@ -9,6 +9,58 @@ const CARDS = [
 
 const N = CARDS.length;
 
+/* ─── Lazy Image ────────────────────────────────────────────────────── */
+function LazyImage({ src, alt, className }) {
+  const imgRef  = useRef(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const el = imgRef.current;
+    if (!el) return;
+
+    // Already cached — mark loaded immediately
+    if (el.complete && el.naturalWidth > 0) {
+      setLoaded(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          if (el.dataset.src) {
+            el.src = el.dataset.src;
+            delete el.dataset.src;
+          }
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px 0px" } // start loading 200px before card is visible
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <img
+      ref={imgRef}
+      data-src={src}      // real src held here until observer fires
+      src=""              // empty until intersection
+      loading="lazy"      // native browser hint as fallback
+      decoding="async"    // non-blocking decode
+      alt={alt}
+      className={className}
+      draggable={false}
+      onLoad={() => setLoaded(true)}
+      style={{
+        opacity:    loaded ? 1 : 0,
+        transition: loaded ? "opacity 0.45s ease" : "none",
+      }}
+    />
+  );
+}
+
+/* ─── Main ──────────────────────────────────────────────────────────── */
 export default function Projects() {
   return (
     <>
@@ -202,18 +254,12 @@ export default function Projects() {
 
         /* ════════════════════════════════════════
            MOBILE BASE ≤ 767px
-           Non-last wrappers use 38vh (reduced from 48vh).
-           Last wrapper retains the original 48vh.
-           Total outer height = (N-1)*38 + 48
         ════════════════════════════════════════ */
         @media (max-width: 767px) {
-
-          /* ── Header wrapper ── */
           #pj-header {
             align-items: center;
             padding-bottom: 0;
           }
-
           .pj-label {
             position: relative;
             top: auto;
@@ -226,7 +272,6 @@ export default function Projects() {
             color: #fff;
             letter-spacing: 0;
           }
-
           .pj-heading {
             margin-top: 14px;
             white-space: normal;
@@ -236,12 +281,8 @@ export default function Projects() {
             letter-spacing: -0.032em;
             line-height: 1.08;
           }
-
-          /* All wrappers uniform — no leftover scroll below last card */
           #pj-outer  { height: ${N * 38}vh; }
           .pj-wrapper { height: 38vh; }
-
-          /* Card centered in slot */
           .pj-card {
             width: calc(100vw - 24px);
             height: auto;
@@ -258,11 +299,10 @@ export default function Projects() {
           .pj-tip { display: none; }
         }
 
-        /* ════════════ ≤ 480px — iPhone mini, SE2/3, Galaxy A, Pixel 4a ════════════ */
+        /* ════════════ ≤ 480px ════════════ */
         @media (max-width: 480px) {
           #pj-outer   { height: ${N * 36}vh; }
           .pj-wrapper  { height: 36vh; }
-
           .pj-label {
             padding-top: 40px;
             font-size: 13.5px;
@@ -280,7 +320,7 @@ export default function Projects() {
           }
         }
 
-        /* ════════════ ≤ 414px — iPhone Plus / Max, large Android ════════════ */
+        /* ════════════ ≤ 414px ════════════ */
         @media (max-width: 414px) {
           .pj-label   { padding-top: 38px; font-size: 13.5px; }
           .pj-heading {
@@ -290,11 +330,10 @@ export default function Projects() {
           }
         }
 
-        /* ════════════ ≤ 390px — iPhone 13/14/15, Galaxy S23, Pixel 7 ════════════ */
+        /* ════════════ ≤ 390px ════════════ */
         @media (max-width: 390px) {
           #pj-outer   { height: ${N * 34}vh; }
           .pj-wrapper  { height: 34vh; }
-
           .pj-label {
             padding-top: 36px;
             font-size: 13px;
@@ -313,7 +352,7 @@ export default function Projects() {
           }
         }
 
-        /* ════════════ ≤ 375px — iPhone SE3, 12 mini, Galaxy S21 ════════════ */
+        /* ════════════ ≤ 375px ════════════ */
         @media (max-width: 375px) {
           .pj-label   { padding-top: 34px; font-size: 13px; }
           .pj-heading {
@@ -323,11 +362,10 @@ export default function Projects() {
           }
         }
 
-        /* ════════════ ≤ 360px — Galaxy S22/S20, Xiaomi, Redmi, OnePlus Nord ════════════ */
+        /* ════════════ ≤ 360px ════════════ */
         @media (max-width: 360px) {
           #pj-outer   { height: ${N * 33}vh; }
           .pj-wrapper  { height: 33vh; }
-
           .pj-label   { padding-top: 32px; font-size: 13px; }
           .pj-heading {
             margin-top: 10px;
@@ -343,11 +381,10 @@ export default function Projects() {
           }
         }
 
-        /* ════════════ ≤ 320px — iPhone SE 1st gen, tiny Android ════════════ */
+        /* ════════════ ≤ 320px ════════════ */
         @media (max-width: 320px) {
           #pj-outer   { height: ${N * 32}vh; }
           .pj-wrapper  { height: 32vh; }
-
           .pj-label {
             padding-top: 28px;
             font-size: 12px;
@@ -370,7 +407,6 @@ export default function Projects() {
         @media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
           #pj-outer   { height: ${N * 78}vh; }
           .pj-wrapper  { height: 78vh; }
-
           .pj-label {
             position: relative;
             top: auto; left: auto;
@@ -436,6 +472,7 @@ export default function Projects() {
   );
 }
 
+/* ─── StickyCard ────────────────────────────────────────────────────── */
 function StickyCard({ card, index }) {
   const wrapperRef = useRef(null);
   const cardRef    = useRef(null);
@@ -485,11 +522,11 @@ function StickyCard({ card, index }) {
           Visit Now
         </span>
 
-        <img
+        {/* ↓ Replaced plain <img> with lazy-loading wrapper */}
+        <LazyImage
           src={card.image}
           alt={`Project ${card.id}`}
           className="pj-img"
-          draggable={false}
         />
       </div>
     </div>
