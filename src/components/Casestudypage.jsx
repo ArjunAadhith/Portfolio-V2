@@ -21,59 +21,85 @@ const IMAGES = [
   { id: 17, src: "/case study/TNSTC/s17.png" },
   { id: 18, src: "/case study/TNSTC/s18.png" },
   { id: "vid", src: "/case study/TNSTC/vid.mp4" },
-  { id: 19, src: "/case study/TNSTC/s19.png" }
+  { id: 19, src: "/case study/TNSTC/s19.png" },
 ];
 
 function RevealImg({ src, index }) {
-  const ref = useRef(null);
+  const wrapRef = useRef(null);
+  const videoRef = useRef(null);
 
+  const isVideo = src?.endsWith(".mp4");
+
+  /* Reveal animation + lazy-play for video */
   useEffect(() => {
-    const el = ref.current;
+    const el = wrapRef.current;
     if (!el) return;
+
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           el.classList.add("csp-img--visible");
+
+          /* Lazy-load video src only when in view */
+          if (isVideo && videoRef.current) {
+            const vid = videoRef.current;
+            if (!vid.src) {
+              vid.src = src;
+              vid.load();
+              vid.play().catch(() => {});
+            }
+          }
+
           io.unobserve(el);
         }
       },
       { threshold: 0.08 }
     );
+
     io.observe(el);
     return () => io.disconnect();
-  }, []);
-
-  const isVideo = src?.endsWith(".mp4");
+  }, [isVideo, src]);
 
   return (
     <div
       className="csp-img-wrap"
-      ref={ref}
+      ref={wrapRef}
       style={{ "--stagger": `${Math.min(index * 0.05, 0.2)}s` }}
     >
       {isVideo ? (
+        /* No src on mount — injected by IntersectionObserver above */
         <video
-          src={src}
+          ref={videoRef}
           className="csp-img"
           autoPlay
           loop
           muted
           playsInline
+          preload="none"
         />
       ) : src ? (
         <img
           src={src}
           alt={`Case study image ${index + 1}`}
           className="csp-img"
+          loading="lazy"          /* native lazy load */
+          decoding="async"        /* non-blocking decode */
           draggable={false}
         />
       ) : (
         <div className="csp-placeholder">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
-            <rect x="3" y="3" width="18" height="18" rx="2.5"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <path d="M21 15l-5-5L5 21"/>
+          <svg
+            width="36"
+            height="36"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.3"
+            strokeLinecap="round"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2.5" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <path d="M21 15l-5-5L5 21" />
           </svg>
         </div>
       )}
@@ -87,13 +113,17 @@ export default function CaseStudyPage({ isOpen, onClose }) {
   /* 1 — Lock body scroll */
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isOpen]);
 
   /* 2 — Escape key */
   useEffect(() => {
     if (!isOpen) return;
-    const fn = (e) => { if (e.key === "Escape") onClose(); };
+    const fn = (e) => {
+      if (e.key === "Escape") onClose();
+    };
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
   }, [isOpen, onClose]);
@@ -168,9 +198,13 @@ export default function CaseStudyPage({ isOpen, onClose }) {
             <span className="csp-back-label">Back to Portfolio</span>
             <span className="csp-back-arrow">
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M15 9H3M7 4L2 9l5 5"
-                  stroke="currentColor" strokeWidth="1.8"
-                  strokeLinecap="round" strokeLinejoin="round"/>
+                <path
+                  d="M15 9H3M7 4L2 9l5 5"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </span>
           </button>
@@ -253,7 +287,7 @@ const CSS = `
     background: rgba(0,0,0,0.1);
   }
 
-  /* Pill button — bottom-to-top fill on hover, matches About.jsx .btn-pill */
+  /* Pill button */
   .csp-back-btn {
     position: relative;
     display: inline-flex;
@@ -278,7 +312,6 @@ const CSS = `
       border-color 0.40s cubic-bezier(0.16,1,0.3,1);
   }
 
-  /* The fill layer — starts below, slides up on hover */
   .csp-back-btn::before {
     content: "";
     position: absolute;
