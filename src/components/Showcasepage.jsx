@@ -131,7 +131,7 @@ const ALL_PROJECTS = [
   {
     id: 16,
     src: "/multidisciplinary/Gayle wallpaper.jpg",
-    title: "Gayle Wallpaper",
+    title: "333: Universe Boss",
     category: "Wallpapers",
     label: "Wallpaper",
     link: "https://gayle-wallpaper.vercel.app/",
@@ -139,7 +139,7 @@ const ALL_PROJECTS = [
   {
     id: 17,
     src: "/multidisciplinary/Dhoni wallpaper.jpg",
-    title: "Dhoni Wallpaper",
+    title: "Captain Cool - 7",
     category: "Wallpapers",
     label: "Wallpaper",
     link: "https://captain-cool-wallpaper.vercel.app/",
