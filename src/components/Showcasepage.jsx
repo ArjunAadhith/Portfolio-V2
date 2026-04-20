@@ -135,6 +135,14 @@ const ALL_PROJECTS = [
     category: "Wallpapers",
     label: "Wallpaper",
     link: "https://gayle-wallpaper.vercel.app/",
+  },
+  {
+    id: 17,
+    src: "/multidisciplinary/Dhoni wallpaper.jpg",
+    title: "Dhoni Wallpaper",
+    category: "Wallpapers",
+    label: "Wallpaper",
+    link: "https://captain-cool-wallpaper.vercel.app/",
   }
 ];
 
