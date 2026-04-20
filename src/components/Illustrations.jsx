@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 const ROW_1 = [
   { id: 1, src: "/illustration/i1.png", alt: "Illustration 1" },
@@ -13,6 +13,62 @@ const ROW_2 = [
   { id: 8, src: "/illustration/i8.jpg", alt: "Illustration 8" },
 ];
 
+// ── Lazy Image Hook ───────────────────────────────────────────────────────────
+// Watches the wrapper element via IntersectionObserver.
+// `src` stays undefined until the image is near the viewport,
+// preventing any network request until it's actually needed.
+function useLazyImage(src) {
+  const wrapperRef        = useRef(null);
+  const [lazySrc, setLazySrc] = useState(undefined);
+  const [loaded,  setLoaded ] = useState(false);
+
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setLazySrc(src);   // unlock the real src → browser starts fetching
+          observer.disconnect();
+        }
+      },
+      // generous root margin so images load just before scrolling into view
+      { rootMargin: "200px 200px 200px 200px", threshold: 0 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [src]);
+
+  return { wrapperRef, lazySrc, loaded, setLoaded };
+}
+
+// ── LazyImage component ───────────────────────────────────────────────────────
+function LazyImage({ src, alt }) {
+  const { wrapperRef, lazySrc, loaded, setLoaded } = useLazyImage(src);
+
+  return (
+    // wrapperRef is on the outer div so IntersectionObserver fires as soon
+    // as the card enters the viewport, even before the <img> mounts its src.
+    <div
+      ref={wrapperRef}
+      className={`il-lazy-wrap${loaded ? " il-lazy-wrap--loaded" : ""}`}
+    >
+      <img
+        src={lazySrc}           // undefined until near viewport → no request
+        loading="lazy"          // native fallback for belt-and-suspenders
+        decoding="async"        // non-blocking decode
+        alt={alt}
+        className={`il-img${loaded ? " il-img--visible" : ""}`}
+        draggable={false}
+        onLoad={() => setLoaded(true)}
+      />
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 export default function Illustrations() {
   const [tip, setTip] = useState({ visible: false, x: 0, y: 0 });
   const sectionRef = useRef(null);
@@ -55,24 +111,14 @@ export default function Illustrations() {
           <div className="il-row">
             {ROW_1.map((img) => (
               <div className="il-card" key={img.id}>
-                <img
-                  src={img.src}
-                  alt={img.alt}
-                  className="il-img"
-                  draggable={false}
-                />
+                <LazyImage src={img.src} alt={img.alt} />
               </div>
             ))}
           </div>
           <div className="il-row">
             {ROW_2.map((img) => (
               <div className="il-card" key={img.id}>
-                <img
-                  src={img.src}
-                  alt={img.alt}
-                  className="il-img"
-                  draggable={false}
-                />
+                <LazyImage src={img.src} alt={img.alt} />
               </div>
             ))}
           </div>
@@ -139,6 +185,40 @@ const CSS = `
     height: 100%;
   }
 
+  /* ── Lazy wrapper: fills the card, shows shimmer skeleton ── */
+  .il-lazy-wrap {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #d8d8d8;
+    overflow: hidden;
+  }
+
+  /* Shimmer sweep — plays while image is loading */
+  .il-lazy-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.45) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: il-shimmer 1.6s infinite linear;
+  }
+
+  /* Remove shimmer once image has loaded */
+  .il-lazy-wrap--loaded::after {
+    display: none;
+  }
+
+  @keyframes il-shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position:  200% 0; }
+  }
+
   .il-img {
     height: 100%;
     width: auto;
@@ -147,7 +227,16 @@ const CSS = `
     pointer-events: none;
     user-select: none;
     -webkit-user-drag: none;
-    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    /* Start invisible; fade in after load */
+    opacity: 0;
+    transition:
+      opacity 0.45s ease,
+      transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  /* Fade in once loaded */
+  .il-img--visible {
+    opacity: 1;
   }
 
   .il-card:hover .il-img {
@@ -287,7 +376,6 @@ const CSS = `
       gap: 14px;
     }
 
-    /* Each row: two images side-by-side, equal width */
     .il-row {
       flex: unset;
       height: auto;
@@ -304,8 +392,14 @@ const CSS = `
       width: 100%;
     }
 
-    .il-img {
+    /* Wrapper & img need explicit height on grid layout */
+    .il-lazy-wrap {
       height: auto;
+      aspect-ratio: 4 / 3;
+    }
+
+    .il-img {
+      height: 100%;
       width: 100%;
       object-fit: cover;
       aspect-ratio: 4 / 3;
@@ -340,7 +434,6 @@ const CSS = `
       gap: 10px;
     }
 
-    /* Two images side-by-side per row on mobile */
     .il-row {
       flex: unset;
       height: auto;
@@ -357,8 +450,13 @@ const CSS = `
       width: 100%;
     }
 
-    .il-img {
+    .il-lazy-wrap {
       height: auto;
+      aspect-ratio: 4 / 3;
+    }
+
+    .il-img {
+      height: 100%;
       width: 100%;
       object-fit: cover;
       aspect-ratio: 4 / 3;
@@ -372,8 +470,7 @@ const CSS = `
 
 
   /* ══════════════════════════════════════════
-     SMALL MOBILE (≤ 375px) — iPhone SE,
-     Galaxy A-series small, 320px devices
+     SMALL MOBILE (≤ 375px)
   ══════════════════════════════════════════ */
   @media (max-width: 375px) {
     .il-section {
@@ -397,6 +494,7 @@ const CSS = `
       border-radius: 10px;
     }
 
+    .il-lazy-wrap,
     .il-img {
       aspect-ratio: 1 / 1;
     }
@@ -428,6 +526,7 @@ const CSS = `
       border-radius: 8px;
     }
 
+    .il-lazy-wrap,
     .il-img {
       aspect-ratio: 1 / 1;
     }
@@ -435,8 +534,7 @@ const CSS = `
 
 
   /* ══════════════════════════════════════════
-     LARGE MOBILE (428px+) — iPhone 14 Pro Max,
-     Galaxy S Ultra, Pixel XL
+     LARGE MOBILE (428px+)
   ══════════════════════════════════════════ */
   @media (min-width: 428px) and (max-width: 767px) {
     .il-section {
@@ -460,6 +558,7 @@ const CSS = `
       border-radius: 14px;
     }
 
+    .il-lazy-wrap,
     .il-img {
       aspect-ratio: 4 / 3;
     }
@@ -467,8 +566,7 @@ const CSS = `
 
 
   /* ══════════════════════════════════════════
-     iOS SAFE AREA — notch / Dynamic Island /
-     home indicator support
+     iOS SAFE AREA
   ══════════════════════════════════════════ */
   @supports (padding-bottom: env(safe-area-inset-bottom)) {
     @media (max-width: 767px) {
@@ -498,8 +596,7 @@ const CSS = `
 
 
   /* ══════════════════════════════════════════
-     TOUCH DEVICE — clean active feedback,
-     no sticky hover states
+     TOUCH DEVICE
   ══════════════════════════════════════════ */
   @media (hover: none) and (pointer: coarse) {
     .il-card:hover .il-img {
@@ -513,6 +610,19 @@ const CSS = `
 
     .il-tip {
       display: none !important;
+    }
+  }
+
+
+  /* ══════════════════════════════════════════
+     REDUCED MOTION
+  ══════════════════════════════════════════ */
+  @media (prefers-reduced-motion: reduce) {
+    .il-img {
+      transition: opacity 0.1s ease;
+    }
+    .il-lazy-wrap::after {
+      animation: none;
     }
   }
 `;
