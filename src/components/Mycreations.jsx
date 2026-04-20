@@ -43,11 +43,42 @@ function useBreakpoint() {
 }
 
 function getBreakpoint(w) {
-  if (w < 480)  return "xs";       // small mobile  (320–479)
-  if (w < 768)  return "mobile";   // standard mobile (480–767)
-  if (w < 1024) return "tablet";   // tablet portrait / landscape (768–1023)
-  if (w < 1280) return "sm-desk";  // small desktop (1024–1279)
-  return "desktop";                // 1280+ (original layout untouched)
+  if (w < 480)  return "xs";
+  if (w < 768)  return "mobile";
+  if (w < 1024) return "tablet";
+  if (w < 1280) return "sm-desk";
+  return "desktop";
+}
+
+// ── Lazy Image Hook (IntersectionObserver) ──────────────────────────────────
+function useLazyImage(src) {
+  const imgRef     = useRef(null);
+  const [loaded, setLoaded]   = useState(false);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = imgRef.current;
+    if (!el) return;
+
+    // Use native IntersectionObserver with a generous root margin
+    // so images start loading just before they scroll into view.
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px 400px 200px 400px", threshold: 0 }
+      //              ↑ 400px horizontal margin pre-loads cards
+      //                before they scroll into view horizontally
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return { imgRef, src: visible ? src : undefined, loaded, setLoaded };
 }
 
 // ── Main component ──────────────────────────────────────────────────────────
@@ -55,8 +86,6 @@ export default function Showcase() {
   const bp          = useBreakpoint();
   const isMobile    = bp === "xs" || bp === "mobile";
   const isTablet    = bp === "tablet";
-  const isSmDesk    = bp === "sm-desk";
-  // Use native swipe scroll on xs / mobile / tablet portrait
   const useNative   = isMobile || isTablet;
 
   const sectionRef  = useRef(null);
@@ -311,7 +340,36 @@ export default function Showcase() {
       position: relative; overflow: hidden;
     }
 
-    .sc-img-placeholder { position: absolute; inset: 0; }
+    .sc-img-placeholder {
+      position: absolute; inset: 0;
+      background: #f5f5f5;  /* skeleton colour while image loads */
+      overflow: hidden;
+    }
+
+    /* Shimmer skeleton shown before image loads */
+    .sc-img-placeholder::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255,255,255,0.55) 50%,
+        transparent 100%
+      );
+      background-size: 200% 100%;
+      animation: sc-shimmer 1.6s infinite linear;
+    }
+
+    /* Stop shimmer once image has loaded */
+    .sc-img-placeholder.sc-loaded::after {
+      display: none;
+    }
+
+    @keyframes sc-shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position:  200% 0; }
+    }
 
     .sc-img {
       width: 100%; height: 100%;
@@ -320,8 +378,18 @@ export default function Showcase() {
       pointer-events: none;
       user-select: none;
       -webkit-user-drag: none;
-      transition: transform 0.55s cubic-bezier(.16,1,.3,1);
+      /* ── Lazy-load fade-in ── */
+      opacity: 0;
+      transition:
+        opacity 0.5s ease,
+        transform 0.55s cubic-bezier(.16,1,.3,1);
     }
+
+    /* Image becomes visible once loaded */
+    .sc-img.sc-img-visible {
+      opacity: 1;
+    }
+
     .sc-card-link:hover .sc-img { transform: scale(1.04); }
 
     /* Tooltip */
@@ -352,79 +420,43 @@ export default function Showcase() {
 
     /* ════════════════════════════════════════════════════
        ULTRA-WIDE  ≥ 1920px
-       Content stays centered, whitespace is balanced.
     ════════════════════════════════════════════════════ */
     @media (min-width: 1920px) {
-      #sc-heading-block {
-        padding: 0 120px;
-      }
-
-      #sc-track {
-        padding: 0 120px;
-      }
+      #sc-heading-block { padding: 0 120px; }
+      #sc-track         { padding: 0 120px; }
     }
 
     /* ════════════════════════════════════════════════════
        SMALL DESKTOP  1024px – 1279px
-       Slightly reduced card & heading, same sticky scroll.
     ════════════════════════════════════════════════════ */
     @media (min-width: 1024px) and (max-width: 1279px) {
-      #sc-heading-block {
-        padding: 0 48px;
-        margin-bottom: 36px;
-      }
-
-      #sc-track {
-        padding: 0 48px;
-        gap: 20px;
-      }
-
-      .sc-card-link {
-        width: 480px;
-        height: 280px;
-        border-radius: 22px;
-      }
+      #sc-heading-block { padding: 0 48px; margin-bottom: 36px; }
+      #sc-track         { padding: 0 48px; gap: 20px; }
+      .sc-card-link     { width: 480px; height: 280px; border-radius: 22px; }
     }
 
     /* ════════════════════════════════════════════════════
        TABLET  768px – 1023px
-       Native horizontal swipe; single-row carousel.
-       Sticky disabled in JSX for this range.
     ════════════════════════════════════════════════════ */
     @media (min-width: 768px) and (max-width: 1023px) {
-      #sc-section {
-        /* height: auto set via JS */
-        padding-bottom: 60px;
-      }
+      #sc-section { padding-bottom: 60px; }
 
-      /* Disable sticky in CSS as extra guard */
       #sc-sticky {
         position: relative !important;
         height: auto !important;
         overflow: visible !important;
         justify-content: flex-start;
-        padding-top: 56px; /* clear marquee */
+        padding-top: 56px;
       }
 
-      #sc-heading-block {
-        padding: 0 40px;
-        margin-bottom: 32px;
-      }
+      #sc-heading-block { padding: 0 40px; margin-bottom: 32px; }
 
-      .sc-t-solid,
-      .sc-t-ghost {
-        font-size: clamp(56px, 9vw, 88px);
-      }
+      .sc-t-solid, .sc-t-ghost { font-size: clamp(56px, 9vw, 88px); }
+      .sc-t-italic              { font-size: clamp(18px, 2.8vw, 32px); padding: 0 12px 10px; }
 
-      .sc-t-italic {
-        font-size: clamp(18px, 2.8vw, 32px);
-        padding: 0 12px 10px;
-      }
+      #sc-tagline  { margin-top: 12px; }
+      .sc-tg-text  { font-size: 9.5px; }
 
-      #sc-tagline { margin-top: 12px; }
-      .sc-tg-text { font-size: 9.5px; }
-
-      /* Native scroll track */
       #sc-overflow-clip {
         overflow-x: auto;
         overflow-y: hidden;
@@ -444,76 +476,40 @@ export default function Showcase() {
         width: 400px;
         height: 240px;
         border-radius: 20px;
-        cursor: pointer; /* restore on touch */
+        cursor: pointer;
       }
 
-      /* Hide tooltip on touch */
       .sc-tooltip { display: none; }
     }
 
     /* ════════════════════════════════════════════════════
        MOBILE  < 768px
-       Native swipe, stacked heading, proportional sizing.
     ════════════════════════════════════════════════════ */
     @media (max-width: 767px) {
-      #sc-section {
-        padding-bottom: 48px;
-      }
+      #sc-section { padding-bottom: 48px; }
 
       #sc-sticky {
         position: relative !important;
         height: auto !important;
         overflow: visible !important;
         justify-content: flex-start;
-        padding-top: 48px; /* clear marquee */
+        padding-top: 48px;
       }
 
-      /* ── Marquee ── */
-      #sc-marquee-wrap {
-        height: 28px;
-      }
-      .sc-mq-item {
-        font-size: 7.5px;
-        letter-spacing: 0.20em;
-        padding: 0 18px;
-      }
+      #sc-marquee-wrap { height: 28px; }
+      .sc-mq-item      { font-size: 7.5px; letter-spacing: 0.20em; padding: 0 18px; }
 
-      /* ── Heading ── */
-      #sc-heading-block {
-        padding: 0 20px;
-        margin-bottom: 24px;
-      }
+      #sc-heading-block { padding: 0 20px; margin-bottom: 24px; }
 
-      #sc-title-row {
-        flex-wrap: wrap;
-        align-items: flex-end;
-        gap: 0;
-        row-gap: 2px;
-      }
+      #sc-title-row { flex-wrap: wrap; align-items: flex-end; gap: 0; row-gap: 2px; }
 
-      .sc-t-solid {
-        font-size: clamp(52px, 17vw, 76px);
-        line-height: 0.90;
-      }
+      .sc-t-solid, .sc-t-ghost { font-size: clamp(52px, 17vw, 76px); line-height: 0.90; }
+      .sc-t-italic              { font-size: clamp(16px, 5.2vw, 26px); padding: 0 10px 8px; }
 
-      .sc-t-ghost {
-        font-size: clamp(52px, 17vw, 76px);
-        line-height: 0.90;
-      }
+      #sc-tagline  { margin-top: 10px; gap: 10px; }
+      .sc-tg-bar   { width: 20px; }
+      .sc-tg-text  { font-size: 8.5px; letter-spacing: 0.16em; }
 
-      .sc-t-italic {
-        font-size: clamp(16px, 5.2vw, 26px);
-        padding: 0 10px 8px;
-      }
-
-      #sc-tagline {
-        margin-top: 10px;
-        gap: 10px;
-      }
-      .sc-tg-bar  { width: 20px; }
-      .sc-tg-text { font-size: 8.5px; letter-spacing: 0.16em; }
-
-      /* ── Track: native swipe ── */
       #sc-overflow-clip {
         overflow-x: auto;
         overflow-y: hidden;
@@ -529,7 +525,6 @@ export default function Showcase() {
         gap: 14px;
       }
 
-      /* ── Cards ── */
       .sc-card-link {
         width: 76vw;
         max-width: 340px;
@@ -537,75 +532,51 @@ export default function Showcase() {
         aspect-ratio: 16 / 9;
         border-radius: 16px;
         cursor: pointer;
-        min-height: 44px; /* touch target floor */
+        min-height: 44px;
       }
 
       .sc-tooltip { display: none; }
-
-      /* Suppress decorative crosses on mobile */
       #sc-bg .sc-x { display: none; }
     }
 
     /* ════════════════════════════════════════════════════
-       EXTRA-SMALL  < 480px  (320px–479px)
-       Narrower cards, tighter spacing.
+       EXTRA-SMALL  < 480px
     ════════════════════════════════════════════════════ */
     @media (max-width: 479px) {
       #sc-heading-block { padding: 0 16px; }
+      #sc-track         { padding: 0 16px 16px; gap: 12px; }
 
-      #sc-track { padding: 0 16px 16px; gap: 12px; }
+      .sc-card-link { width: 84vw; max-width: 300px; }
 
-      .sc-card-link {
-        width: 84vw;
-        max-width: 300px;
-      }
-
-      .sc-t-solid,
-      .sc-t-ghost {
-        font-size: clamp(44px, 18.5vw, 64px);
-      }
-
-      .sc-t-italic {
-        font-size: clamp(14px, 5.5vw, 22px);
-        padding: 0 8px 6px;
-      }
+      .sc-t-solid, .sc-t-ghost { font-size: clamp(44px, 18.5vw, 64px); }
+      .sc-t-italic              { font-size: clamp(14px, 5.5vw, 22px); padding: 0 8px 6px; }
     }
 
     /* ════════════════════════════════════════════════════
-       IOS SAFE-AREA  (notch / home-bar devices)
+       IOS SAFE-AREA
     ════════════════════════════════════════════════════ */
     @supports (padding-bottom: env(safe-area-inset-bottom)) {
       @media (max-width: 1023px) {
-        #sc-section {
-          padding-bottom: max(48px, env(safe-area-inset-bottom));
-        }
-
-        #sc-track {
-          /* add right clearance for notch in landscape */
-          padding-right: max(20px, env(safe-area-inset-right));
-        }
+        #sc-section { padding-bottom: max(48px, env(safe-area-inset-bottom)); }
+        #sc-track   { padding-right: max(20px, env(safe-area-inset-right)); }
       }
     }
 
     /* ════════════════════════════════════════════════════
        SCROLL-SNAP on native swipe tracks
-       Gives satisfying card-by-card feel on touch.
     ════════════════════════════════════════════════════ */
     @media (max-width: 1023px) {
-      #sc-overflow-clip {
-        scroll-snap-type: x mandatory;
-      }
-      .sc-card-link {
-        scroll-snap-align: start;
-      }
+      #sc-overflow-clip { scroll-snap-type: x mandatory; }
+      .sc-card-link     { scroll-snap-align: start; }
     }
 
     /* ════════════════════════════════════════════════════
-       REDUCED-MOTION  preference
+       REDUCED-MOTION
     ════════════════════════════════════════════════════ */
     @media (prefers-reduced-motion: reduce) {
-      .sc-img { transition: none; }
-      .sc-tooltip { transition: opacity 0.1s ease; }
+      .sc-img                    { transition: opacity 0.1s ease; }
+      .sc-tooltip                { transition: opacity 0.1s ease; }
+      .sc-img-placeholder::after { animation: none; }
     }
   `;
 
@@ -674,6 +645,9 @@ function Card({ card, useTooltip }) {
   const rafRef     = useRef(null);
   const activeRef  = useRef(false);
 
+  // ── Lazy loading ──────────────────────────────────────────────────────────
+  const { imgRef, src: lazySrc, loaded, setLoaded } = useLazyImage(card.image);
+
   const startLoop = useCallback(() => {
     if (rafRef.current) return;
     const loop = () => {
@@ -739,13 +713,23 @@ function Card({ card, useTooltip }) {
           {"Explore Now \u2197"}
         </div>
       )}
+
       <div className="sc-right">
-        <div className="sc-img-placeholder">
+        {/* sc-loaded class removes the shimmer once the image is ready */}
+        <div className={`sc-img-placeholder${loaded ? " sc-loaded" : ""}`}>
           <img
-            src={card.image}
+            ref={imgRef}
+            /* lazySrc is undefined until the card enters the viewport;
+               only then does the browser start fetching the image.     */
+            src={lazySrc}
+            /* native lazy as a belt-and-suspenders fallback */
+            loading="lazy"
+            decoding="async"
             alt={card.title.replace("\n", " ")}
-            className="sc-img"
+            /* sc-img-visible fades the image in after it finishes loading */
+            className={`sc-img${loaded ? " sc-img-visible" : ""}`}
             draggable={false}
+            onLoad={() => setLoaded(true)}
           />
         </div>
       </div>
