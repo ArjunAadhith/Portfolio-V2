@@ -143,7 +143,7 @@ const ALL_PROJECTS = [
     category: "Wallpapers",
     label: "Wallpaper",
     link: "https://captain-cool-wallpaper.vercel.app/",
-  }
+  },
 ];
 
 const CATEGORY_ORDER = ["Graphic Design", "Logos", "3D Model", "Game", "Wallpapers", "Others"];
@@ -249,7 +249,9 @@ const SCHome = memo(function SCHome({ onScrollDown, scroller }) {
    PROJECT CARD
    ══════════════════════════════════════════════════════════ */
 const ProjectCard = memo(function ProjectCard({ project, index }) {
+  const [imgLoaded, setImgLoaded] = useState(false);
   const hasLink = project.link && project.link !== "#";
+
   const handleClick = useCallback(() => {
     if (hasLink) window.open(project.link, "_blank", "noopener,noreferrer");
   }, [project.link, hasLink]);
@@ -266,11 +268,17 @@ const ProjectCard = memo(function ProjectCard({ project, index }) {
       whileHover={hasLink ? { y: -3 } : {}}
     >
       <div className="sc-card-media">
+        {/* Skeleton shimmer shown until image loads */}
+        {!imgLoaded && <div className="sc-card-skeleton" aria-hidden="true" />}
+
         <motion.img
           src={project.src}
           alt={project.title}
-          className="sc-card-img"
+          className={`sc-card-img${imgLoaded ? " sc-img-loaded" : ""}`}
+          loading="lazy"
+          decoding="async"
           draggable={false}
+          onLoad={() => setImgLoaded(true)}
           whileHover={{ scale: 1.04 }}
           transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
         />
@@ -761,7 +769,29 @@ const CSS = `
     aspect-ratio: 16 / 10;
     overflow: hidden;
     background: #f0f0f0;
+    position: relative;
   }
+
+  /* ── Lazy load: skeleton shimmer ── */
+  .sc-card-skeleton {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      #f0f0f0 25%,
+      #e4e4e4 50%,
+      #f0f0f0 75%
+    );
+    background-size: 200% 100%;
+    animation: sc-shimmer 1.4s ease-in-out infinite;
+    z-index: 1;
+  }
+  @keyframes sc-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* ── Lazy load: image fade-in on load ── */
   .sc-card-img {
     width: 100%;
     height: 100%;
@@ -771,7 +801,15 @@ const CSS = `
     user-select: none;
     -webkit-user-drag: none;
     transform-origin: center;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    position: relative;
+    z-index: 2;
   }
+  .sc-card-img.sc-img-loaded {
+    opacity: 1;
+  }
+
   .sc-card-info {
     padding: 14px 18px 18px;
     border-top: 1px solid #f0f0f0;
@@ -1051,12 +1089,6 @@ const CSS = `
 
   /* ── MOBILE: pin content to the mid-rule line ── */
   @media (max-width: 768px) {
-    /*
-      Switch from bottom-anchored flex to top-anchored,
-      with padding-top = 48% so content starts right at sc-rule-mid.
-      Use 100svh (small viewport height) so it fits snugly on
-      every mobile browser regardless of address-bar state.
-    */
     .sc-home {
       align-items: flex-start;
       padding: calc(54% + 80px) 28px 6vh;
@@ -1064,29 +1096,23 @@ const CSS = `
       height: 100svh;
     }
 
-    /* Keep the rules visible; top rule stays near top, mid rule at 48% */
     .sc-rule-top { top: 56px; }
     .sc-rule-mid { top: 48%; }
 
-    /* Slightly tighter title sizes for narrow screens */
     .sc-name-outlined,
     .sc-name-filled       { font-size: clamp(48px, 13.5vw, 96px); }
     .sc-name-sub-italic   { font-size: clamp(16px, 5vw, 32px); }
 
-    /* Stack CTA below disciplines text */
     .sc-hero-bottom-row   { flex-direction: column; align-items: flex-start; gap: 16px; }
 
-    /* Tighten spacing between meta row and title */
     .sc-hero-meta-row     { margin-bottom: 14px; }
     .sc-home-name         { margin-bottom: 20px; }
 
-    /* Filter bar & grid */
     .sc-filter-bar        { padding: 12px 20px; }
     .sc-grid-outer        { padding: 24px 20px 0; }
     .sc-grid              { gap: 12px; }
     .sc-strip-text        { padding: 12px 20px; }
 
-    /* Footer */
     .sc-footer            { padding: 24px 28px 0; }
     .sc-footer-card       { padding: 36px 32px; min-height: 380px; border-radius: 18px; }
     .sc-footer-headline   { font-size: clamp(36px, 10vw, 64px); }
