@@ -5,21 +5,19 @@ const ROW_1 = [
   { id: 2, src: "/illustration/i2.png", alt: "Illustration 2" },
   { id: 3, src: "/illustration/i3.jpg", alt: "Illustration 3" },
   { id: 4, src: "/illustration/i4.png", alt: "Illustration 4" },
+  
 ];
 const ROW_2 = [
   { id: 5, src: "/illustration/i5.png", alt: "Illustration 5" },
   { id: 6, src: "/illustration/i6.png", alt: "Illustration 6" },
   { id: 7, src: "/illustration/i7.jpg", alt: "Illustration 7" },
   { id: 8, src: "/illustration/i8.jpg", alt: "Illustration 8" },
-  { id: 9, src: "/illustration/i9.png", alt: "Illustration 9" }
+  { id: 9, src: "/illustration/i9.png", alt: "Illustration 9" },
 ];
 
 // ── Lazy Image Hook ───────────────────────────────────────────────────────────
-// Watches the wrapper element via IntersectionObserver.
-// `src` stays undefined until the image is near the viewport,
-// preventing any network request until it's actually needed.
 function useLazyImage(src) {
-  const wrapperRef        = useRef(null);
+  const wrapperRef            = useRef(null);
   const [lazySrc, setLazySrc] = useState(undefined);
   const [loaded,  setLoaded ] = useState(false);
 
@@ -30,11 +28,10 @@ function useLazyImage(src) {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setLazySrc(src);   // unlock the real src → browser starts fetching
+          setLazySrc(src);
           observer.disconnect();
         }
       },
-      // generous root margin so images load just before scrolling into view
       { rootMargin: "200px 200px 200px 200px", threshold: 0 }
     );
 
@@ -50,16 +47,14 @@ function LazyImage({ src, alt }) {
   const { wrapperRef, lazySrc, loaded, setLoaded } = useLazyImage(src);
 
   return (
-    // wrapperRef is on the outer div so IntersectionObserver fires as soon
-    // as the card enters the viewport, even before the <img> mounts its src.
     <div
       ref={wrapperRef}
       className={`il-lazy-wrap${loaded ? " il-lazy-wrap--loaded" : ""}`}
     >
       <img
-        src={lazySrc}           // undefined until near viewport → no request
-        loading="lazy"          // native fallback for belt-and-suspenders
-        decoding="async"        // non-blocking decode
+        src={lazySrc}
+        loading="lazy"
+        decoding="async"
         alt={alt}
         className={`il-img${loaded ? " il-img--visible" : ""}`}
         draggable={false}
@@ -72,16 +67,12 @@ function LazyImage({ src, alt }) {
 // ── Main component ────────────────────────────────────────────────────────────
 export default function Illustrations() {
   const [tip, setTip] = useState({ visible: false, x: 0, y: 0 });
-  const sectionRef = useRef(null);
+  const sectionRef    = useRef(null);
 
   const handleMouseMove = useCallback((e) => {
     const rect = sectionRef.current?.getBoundingClientRect();
     if (!rect) return;
-    setTip({
-      visible: true,
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
+    setTip({ visible: true, x: e.clientX - rect.left, y: e.clientY - rect.top });
   }, []);
 
   const handleMouseLeave = useCallback(() => {
@@ -109,16 +100,19 @@ export default function Illustrations() {
         <h2 className="il-title">Illustrations</h2>
 
         <div className="il-rows">
-          <div className="il-row">
+          {/* Row 1 — horizontally scrollable */}
+          <div className="il-row" role="list">
             {ROW_1.map((img) => (
-              <div className="il-card" key={img.id}>
+              <div className="il-card" key={img.id} role="listitem">
                 <LazyImage src={img.src} alt={img.alt} />
               </div>
             ))}
           </div>
-          <div className="il-row">
+
+          {/* Row 2 — horizontally scrollable */}
+          <div className="il-row" role="list">
             {ROW_2.map((img) => (
-              <div className="il-card" key={img.id}>
+              <div className="il-card" key={img.id} role="listitem">
                 <LazyImage src={img.src} alt={img.alt} />
               </div>
             ))}
@@ -131,7 +125,7 @@ export default function Illustrations() {
 
 const CSS = `
   /* ══════════════════════════════════════════
-     DESKTOP BASE (1280px) — UNTOUCHED
+     DESKTOP BASE (1280px)
   ══════════════════════════════════════════ */
 
   .il-section {
@@ -155,28 +149,45 @@ const CSS = `
     letter-spacing: -0.03em;
     color: #111;
     margin: 0 0 24px;
-    padding: 0 0 0 12px;
+    padding: 0;
     line-height: 1;
   }
 
+  /* ── Rows container ── */
   .il-rows {
     flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    overflow: hidden;
   }
 
+  /* ── Each row: horizontal scroll track ──
+     - flex-start: images anchor to the left edge
+     - overflow-x auto: scrolls right when items overflow
+     - flex-wrap nowrap: new items always extend the row, never wrap
+  ── */
   .il-row {
     flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: row;
+    flex-wrap: nowrap;
     gap: 14px;
     align-items: stretch;
-    justify-content: center;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 
+  .il-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ── Card: flex item, fills row height, width = image natural width ── */
   .il-card {
     flex-shrink: 0;
     border-radius: 2px;
@@ -186,16 +197,20 @@ const CSS = `
     height: 100%;
   }
 
-  /* ── Lazy wrapper: fills the card, shows shimmer skeleton ── */
+  /* ── Lazy wrapper ──
+     - fit-content: shrink-wraps to the loaded image's natural width
+     - min-width: gives the shimmer a visible body before image loads
+  ── */
   .il-lazy-wrap {
     position: relative;
-    width: 100%;
     height: 100%;
+    width: fit-content;
+    min-width: 180px;
     background: #d8d8d8;
     overflow: hidden;
   }
 
-  /* Shimmer sweep — plays while image is loading */
+  /* Shimmer sweep while image is loading */
   .il-lazy-wrap::after {
     content: '';
     position: absolute;
@@ -210,7 +225,6 @@ const CSS = `
     animation: il-shimmer 1.6s infinite linear;
   }
 
-  /* Remove shimmer once image has loaded */
   .il-lazy-wrap--loaded::after {
     display: none;
   }
@@ -220,6 +234,7 @@ const CSS = `
     100% { background-position:  200% 0; }
   }
 
+  /* ── Image: fills row height, natural width drives card width ── */
   .il-img {
     height: 100%;
     width: auto;
@@ -228,14 +243,12 @@ const CSS = `
     pointer-events: none;
     user-select: none;
     -webkit-user-drag: none;
-    /* Start invisible; fade in after load */
     opacity: 0;
     transition:
       opacity 0.45s ease,
       transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
-  /* Fade in once loaded */
   .il-img--visible {
     opacity: 1;
   }
@@ -244,6 +257,7 @@ const CSS = `
     transform: scale(1.04);
   }
 
+  /* ── Cursor-following tooltip ── */
   .il-tip {
     position: absolute;
     pointer-events: none;
@@ -279,22 +293,10 @@ const CSS = `
      ULTRA-WIDE (1440px – 1600px)
   ══════════════════════════════════════════ */
   @media (min-width: 1440px) {
-    .il-section {
-      padding: 56px 100px;
-    }
-
-    .il-title {
-      font-size: clamp(26px, 2.6vw, 42px);
-      margin-bottom: 28px;
-    }
-
-    .il-rows {
-      gap: 16px;
-    }
-
-    .il-row {
-      gap: 16px;
-    }
+    .il-section { padding: 56px 100px; }
+    .il-title   { font-size: clamp(26px, 2.6vw, 42px); margin-bottom: 28px; }
+    .il-rows    { gap: 16px; }
+    .il-row     { gap: 16px; }
   }
 
 
@@ -307,23 +309,10 @@ const CSS = `
       margin: 0 auto;
       padding: 64px 120px;
     }
-
-    .il-title {
-      font-size: clamp(30px, 2.4vw, 48px);
-      margin-bottom: 32px;
-    }
-
-    .il-rows {
-      gap: 20px;
-    }
-
-    .il-row {
-      gap: 20px;
-    }
-
-    .il-card {
-      border-radius: 4px;
-    }
+    .il-title { font-size: clamp(30px, 2.4vw, 48px); margin-bottom: 32px; }
+    .il-rows  { gap: 20px; }
+    .il-row   { gap: 20px; }
+    .il-card  { border-radius: 4px; }
   }
 
 
@@ -331,27 +320,16 @@ const CSS = `
      TABLET LANDSCAPE (1024px – 1279px)
   ══════════════════════════════════════════ */
   @media (min-width: 1024px) and (max-width: 1279px) {
-    .il-section {
-      padding: 44px 60px;
-    }
-
-    .il-title {
-      font-size: clamp(22px, 3vw, 34px);
-      margin-bottom: 20px;
-    }
-
-    .il-rows {
-      gap: 12px;
-    }
-
-    .il-row {
-      gap: 12px;
-    }
+    .il-section { padding: 44px 60px; }
+    .il-title   { font-size: clamp(22px, 3vw, 34px); margin-bottom: 20px; }
+    .il-rows    { gap: 12px; }
+    .il-row     { gap: 12px; }
   }
 
 
   /* ══════════════════════════════════════════
      TABLET PORTRAIT (768px – 1023px)
+     — 2-col grid, vertical layout
   ══════════════════════════════════════════ */
   @media (min-width: 768px) and (max-width: 1023px) {
     .il-section {
@@ -361,10 +339,7 @@ const CSS = `
       overflow: visible;
       cursor: auto;
     }
-
-    .il-tip {
-      display: none;
-    }
+    .il-tip { display: none; }
 
     .il-title {
       font-size: clamp(26px, 4.5vw, 36px);
@@ -374,17 +349,23 @@ const CSS = `
 
     .il-rows {
       flex: unset;
+      overflow: visible;
       gap: 14px;
     }
 
     .il-row {
       flex: unset;
       height: auto;
+      min-height: unset;
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 14px;
       align-items: stretch;
       justify-content: unset;
+      overflow-x: unset;
+      overflow-y: unset;
+      scrollbar-width: unset;
+      -ms-overflow-style: unset;
     }
 
     .il-card {
@@ -393,9 +374,10 @@ const CSS = `
       width: 100%;
     }
 
-    /* Wrapper & img need explicit height on grid layout */
     .il-lazy-wrap {
       height: auto;
+      width: 100%;
+      min-width: unset;
       aspect-ratio: 4 / 3;
     }
 
@@ -403,13 +385,13 @@ const CSS = `
       height: 100%;
       width: 100%;
       object-fit: cover;
-      aspect-ratio: 4 / 3;
     }
   }
 
 
   /* ══════════════════════════════════════════
      MOBILE — ALL DEVICES (≤ 767px)
+     — 2-col grid, vertical layout
   ══════════════════════════════════════════ */
   @media (max-width: 767px) {
     .il-section {
@@ -419,10 +401,7 @@ const CSS = `
       overflow: visible;
       cursor: auto;
     }
-
-    .il-tip {
-      display: none;
-    }
+    .il-tip { display: none; }
 
     .il-title {
       font-size: clamp(22px, 6.5vw, 30px);
@@ -432,17 +411,23 @@ const CSS = `
 
     .il-rows {
       flex: unset;
+      overflow: visible;
       gap: 10px;
     }
 
     .il-row {
       flex: unset;
       height: auto;
+      min-height: unset;
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 10px;
       align-items: stretch;
       justify-content: unset;
+      overflow-x: unset;
+      overflow-y: unset;
+      scrollbar-width: unset;
+      -ms-overflow-style: unset;
     }
 
     .il-card {
@@ -453,6 +438,8 @@ const CSS = `
 
     .il-lazy-wrap {
       height: auto;
+      width: 100%;
+      min-width: unset;
       aspect-ratio: 4 / 3;
     }
 
@@ -460,10 +447,8 @@ const CSS = `
       height: 100%;
       width: 100%;
       object-fit: cover;
-      aspect-ratio: 4 / 3;
     }
 
-    /* Disable hover scale on touch */
     .il-card:hover .il-img {
       transform: none;
     }
@@ -474,31 +459,12 @@ const CSS = `
      SMALL MOBILE (≤ 375px)
   ══════════════════════════════════════════ */
   @media (max-width: 375px) {
-    .il-section {
-      padding: 36px 14px 44px;
-    }
-
-    .il-title {
-      font-size: clamp(20px, 7vw, 26px);
-      margin-bottom: 14px;
-    }
-
-    .il-rows {
-      gap: 8px;
-    }
-
-    .il-row {
-      gap: 8px;
-    }
-
-    .il-card {
-      border-radius: 10px;
-    }
-
-    .il-lazy-wrap,
-    .il-img {
-      aspect-ratio: 1 / 1;
-    }
+    .il-section { padding: 36px 14px 44px; }
+    .il-title   { font-size: clamp(20px, 7vw, 26px); margin-bottom: 14px; }
+    .il-rows    { gap: 8px; }
+    .il-row     { gap: 8px; }
+    .il-card    { border-radius: 10px; }
+    .il-lazy-wrap, .il-img { aspect-ratio: 1 / 1; }
   }
 
 
@@ -506,63 +472,25 @@ const CSS = `
      TINY SCREENS (≤ 320px)
   ══════════════════════════════════════════ */
   @media (max-width: 320px) {
-    .il-section {
-      padding: 32px 12px 40px;
-    }
-
-    .il-title {
-      font-size: 18px;
-      margin-bottom: 12px;
-    }
-
-    .il-rows {
-      gap: 6px;
-    }
-
-    .il-row {
-      gap: 6px;
-    }
-
-    .il-card {
-      border-radius: 8px;
-    }
-
-    .il-lazy-wrap,
-    .il-img {
-      aspect-ratio: 1 / 1;
-    }
+    .il-section { padding: 32px 12px 40px; }
+    .il-title   { font-size: 18px; margin-bottom: 12px; }
+    .il-rows    { gap: 6px; }
+    .il-row     { gap: 6px; }
+    .il-card    { border-radius: 8px; }
+    .il-lazy-wrap, .il-img { aspect-ratio: 1 / 1; }
   }
 
 
   /* ══════════════════════════════════════════
-     LARGE MOBILE (428px+)
+     LARGE MOBILE (428px – 767px)
   ══════════════════════════════════════════ */
   @media (min-width: 428px) and (max-width: 767px) {
-    .il-section {
-      padding: 48px 24px 56px;
-    }
-
-    .il-title {
-      font-size: clamp(24px, 6vw, 32px);
-      margin-bottom: 20px;
-    }
-
-    .il-rows {
-      gap: 12px;
-    }
-
-    .il-row {
-      gap: 12px;
-    }
-
-    .il-card {
-      border-radius: 14px;
-    }
-
-    .il-lazy-wrap,
-    .il-img {
-      aspect-ratio: 4 / 3;
-    }
+    .il-section { padding: 48px 24px 56px; }
+    .il-title   { font-size: clamp(24px, 6vw, 32px); margin-bottom: 20px; }
+    .il-rows    { gap: 12px; }
+    .il-row     { gap: 12px; }
+    .il-card    { border-radius: 14px; }
+    .il-lazy-wrap, .il-img { aspect-ratio: 4 / 3; }
   }
 
 
@@ -577,7 +505,6 @@ const CSS = `
         padding-right:  calc(20px + env(safe-area-inset-right));
       }
     }
-
     @media (min-width: 428px) and (max-width: 767px) {
       .il-section {
         padding-bottom: calc(56px + env(safe-area-inset-bottom));
@@ -585,7 +512,6 @@ const CSS = `
         padding-right:  calc(24px + env(safe-area-inset-right));
       }
     }
-
     @media (min-width: 768px) and (max-width: 1023px) {
       .il-section {
         padding-bottom: calc(56px + env(safe-area-inset-bottom));
@@ -597,18 +523,16 @@ const CSS = `
 
 
   /* ══════════════════════════════════════════
-     TOUCH DEVICE
+     TOUCH DEVICES
   ══════════════════════════════════════════ */
   @media (hover: none) and (pointer: coarse) {
     .il-card:hover .il-img {
       transform: none;
     }
-
     .il-card:active .il-img {
       transform: scale(1.02);
       transition: transform 0.18s ease;
     }
-
     .il-tip {
       display: none !important;
     }
