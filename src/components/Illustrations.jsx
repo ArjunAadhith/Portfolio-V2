@@ -5,14 +5,15 @@ const ROW_1 = [
   { id: 2, src: "/illustration/i2.png", alt: "Illustration 2" },
   { id: 3, src: "/illustration/i3.jpg", alt: "Illustration 3" },
   { id: 4, src: "/illustration/i4.png", alt: "Illustration 4" },
-  
+  { id: 5, src: "/illustration/i5.png", alt: "Illustration 5" },
+
 ];
 const ROW_2 = [
-  { id: 5, src: "/illustration/i5.png", alt: "Illustration 5" },
   { id: 6, src: "/illustration/i6.png", alt: "Illustration 6" },
   { id: 7, src: "/illustration/i7.jpg", alt: "Illustration 7" },
   { id: 8, src: "/illustration/i8.jpg", alt: "Illustration 8" },
   { id: 9, src: "/illustration/i9.png", alt: "Illustration 9" },
+  { id: 10, src: "/illustration/i10.png", alt: "Illustration 10" },
 ];
 
 // ── Lazy Image Hook ───────────────────────────────────────────────────────────
