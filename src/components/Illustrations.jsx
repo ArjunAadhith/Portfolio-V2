@@ -6,7 +6,6 @@ const ROW_1 = [
   { id: 3, src: "/illustration/i3.jpg", alt: "Illustration 3" },
   { id: 4, src: "/illustration/i4.png", alt: "Illustration 4" },
   { id: 5, src: "/illustration/i5.png", alt: "Illustration 5" },
-
 ];
 const ROW_2 = [
   { id: 6, src: "/illustration/i6.png", alt: "Illustration 6" },
@@ -164,11 +163,6 @@ const CSS = `
     overflow: hidden;
   }
 
-  /* ── Each row: horizontal scroll track ──
-     - flex-start: images anchor to the left edge
-     - overflow-x auto: scrolls right when items overflow
-     - flex-wrap nowrap: new items always extend the row, never wrap
-  ── */
   .il-row {
     flex: 1;
     min-height: 0;
@@ -188,7 +182,6 @@ const CSS = `
     display: none;
   }
 
-  /* ── Card: flex item, fills row height, width = image natural width ── */
   .il-card {
     flex-shrink: 0;
     border-radius: 2px;
@@ -198,10 +191,6 @@ const CSS = `
     height: 100%;
   }
 
-  /* ── Lazy wrapper ──
-     - fit-content: shrink-wraps to the loaded image's natural width
-     - min-width: gives the shimmer a visible body before image loads
-  ── */
   .il-lazy-wrap {
     position: relative;
     height: 100%;
@@ -235,7 +224,6 @@ const CSS = `
     100% { background-position:  200% 0; }
   }
 
-  /* ── Image: fills row height, natural width drives card width ── */
   .il-img {
     height: 100%;
     width: auto;
@@ -375,6 +363,11 @@ const CSS = `
       width: 100%;
     }
 
+    /* ── FIX: last odd card spans full width ── */
+    .il-row > .il-card:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+    }
+
     .il-lazy-wrap {
       height: auto;
       width: 100%;
@@ -437,6 +430,11 @@ const CSS = `
       width: 100%;
     }
 
+    /* ── FIX: last odd card spans full width ── */
+    .il-row > .il-card:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+    }
+
     .il-lazy-wrap {
       height: auto;
       width: 100%;
@@ -491,6 +489,12 @@ const CSS = `
     .il-rows    { gap: 12px; }
     .il-row     { gap: 12px; }
     .il-card    { border-radius: 14px; }
+
+    /* ── FIX: last odd card spans full width ── */
+    .il-row > .il-card:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+    }
+
     .il-lazy-wrap, .il-img { aspect-ratio: 4 / 3; }
   }
 
