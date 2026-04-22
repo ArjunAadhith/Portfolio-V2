@@ -64,6 +64,87 @@ function LazyImage({ src, alt }) {
   );
 }
 
+// ── Scroll Row with indicators ────────────────────────────────────────────────
+function ScrollRow({ items }) {
+  const rowRef                        = useRef(null);
+  const rafRef                        = useRef(null);
+  const [hovered,       setHovered  ] = useState(false);
+  const [canScrollLeft, setCanLeft  ] = useState(false);
+  const [canScrollRight,setCanRight ] = useState(true);
+
+  const syncScroll = useCallback(() => {
+    const el = rowRef.current;
+    if (!el) return;
+    const threshold = 4;
+    setCanLeft (el.scrollLeft > threshold);
+    setCanRight(el.scrollLeft < el.scrollWidth - el.clientWidth - threshold);
+  }, []);
+
+  useEffect(() => {
+    const el = rowRef.current;
+    if (!el) return;
+    syncScroll();
+
+    const onScroll = () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(syncScroll);
+    };
+
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [syncScroll]);
+
+  const nudge = useCallback((dir) => {
+    const el = rowRef.current;
+    if (!el) return;
+    const amount = Math.round(el.clientWidth * 0.72);
+    el.scrollBy({ left: dir * amount, behavior: "smooth" });
+  }, []);
+
+  return (
+    <div
+      className="il-row-outer"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div className="il-row" ref={rowRef} role="list">
+        {items.map((img) => (
+          <div className="il-card" key={img.id} role="listitem">
+            <LazyImage src={img.src} alt={img.alt} />
+          </div>
+        ))}
+      </div>
+
+      {/* Left indicator */}
+      <button
+        className={`il-scroll-btn il-scroll-btn--left${hovered && canScrollLeft ? " il-scroll-btn--visible" : ""}`}
+        onClick={() => nudge(-1)}
+        aria-label="Scroll left"
+        tabIndex={-1}
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M9 11.5L4.5 7L9 2.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+
+      {/* Right indicator */}
+      <button
+        className={`il-scroll-btn il-scroll-btn--right${hovered && canScrollRight ? " il-scroll-btn--visible" : ""}`}
+        onClick={() => nudge(1)}
+        aria-label="Scroll right"
+        tabIndex={-1}
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M5 2.5L9.5 7L5 11.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 export default function Illustrations() {
   const [tip, setTip] = useState({ visible: false, x: 0, y: 0 });
@@ -100,23 +181,8 @@ export default function Illustrations() {
         <h2 className="il-title">Illustrations</h2>
 
         <div className="il-rows">
-          {/* Row 1 — horizontally scrollable */}
-          <div className="il-row" role="list">
-            {ROW_1.map((img) => (
-              <div className="il-card" key={img.id} role="listitem">
-                <LazyImage src={img.src} alt={img.alt} />
-              </div>
-            ))}
-          </div>
-
-          {/* Row 2 — horizontally scrollable */}
-          <div className="il-row" role="list">
-            {ROW_2.map((img) => (
-              <div className="il-card" key={img.id} role="listitem">
-                <LazyImage src={img.src} alt={img.alt} />
-              </div>
-            ))}
-          </div>
+          <ScrollRow items={ROW_1} />
+          <ScrollRow items={ROW_2} />
         </div>
       </section>
     </>
@@ -163,9 +229,17 @@ const CSS = `
     overflow: hidden;
   }
 
+  /* ── NEW: Outer wrapper per row ── */
+  .il-row-outer {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+  }
+
   .il-row {
     flex: 1;
     min-height: 0;
+    height: 100%;
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
@@ -176,6 +250,7 @@ const CSS = `
     overflow-y: hidden;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    will-change: scroll-position;
   }
 
   .il-row::-webkit-scrollbar {
@@ -277,6 +352,48 @@ const CSS = `
     scale: 1;
   }
 
+  /* ── NEW: Scroll indicator buttons ── */
+  .il-scroll-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(12, 12, 12, 0.76);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.28);
+    cursor: pointer;
+    padding: 0;
+    opacity: 0;
+    scale: 0.78;
+    pointer-events: none;
+    transition:
+      opacity 0.2s ease,
+      scale 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+      background 0.15s ease;
+  }
+
+  .il-scroll-btn:hover {
+    background: rgba(12, 12, 12, 0.92);
+  }
+
+  .il-scroll-btn--left  { left: 12px; }
+  .il-scroll-btn--right { right: 12px; }
+
+  .il-scroll-btn--visible {
+    opacity: 1;
+    scale: 1;
+    pointer-events: auto;
+  }
+
 
   /* ══════════════════════════════════════════
      ULTRA-WIDE (1440px – 1600px)
@@ -341,6 +458,13 @@ const CSS = `
       overflow: visible;
       gap: 14px;
     }
+
+    .il-row-outer {
+      flex: unset;
+      min-height: unset;
+    }
+
+    .il-scroll-btn { display: none; }
 
     .il-row {
       flex: unset;
@@ -408,6 +532,13 @@ const CSS = `
       overflow: visible;
       gap: 10px;
     }
+
+    .il-row-outer {
+      flex: unset;
+      min-height: unset;
+    }
+
+    .il-scroll-btn { display: none; }
 
     .il-row {
       flex: unset;
@@ -539,6 +670,9 @@ const CSS = `
       transition: transform 0.18s ease;
     }
     .il-tip {
+      display: none !important;
+    }
+    .il-scroll-btn {
       display: none !important;
     }
   }
