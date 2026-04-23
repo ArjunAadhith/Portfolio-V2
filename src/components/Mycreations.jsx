@@ -12,7 +12,6 @@ const CARDS = [
   { id: 9, title: "DDDAS Site Design",    image: "/UIUX/9.png", link: "https://www.figma.com/proto/1itf6UuzeiXOBFBhmhj4eM/DDDAS-Design?page-id=0%3A1&node-id=1-2&viewport=240%2C164%2C0.09&t=7HYdcdULhxg9uwW2-1&scaling=min-zoom&content-scaling=fixed" },
 ];
 
-// ── Desktop constants (unchanged) ──────────────────────────────────────────
 const CARD_W        = 644;
 const GAP           = 28;
 const SIDE_PADDING  = 80;
@@ -28,11 +27,10 @@ const MQ_ITEMS = [
   "User Personas", "Information Architecture"
 ];
 
-// ── Breakpoint helper ───────────────────────────────────────────────────────
 function useBreakpoint() {
-  const [bp, setBp] = useState(() => getBreakpoint(
-    typeof window !== "undefined" ? window.innerWidth : 1280
-  ));
+  const [bp, setBp] = useState(() =>
+    getBreakpoint(typeof window !== "undefined" ? window.innerWidth : 1280)
+  );
   useEffect(() => {
     const update = () => setBp(getBreakpoint(window.innerWidth));
     update();
@@ -50,30 +48,20 @@ function getBreakpoint(w) {
   return "desktop";
 }
 
-// ── Lazy Image Hook (IntersectionObserver) ──────────────────────────────────
 function useLazyImage(src) {
-  const imgRef     = useRef(null);
+  const imgRef             = useRef(null);
   const [loaded, setLoaded]   = useState(false);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     const el = imgRef.current;
     if (!el) return;
-
-    // Use native IntersectionObserver with a generous root margin
-    // so images start loading just before they scroll into view.
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
+        if (entry.isIntersecting) { setVisible(true); observer.disconnect(); }
       },
       { rootMargin: "200px 400px 200px 400px", threshold: 0 }
-      //              ↑ 400px horizontal margin pre-loads cards
-      //                before they scroll into view horizontally
     );
-
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
@@ -81,18 +69,17 @@ function useLazyImage(src) {
   return { imgRef, src: visible ? src : undefined, loaded, setLoaded };
 }
 
-// ── Main component ──────────────────────────────────────────────────────────
 export default function Showcase() {
-  const bp          = useBreakpoint();
-  const isMobile    = bp === "xs" || bp === "mobile";
-  const isTablet    = bp === "tablet";
-  const useNative   = isMobile || isTablet;
+  const bp        = useBreakpoint();
+  const isMobile  = bp === "xs" || bp === "mobile";
+  const isTablet  = bp === "tablet";
+  const useNative = isMobile || isTablet;
 
-  const sectionRef  = useRef(null);
-  const trackRef    = useRef(null);
-  const currentRef  = useRef(0);
-  const lastTsRef   = useRef(null);
-  const rafRef      = useRef(null);
+  const sectionRef = useRef(null);
+  const trackRef   = useRef(null);
+  const currentRef = useRef(0);
+  const lastTsRef  = useRef(null);
+  const rafRef     = useRef(null);
   const [sectionH, setSectionH] = useState("300vh");
 
   const mqTrackRef  = useRef(null);
@@ -105,7 +92,6 @@ export default function Showcase() {
     return Math.max(0, totalW - vw);
   }, []);
 
-  // Section height — only matters in desktop sticky mode
   useEffect(() => {
     if (useNative) { setSectionH("auto"); return; }
     const update = () => setSectionH("calc(100vh + " + getMax() + "px)");
@@ -114,7 +100,7 @@ export default function Showcase() {
     return () => window.removeEventListener("resize", update);
   }, [getMax, useNative]);
 
-  // Sticky scroll animation — desktop only
+  // ── Desktop sticky scroll — GPU-composited, lag-free ──
   useEffect(() => {
     if (useNative) return;
     const tick = (timestamp) => {
@@ -129,11 +115,10 @@ export default function Showcase() {
         if (Math.abs(diff) < 0.04) {
           currentRef.current = target;
         } else {
-          const factor = 1 - Math.exp(-dt * SMOOTHNESS);
-          currentRef.current += diff * factor;
+          currentRef.current += diff * (1 - Math.exp(-dt * SMOOTHNESS));
         }
         trackRef.current.style.transform =
-          "translateX(-" + currentRef.current.toFixed(3) + "px)";
+          "translate3d(-" + currentRef.current.toFixed(3) + "px, 0, 0)";
       }
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -141,7 +126,7 @@ export default function Showcase() {
     return () => { cancelAnimationFrame(rafRef.current); lastTsRef.current = null; };
   }, [getMax, useNative]);
 
-  // Marquee
+  // ── Marquee ──
   useEffect(() => {
     const track = mqTrackRef.current;
     if (!track) return;
@@ -149,14 +134,13 @@ export default function Showcase() {
       mqOffsetRef.current += MARQUEE_SPEED;
       const halfW = track.scrollWidth / 2;
       if (mqOffsetRef.current >= halfW) mqOffsetRef.current -= halfW;
-      track.style.transform = `translateX(-${mqOffsetRef.current.toFixed(3)}px)`;
+      track.style.transform = `translate3d(-${mqOffsetRef.current.toFixed(3)}px, 0, 0)`;
       mqRafRef.current = requestAnimationFrame(loop);
     };
     mqRafRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(mqRafRef.current);
   }, []);
 
-  // ── Styles ──────────────────────────────────────────────────────────────
   const styles = `
     @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;500;600;700&family=Playfair+Display:ital,wght@1,400&display=swap');
 
@@ -167,7 +151,6 @@ export default function Showcase() {
 
     html { scroll-behavior: smooth; }
 
-    /* ── Base ── */
     #sc-section {
       position: relative;
       background: #ffffff;
@@ -179,7 +162,8 @@ export default function Showcase() {
       position: sticky;
       top: 0;
       height: 100vh;
-      overflow: hidden;
+      /* ✦ visible — nothing clips the cards */
+      overflow: visible;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -194,13 +178,10 @@ export default function Showcase() {
       z-index: 0;
       overflow: hidden;
     }
-
-    .sc-x {
-      position: absolute; width: 6px; height: 6px;
-    }
-    .sc-x::before, .sc-x::after { content: ''; position: absolute; background: #e4e4e4; }
-    .sc-x::before { width: 1px; height: 100%; left: 50%; }
-    .sc-x::after  { width: 100%; height: 1px; top: 50%; }
+    .sc-x { position: absolute; width: 6px; height: 6px; }
+    .sc-x::before, .sc-x::after { content:''; position:absolute; background:#e4e4e4; }
+    .sc-x::before { width:1px; height:100%; left:50%; }
+    .sc-x::after  { width:100%; height:1px; top:50%; }
 
     /* ── Marquee ── */
     #sc-marquee-wrap {
@@ -213,30 +194,21 @@ export default function Showcase() {
       align-items: center;
       z-index: 2;
     }
-
     #sc-marquee-track {
       display: flex;
       white-space: nowrap;
       will-change: transform;
     }
-
     .sc-mq-item {
       font-family: 'Syne', sans-serif;
-      font-size: 9px;
-      font-weight: 600;
-      letter-spacing: 0.26em;
-      text-transform: uppercase;
-      color: #d0d0d0;
-      padding: 0 28px;
-      flex-shrink: 0;
+      font-size: 9px; font-weight: 600;
+      letter-spacing: 0.26em; text-transform: uppercase;
+      color: #d0d0d0; padding: 0 28px; flex-shrink: 0;
     }
-
     .sc-mq-sep {
       font-family: 'Syne', sans-serif;
-      font-size: 9px;
-      color: #e2e2e2;
-      flex-shrink: 0;
-      padding: 0 4px;
+      font-size: 9px; color: #e2e2e2;
+      flex-shrink: 0; padding: 0 4px;
     }
 
     /* ── Heading ── */
@@ -248,14 +220,12 @@ export default function Showcase() {
       position: relative;
       z-index: 1;
     }
-
     #sc-title-row {
       display: flex;
       align-items: flex-end;
       gap: 0;
       line-height: 1;
     }
-
     .sc-t-solid {
       font-family: 'Bebas Neue', sans-serif;
       font-size: clamp(80px, 10.5vw, 152px);
@@ -264,18 +234,15 @@ export default function Showcase() {
       line-height: 0.88;
       color: #111111;
     }
-
     .sc-t-italic {
       font-family: 'Playfair Display', Georgia, serif;
       font-size: clamp(26px, 3.4vw, 50px);
-      font-weight: 400;
-      font-style: italic;
+      font-weight: 400; font-style: italic;
       color: #c0c0c0;
       letter-spacing: -0.01em;
       line-height: 1;
       padding: 0 16px 14px;
     }
-
     .sc-t-ghost {
       font-family: 'Bebas Neue', sans-serif;
       font-size: clamp(80px, 10.5vw, 152px);
@@ -285,14 +252,11 @@ export default function Showcase() {
       color: white;
       -webkit-text-stroke: 1.5px #d4d4d4;
     }
-
     #sc-tagline {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-top: 16px;
+      display: flex; align-items: center;
+      gap: 14px; margin-top: 16px;
     }
-    .sc-tg-bar  { width: 28px; height: 1px; background: linear-gradient(90deg, #cccccc, transparent); }
+    .sc-tg-bar  { width:28px; height:1px; background:linear-gradient(90deg,#cccccc,transparent); }
     .sc-tg-text {
       font-family: 'Syne', sans-serif;
       font-size: 10.5px; font-weight: 500;
@@ -300,10 +264,11 @@ export default function Showcase() {
       color: #c4c4c4;
     }
 
-    /* ── Track (desktop sticky) ── */
+    /* ── Track ── */
     #sc-overflow-clip {
       width: 100%;
-      overflow: hidden;
+      /* ✦ visible on desktop so images are never clipped by this container */
+      overflow: visible;
       position: relative;
       z-index: 1;
     }
@@ -314,39 +279,64 @@ export default function Showcase() {
       padding: 0 80px;
       width: max-content;
       will-change: transform;
-      transform: translateX(0);
+      transform: translate3d(0, 0, 0);
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
     }
 
-    /* ── Cards ── */
+    /* ── Cards ──────────────────────────────────────────────────────────────
+       KEY FIXES:
+         overflow: visible   — nothing clips the image edges or top
+         height: auto        — card grows to fit the image naturally
+         background: transparent — no shading behind the image
+         box-shadow: none    — no shadow of any kind
+    ─────────────────────────────────────────────────────────────────────── */
     .sc-card-link {
       display: flex;
+      flex-direction: column;
       width: 644px;
-      height: 360px;
-      border-radius: 30px;
-      overflow: hidden;
+      /* ✦ height auto — card fits image, nothing is cropped */
+      height: auto;
+      border-radius: 38px;
+      /* ✦ overflow visible — image edges are never clipped */
+      overflow: visible;
       flex-shrink: 0;
       position: relative;
       text-decoration: none;
       cursor: none;
-      border: 1px solid #eeeeee;
+      /* ✦ no box-shadow anywhere */
+      box-shadow: none;
+      filter: none;
+      /* ✦ transparent — no background shading */
+      background: transparent;
       transition: border-color 0.35s ease;
     }
-    .sc-card-link:hover { border-color: #dddddd; }
+    .sc-card-link:hover {
+      border-color: #dddddd;
+      /* ✦ explicitly keep no shadow on hover */
+      box-shadow: none;
+    }
 
     .sc-right {
-      width: 100%; height: 100%;
-      position: relative; overflow: hidden;
+      width: 100%;
+      /* ✦ height auto — wraps image naturally */
+      height: auto;
+      position: relative;
+      /* ✦ overflow visible — nothing clips */
+      overflow: visible;
     }
 
+    /* Skeleton placeholder — sized by the image inside it */
     .sc-img-placeholder {
-      position: absolute; inset: 0;
-      background: #f5f5f5;  /* skeleton colour while image loads */
+      position: relative;
+      width: 100%;
+      height: auto;
+      /* ✦ background only shown before image loads */
+      background: #f5f5f5;
       overflow: hidden;
+      border-radius: 30px;
     }
 
-    /* Shimmer skeleton shown before image loads */
     .sc-img-placeholder::after {
       content: '';
       position: absolute;
@@ -360,37 +350,46 @@ export default function Showcase() {
       background-size: 200% 100%;
       animation: sc-shimmer 1.6s infinite linear;
     }
-
-    /* Stop shimmer once image has loaded */
-    .sc-img-placeholder.sc-loaded::after {
-      display: none;
-    }
+    .sc-img-placeholder.sc-loaded::after { display: none; }
+    .sc-img-placeholder.sc-loaded { background: transparent; }
 
     @keyframes sc-shimmer {
       0%   { background-position: -200% 0; }
       100% { background-position:  200% 0; }
     }
 
+    /* ── Image ────────────────────────────────────────────────────────────
+       object-fit: contain  — full image always visible, never cropped
+       width: 100%          — fills card width
+       height: auto         — natural height, no squashing
+       object-position: center top — top edge is never cut off
+    ─────────────────────────────────────────────────────────────────────── */
     .sc-img {
-      width: 100%; height: 100%;
-      object-fit: cover; object-position: center;
       display: block;
+      width: 100%;
+      height: auto;
+      /* ✦ contain — entire image visible, original proportions kept */
+      object-fit: contain;
+      object-position: center top;
       pointer-events: none;
       user-select: none;
       -webkit-user-drag: none;
-      /* ── Lazy-load fade-in ── */
+      /* ✦ no shadow or filter on the image itself */
+      box-shadow: none;
+      filter: none;
+      border-radius: 30px;
+      /* fade-in only — no scale crop */
       opacity: 0;
-      transition:
-        opacity 0.5s ease,
-        transform 0.55s cubic-bezier(.16,1,.3,1);
+      transition: opacity 0.5s ease;
+      /* GPU hint for smooth rendering */
+      will-change: opacity;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
     }
+    .sc-img.sc-img-visible { opacity: 1; }
 
-    /* Image becomes visible once loaded */
-    .sc-img.sc-img-visible {
-      opacity: 1;
-    }
-
-    .sc-card-link:hover .sc-img { transform: scale(1.04); }
+    /* ✦ no scale-in on hover (scale causes visual crop) */
+    .sc-card-link:hover .sc-img { transform: none; }
 
     /* Tooltip */
     .sc-tooltip {
@@ -407,9 +406,11 @@ export default function Showcase() {
       white-space: nowrap;
       opacity: 0;
       border: 1px solid #eeeeee;
+      box-shadow: none;
       transform: translate(-50%, -50%) scale(0.72);
-      transition: opacity 0.20s ease,
-                  transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition:
+        opacity 0.20s ease,
+        transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
       top: 50%; left: 50%;
       will-change: left, top, transform, opacity;
     }
@@ -418,29 +419,24 @@ export default function Showcase() {
       transform: translate(-50%, -50%) scale(1);
     }
 
-    /* ════════════════════════════════════════════════════
-       ULTRA-WIDE  ≥ 1920px
-    ════════════════════════════════════════════════════ */
+    /* ════════ ULTRA-WIDE ≥ 1920px ═══════════════════════════════════════ */
     @media (min-width: 1920px) {
       #sc-heading-block { padding: 0 120px; }
       #sc-track         { padding: 0 120px; }
     }
 
-    /* ════════════════════════════════════════════════════
-       SMALL DESKTOP  1024px – 1279px
-    ════════════════════════════════════════════════════ */
+    /* ════════ SMALL DESKTOP 1024–1279px ══════════════════════════════════ */
     @media (min-width: 1024px) and (max-width: 1279px) {
       #sc-heading-block { padding: 0 48px; margin-bottom: 36px; }
       #sc-track         { padding: 0 48px; gap: 20px; }
-      .sc-card-link     { width: 480px; height: 280px; border-radius: 22px; }
+      .sc-card-link     { width: 480px; height: auto; border-radius: 22px; }
+      .sc-img           { border-radius: 22px; }
+      .sc-img-placeholder { border-radius: 22px; }
     }
 
-    /* ════════════════════════════════════════════════════
-       TABLET  768px – 1023px
-    ════════════════════════════════════════════════════ */
+    /* ════════ TABLET 768–1023px ═══════════════════════════════════════════ */
     @media (min-width: 768px) and (max-width: 1023px) {
       #sc-section { padding-bottom: 60px; }
-
       #sc-sticky {
         position: relative !important;
         height: auto !important;
@@ -448,46 +444,38 @@ export default function Showcase() {
         justify-content: flex-start;
         padding-top: 56px;
       }
-
       #sc-heading-block { padding: 0 40px; margin-bottom: 32px; }
-
       .sc-t-solid, .sc-t-ghost { font-size: clamp(56px, 9vw, 88px); }
       .sc-t-italic              { font-size: clamp(18px, 2.8vw, 32px); padding: 0 12px 10px; }
-
       #sc-tagline  { margin-top: 12px; }
       .sc-tg-text  { font-size: 9.5px; }
-
       #sc-overflow-clip {
         overflow-x: auto;
-        overflow-y: hidden;
+        overflow-y: visible;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
       }
       #sc-overflow-clip::-webkit-scrollbar { display: none; }
-
       #sc-track {
         width: max-content;
         transform: none !important;
         padding: 0 40px 24px;
         gap: 20px;
       }
-
       .sc-card-link {
         width: 400px;
-        height: 240px;
+        height: auto;
         border-radius: 20px;
         cursor: pointer;
       }
-
+      .sc-img             { border-radius: 20px; }
+      .sc-img-placeholder { border-radius: 20px; }
       .sc-tooltip { display: none; }
     }
 
-    /* ════════════════════════════════════════════════════
-       MOBILE  < 768px
-    ════════════════════════════════════════════════════ */
+    /* ════════ MOBILE < 768px ══════════════════════════════════════════════ */
     @media (max-width: 767px) {
       #sc-section { padding-bottom: 48px; }
-
       #sc-sticky {
         position: relative !important;
         height: auto !important;
@@ -495,66 +483,54 @@ export default function Showcase() {
         justify-content: flex-start;
         padding-top: 48px;
       }
-
       #sc-marquee-wrap { height: 28px; }
-      .sc-mq-item      { font-size: 7.5px; letter-spacing: 0.20em; padding: 0 18px; }
-
+      .sc-mq-item { font-size: 7.5px; letter-spacing: 0.20em; padding: 0 18px; }
       #sc-heading-block { padding: 0 20px; margin-bottom: 24px; }
-
       #sc-title-row { flex-wrap: wrap; align-items: flex-end; gap: 0; row-gap: 2px; }
-
       .sc-t-solid, .sc-t-ghost { font-size: clamp(52px, 17vw, 76px); line-height: 0.90; }
       .sc-t-italic              { font-size: clamp(16px, 5.2vw, 26px); padding: 0 10px 8px; }
-
-      #sc-tagline  { margin-top: 10px; gap: 10px; }
-      .sc-tg-bar   { width: 20px; }
-      .sc-tg-text  { font-size: 8.5px; letter-spacing: 0.16em; }
-
+      #sc-tagline { margin-top: 10px; gap: 10px; }
+      .sc-tg-bar  { width: 20px; }
+      .sc-tg-text { font-size: 8.5px; letter-spacing: 0.16em; }
       #sc-overflow-clip {
         overflow-x: auto;
-        overflow-y: hidden;
+        overflow-y: visible;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
       }
       #sc-overflow-clip::-webkit-scrollbar { display: none; }
-
       #sc-track {
         width: max-content;
         transform: none !important;
         padding: 0 20px 16px;
         gap: 14px;
       }
-
       .sc-card-link {
         width: 76vw;
         max-width: 340px;
         height: auto;
-        aspect-ratio: 16 / 9;
         border-radius: 16px;
         cursor: pointer;
-        min-height: 44px;
+        min-height: unset;
       }
-
+      .sc-img             { border-radius: 16px; }
+      .sc-img-placeholder { border-radius: 16px; }
       .sc-tooltip { display: none; }
       #sc-bg .sc-x { display: none; }
     }
 
-    /* ════════════════════════════════════════════════════
-       EXTRA-SMALL  < 480px
-    ════════════════════════════════════════════════════ */
+    /* ════════ EXTRA-SMALL < 480px ════════════════════════════════════════ */
     @media (max-width: 479px) {
       #sc-heading-block { padding: 0 16px; }
       #sc-track         { padding: 0 16px 16px; gap: 12px; }
-
-      .sc-card-link { width: 84vw; max-width: 300px; }
-
+      .sc-card-link     { width: 84vw; max-width: 300px; border-radius: 14px; }
+      .sc-img             { border-radius: 14px; }
+      .sc-img-placeholder { border-radius: 14px; }
       .sc-t-solid, .sc-t-ghost { font-size: clamp(44px, 18.5vw, 64px); }
       .sc-t-italic              { font-size: clamp(14px, 5.5vw, 22px); padding: 0 8px 6px; }
     }
 
-    /* ════════════════════════════════════════════════════
-       IOS SAFE-AREA
-    ════════════════════════════════════════════════════ */
+    /* ════════ iOS safe-area ══════════════════════════════════════════════ */
     @supports (padding-bottom: env(safe-area-inset-bottom)) {
       @media (max-width: 1023px) {
         #sc-section { padding-bottom: max(48px, env(safe-area-inset-bottom)); }
@@ -562,17 +538,13 @@ export default function Showcase() {
       }
     }
 
-    /* ════════════════════════════════════════════════════
-       SCROLL-SNAP on native swipe tracks
-    ════════════════════════════════════════════════════ */
+    /* ════════ Scroll snap — mobile/tablet ════════════════════════════════ */
     @media (max-width: 1023px) {
       #sc-overflow-clip { scroll-snap-type: x mandatory; }
       .sc-card-link     { scroll-snap-align: start; }
     }
 
-    /* ════════════════════════════════════════════════════
-       REDUCED-MOTION
-    ════════════════════════════════════════════════════ */
+    /* ════════ Reduced motion ═════════════════════════════════════════════ */
     @media (prefers-reduced-motion: reduce) {
       .sc-img                    { transition: opacity 0.1s ease; }
       .sc-tooltip                { transition: opacity 0.1s ease; }
@@ -593,7 +565,6 @@ export default function Showcase() {
       <div id="sc-section" ref={sectionRef} style={{ height: sectionH }}>
         <div id="sc-sticky">
 
-          {/* ── Background ── */}
           <div id="sc-bg" aria-hidden="true">
             <div className="sc-x" style={{ top:"17%", left:"55%" }} />
             <div className="sc-x" style={{ top:"68%", left:"42%" }} />
@@ -601,14 +572,12 @@ export default function Showcase() {
             <div className="sc-x" style={{ bottom:"20%", right:"148px" }} />
           </div>
 
-          {/* ── Marquee ── */}
           <div id="sc-marquee-wrap" aria-hidden="true">
             <div id="sc-marquee-track" ref={mqTrackRef}>
               {mqItems}
             </div>
           </div>
 
-          {/* ── Heading ── */}
           <div id="sc-heading-block">
             <div id="sc-title-row">
               <span className="sc-t-solid">Showcase</span>
@@ -621,7 +590,6 @@ export default function Showcase() {
             </div>
           </div>
 
-          {/* ── Track ── */}
           <div id="sc-overflow-clip">
             <div id="sc-track" ref={trackRef}>
               {CARDS.map((card) => (
@@ -636,7 +604,7 @@ export default function Showcase() {
   );
 }
 
-// ── Card ────────────────────────────────────────────────────────────────────
+/* ── Card ──────────────────────────────────────────────────────────────── */
 function Card({ card, useTooltip }) {
   const cardRef    = useRef(null);
   const tipRef     = useRef(null);
@@ -645,7 +613,6 @@ function Card({ card, useTooltip }) {
   const rafRef     = useRef(null);
   const activeRef  = useRef(false);
 
-  // ── Lazy loading ──────────────────────────────────────────────────────────
   const { imgRef, src: lazySrc, loaded, setLoaded } = useLazyImage(card.image);
 
   const startLoop = useCallback(() => {
@@ -682,7 +649,7 @@ function Card({ card, useTooltip }) {
     startLoop();
   }, [toLocal, startLoop, useTooltip]);
 
-  const onMouseMove  = useCallback((e) => {
+  const onMouseMove = useCallback((e) => {
     if (!useTooltip) return;
     targetRef.current = toLocal(e);
   }, [toLocal, useTooltip]);
@@ -715,18 +682,13 @@ function Card({ card, useTooltip }) {
       )}
 
       <div className="sc-right">
-        {/* sc-loaded class removes the shimmer once the image is ready */}
         <div className={`sc-img-placeholder${loaded ? " sc-loaded" : ""}`}>
           <img
             ref={imgRef}
-            /* lazySrc is undefined until the card enters the viewport;
-               only then does the browser start fetching the image.     */
             src={lazySrc}
-            /* native lazy as a belt-and-suspenders fallback */
             loading="lazy"
             decoding="async"
-            alt={card.title.replace("\n", " ")}
-            /* sc-img-visible fades the image in after it finishes loading */
+            alt={card.title}
             className={`sc-img${loaded ? " sc-img-visible" : ""}`}
             draggable={false}
             onLoad={() => setLoaded(true)}
