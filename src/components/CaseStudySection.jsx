@@ -4,8 +4,6 @@ import SwayamCaseStudyPage  from "./SwayamCaseStudyPage.jsx";
 
 
 const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
-
   :root {
     --white: #ffffff;
     --ink: #0a0a0a;
@@ -15,11 +13,11 @@ const styles = `
     --ts:     cubic-bezier(0.25, 0.46, 0.45, 0.94);
     --tsp:    cubic-bezier(0.34, 1.56, 0.64, 1);
     --spring: cubic-bezier(0.34, 1.12, 0.64, 1);
+    --sf: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* ── Section — no min-height, padding only what's needed ── */
   .cs-section {
     background: var(--white);
     padding: 32px 0 32px;
@@ -28,7 +26,6 @@ const styles = `
     flex-direction: column;
   }
 
-  /* ── Header ── */
   .cs-header {
     display: flex;
     align-items: flex-end;
@@ -45,34 +42,28 @@ const styles = `
   .cs-header-left { flex: 1; }
 
   .cs-label {
-    font-family: 'Syne', sans-serif;
+    font-family: var(--sf);
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--grey);
-    display: flex;
-    align-items: center;
-    gap: 8px;
     margin-bottom: 12px;
-  }
-  .cs-label::before {
-    content: '';
-    display: block;
-    width: 20px;
-    height: 1px;
-    background: var(--grey-line);
   }
 
   .cs-title {
-    font-family: 'Instrument Serif', serif;
+    font-family: var(--sf);
     font-size: clamp(32px, 4vw, 58px);
-    font-weight: 400;
+    font-weight: 300;
     line-height: 1.06;
     color: var(--ink);
-    letter-spacing: -0.025em;
+    letter-spacing: -0.03em;
   }
-  .cs-title em { font-style: italic; color: var(--grey); }
+  .cs-title em {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--grey);
+  }
 
   .cs-header-right {
     flex: 0 0 auto;
@@ -84,7 +75,7 @@ const styles = `
     padding-bottom: 4px;
   }
   .cs-subtitle {
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--sf);
     font-size: 14px;
     font-weight: 300;
     color: var(--ink-muted);
@@ -93,16 +84,15 @@ const styles = `
     transition: opacity 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
   .cs-year {
-    font-family: 'Syne', sans-serif;
+    font-family: var(--sf);
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: 0.16em;
     text-transform: uppercase;
     color: rgba(0,0,0,0.22);
     transition: opacity 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
-  /* ── Stage — height is exactly the card's natural height ── */
   .cs-stage {
     position: relative;
     display: flex;
@@ -113,7 +103,6 @@ const styles = `
     -webkit-user-select: none;
   }
 
-  /* ── Card items ── */
   .cs-card-item {
     position: absolute;
     width: min(68vw, 820px);
@@ -158,7 +147,6 @@ const styles = `
     pointer-events: none;
   }
 
-  /* ── Tooltip (front card only) ── */
   .cs-tooltip {
     position: fixed;
     pointer-events: none;
@@ -179,7 +167,7 @@ const styles = `
     padding: 10px 18px;
     border-radius: 100px;
     white-space: nowrap;
-    background: rgba(255,255,255,0.82);
+    background: rgb(255, 255, 255);
     backdrop-filter: blur(16px) saturate(180%);
     -webkit-backdrop-filter: blur(16px) saturate(180%);
     border: 1px solid rgba(255,255,255,0.6);
@@ -187,7 +175,7 @@ const styles = `
       0 2px 8px   rgba(0,0,0,0.09),
       0 8px 24px  rgba(0,0,0,0.09),
       inset 0 1px 0 rgba(255,255,255,0.85);
-    font-family: 'Syne', sans-serif;
+    font-family: var(--sf);
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.07em;
@@ -225,8 +213,8 @@ const styles = `
     .cs-header-right { align-items: flex-start; max-width: 100%; }
     .cs-subtitle     { text-align: left; font-size: 13px; }
     .cs-title        { font-size: clamp(28px, 6vw, 40px); }
-    .cs-card-item    { width: min(86vw, 520px); }
-    .cs-stage        { height: calc(min(86vw, 520px) * 0.63); }
+    .cs-card-item    { width: 78vw; }
+    .cs-stage        { height: calc(78vw * 0.63); }
     .cs-bezel        { border-radius: 22px; outline-offset: 4px; }
     .cs-card         { border-radius: 20px; }
   }
@@ -238,31 +226,34 @@ const styles = `
     .cs-subtitle  { font-size: 12px; line-height: 1.6; }
     .cs-year      { font-size: 10px; }
     .cs-tooltip   { display: none; }
-    .cs-card-item { width: 88vw; }
-    .cs-stage     { height: calc(88vw * 0.63); }
+    .cs-card-item { width: 82vw; }
+    .cs-stage     { height: calc(82vw * 0.63); }
     .cs-bezel     { border-radius: 16px; outline-offset: 3px; }
     .cs-card      { border-radius: 14px; }
   }
 `;
 
-/* ──────────────────────────────────────────────────
-   Transform states
-   STATES[activeIdx][cardIndex] = { x, scale, z }
-────────────────────────────────────────────────── */
-const STATES = [
+const getOffset = () => {
+  const w = window.innerWidth;
+  if (w <= 480) return "7vw";
+  if (w <= 768) return "8vw";
+  if (w <= 1024) return "9vw";
+  return "13vw";
+};
+
+const buildStates = (offset) => [
   [
-    { x: "0vw",   scale: 1,    z: 2 },
-    { x: "13vw",  scale: 0.93, z: 1 },
+    { x: "0vw",        scale: 1,    z: 2 },
+    { x: offset,       scale: 0.93, z: 1 },
   ],
   [
-    { x: "-13vw", scale: 0.93, z: 1 },
-    { x: "0vw",   scale: 1,    z: 2 },
+    { x: `-${offset}`, scale: 0.93, z: 1 },
+    { x: "0vw",        scale: 1,    z: 2 },
   ],
 ];
 
 const SPRING_TRANSITION = "transform 0.65s cubic-bezier(0.34, 1.12, 0.64, 1)";
 
-/* ── Per-card metadata ── */
 const CARDS = [
   {
     src:      "/case study/TNSTC Case Study.png",
@@ -292,9 +283,9 @@ export default function CaseStudySection() {
   const [swayamOpen, setSwayamOpen] = useState(false);
   const [tipOn,      setTipOn]      = useState(false);
 
-  /* Apply transforms directly to DOM (no re-render lag) */
   const applyTransforms = useCallback((idx, animate) => {
-    STATES[idx].forEach(({ x, scale, z }, i) => {
+    const states = buildStates(getOffset());
+    states[idx].forEach(({ x, scale, z }, i) => {
       const el = cardRefs[i].current;
       if (!el) return;
       el.style.transition = animate ? SPRING_TRANSITION : "none";
@@ -306,10 +297,14 @@ export default function CaseStudySection() {
     });
   }, []);
 
-  /* Paint initial layout without animation */
   useEffect(() => { applyTransforms(0, false); }, []);
 
-  /* Switch to a card with spring animation */
+  useEffect(() => {
+    const onResize = () => applyTransforms(activeIdx, false);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [activeIdx, applyTransforms]);
+
   const goTo = useCallback((idx) => {
     if (isAnimating.current || idx === activeIdx) return;
     isAnimating.current = true;
@@ -318,7 +313,6 @@ export default function CaseStudySection() {
     setTimeout(() => { isAnimating.current = false; }, 700);
   }, [activeIdx, applyTransforms]);
 
-  /* Click: back card → front; front card → open case study */
   const handleCardClick = (clickedIdx) => {
     if (isAnimating.current) return;
     if (clickedIdx !== activeIdx) {
@@ -329,7 +323,6 @@ export default function CaseStudySection() {
     }
   };
 
-  /* Swipe */
   const onTouchStart = (e) => { touchStart.current = e.touches[0].clientX; };
   const onTouchEnd   = (e) => {
     if (touchStart.current === null || isAnimating.current) return;
@@ -340,7 +333,6 @@ export default function CaseStudySection() {
     if (dx > 0 && activeIdx === 1) goTo(0);
   };
 
-  /* Scroll reveal for header */
   useEffect(() => {
     const io = new IntersectionObserver(
       (es) => es.forEach((e) => e.isIntersecting && e.target.classList.add("visible")),
@@ -350,7 +342,6 @@ export default function CaseStudySection() {
     return () => io.disconnect();
   }, []);
 
-  /* Tooltip RAF */
   const loopTip = () => {
     if (tooltipRef.current) {
       tooltipRef.current.style.left = tipPos.current.x + "px";
