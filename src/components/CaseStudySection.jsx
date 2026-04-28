@@ -26,7 +26,7 @@ const styles = `
     flex-direction: column;
   }
 
-  /* ── Header — full left-aligned stack ── */
+  /* ── Header ── */
   .cs-header {
     display: flex;
     flex-direction: column;
@@ -50,49 +50,21 @@ const styles = `
     margin-bottom: 10px;
   }
 
+  /* Bold heading, no italic anywhere */
   .cs-title {
     font-family: var(--sf);
     font-size: clamp(36px, 5vw, 64px);
-    font-weight: 300;
+    font-weight: 700;
     line-height: 1.05;
     color: var(--ink);
     letter-spacing: -0.035em;
-    margin-bottom: 16px;
-  }
-  .cs-title em {
-    font-style: italic;
-    font-weight: 300;
-    color: var(--grey);
+    font-style: normal;
   }
 
-  /* Subtitle + year sit directly below the title, left-aligned */
-  .cs-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    /* Fade-slide when card changes */
-    transition: opacity 0.35s var(--ts), transform 0.35s var(--ts);
-  }
-  .cs-meta.is-switching {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-
-  .cs-subtitle {
-    font-family: var(--sf);
-    font-size: 14px;
-    font-weight: 300;
-    color: var(--ink-muted);
-    line-height: 1.75;
-    max-width: 480px;
-  }
-  .cs-year {
-    font-family: var(--sf);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: rgba(0,0,0,0.22);
+  /* "Intention" — outline/stroke only, transparent fill */
+  .cs-title-stroke {
+    color: #b9b9b9;
+    font-style: normal;
   }
 
   /* ── Stage ── */
@@ -115,34 +87,40 @@ const styles = `
     will-change: transform, opacity;
   }
 
-  /* Fade the back card slightly so depth is clear */
   .cs-card-item.is-back  { opacity: 0.72; }
   .cs-card-item.is-front { opacity: 1; }
 
+  /* Bezel — outline ONLY on active (is-front) card */
   .cs-bezel {
     border-radius: 40px;
-    outline: 1.5px solid rgba(160,160,175,0.55);
-    outline-offset: 6px;
     box-shadow:
       0 8px 40px rgba(0,0,0,0.07),
       0 2px  8px rgba(0,0,0,0.04);
     transition:
+      outline        0.4s var(--ts),
       outline-color  0.4s var(--ts),
       outline-offset 0.4s var(--ts),
       box-shadow     0.4s var(--ts);
+    /* No outline by default */
+    outline: 1.5px solid transparent;
+    outline-offset: 6px;
   }
-  .cs-card-item.is-front .cs-bezel:hover {
-    outline-color:  rgba(110,110,135,0.85);
-    outline-offset: 4px;
+
+  /* Active card — grey external outline */
+  .cs-card-item.is-front .cs-bezel {
+    outline-color: rgba(130, 130, 150, 0.75);
+    outline-offset: 6px;
     box-shadow:
       0 20px 56px rgba(0,0,0,0.10),
       0  4px 12px rgba(0,0,0,0.05);
   }
-  .cs-card-item.is-back .cs-bezel:hover {
-    outline-color: rgba(130,130,155,0.65);
+
+  /* Inactive card — no outline at all */
+  .cs-card-item.is-back .cs-bezel {
+    outline-color: transparent;
     box-shadow:
-      0 12px 44px rgba(0,0,0,0.09),
-      0  3px  9px rgba(0,0,0,0.05);
+      0 8px 40px rgba(0,0,0,0.07),
+      0 2px  8px rgba(0,0,0,0.04);
   }
 
   .cs-card {
@@ -215,25 +193,26 @@ const styles = `
   @media (max-width: 768px) {
     .cs-section   { padding: 20px 0 20px; }
     .cs-header    { padding: 0 24px; margin-bottom: 24px; }
-    .cs-title     { font-size: clamp(28px, 6vw, 44px); margin-bottom: 12px; }
-    .cs-subtitle  { font-size: 13px; max-width: 100%; }
+    .cs-title     { font-size: clamp(28px, 6vw, 44px); }
+    .cs-title-stroke { -webkit-text-stroke: 1.5px var(--ink); }
     .cs-card-item { width: 78vw; }
     .cs-stage     { height: calc(78vw * 0.63); cursor: default; }
     .cs-bezel     { border-radius: 22px; outline-offset: 4px; }
     .cs-card      { border-radius: 20px; }
+    .cs-card-item.is-front .cs-bezel { outline-offset: 4px; }
   }
 
   @media (max-width: 480px) {
     .cs-section   { padding: 16px 0 16px; }
     .cs-header    { padding: 0 18px; margin-bottom: 18px; }
     .cs-title     { font-size: clamp(26px, 7.5vw, 34px); }
-    .cs-subtitle  { font-size: 12px; line-height: 1.6; }
-    .cs-year      { font-size: 10px; }
+    .cs-title-stroke { -webkit-text-stroke: 1px var(--ink); }
     .cs-tooltip   { display: none; }
     .cs-card-item { width: 82vw; }
     .cs-stage     { height: calc(82vw * 0.63); cursor: default; }
     .cs-bezel     { border-radius: 16px; outline-offset: 3px; }
     .cs-card      { border-radius: 14px; }
+    .cs-card-item.is-front .cs-bezel { outline-offset: 3px; }
   }
 `;
 
@@ -256,7 +235,6 @@ const buildStates = (offset) => [
   ],
 ];
 
-// Silky spring for position + separate fast fade for opacity
 const SPRING_TRANSITION  = "transform 0.7s cubic-bezier(0.34, 1.12, 0.64, 1), opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
 const SWIPE_THRESHOLD    = 48;
 const DRAG_CANCEL_THRESHOLD = 6;
@@ -265,34 +243,27 @@ const CARDS = [
   {
     src:      "/case study/TNSTC Case Study.png",
     alt:      "TNSTC Bus Booking Redesign",
-    subtitle: "A deep dive into redesigning TNSTC — turning complexity into clarity, one screen at a time.",
-    year:     "2026 · Personal Project",
   },
   {
     src:      "/case study/Swayam Case Study.png",
     alt:      "Swayam Case Study",
-    subtitle: "Redesigning Swayam — bridging learners and courses through a thoughtful, accessible experience.",
-    year:     "2026 · Personal Project",
   },
 ];
 
 export default function CaseStudySection() {
   const headerRef  = useRef(null);
-  const metaRef    = useRef(null);
   const stageRef   = useRef(null);
   const cardRefs   = [useRef(null), useRef(null)];
   const tooltipRef = useRef(null);
   const rafRef     = useRef(null);
   const tipPos     = useRef({ x: 0, y: 0 });
 
-  const touchStart = useRef(null);
-  const mouseStart = useRef(null);
-  const isDragging = useRef(false);
+  const touchStart  = useRef(null);
+  const mouseStart  = useRef(null);
+  const isDragging  = useRef(false);
   const isAnimating = useRef(false);
 
   const [activeIdx,  setActiveIdx]  = useState(0);
-  const [displayIdx, setDisplayIdx] = useState(0); // lags behind for text fade
-  const [isSwitching, setIsSwitching] = useState(false);
   const [tnstcOpen,  setTnstcOpen]  = useState(false);
   const [swayamOpen, setSwayamOpen] = useState(false);
   const [tipOn,      setTipOn]      = useState(false);
@@ -306,7 +277,6 @@ export default function CaseStudySection() {
       el.style.transition = animate ? SPRING_TRANSITION : "none";
       el.style.transform  = `translateX(${x}) scale(${scale})`;
       el.style.zIndex     = z;
-      // opacity handled by CSS classes is-front / is-back
       el.classList.toggle("is-front", i === idx);
       el.classList.toggle("is-back",  i !== idx);
     });
@@ -320,25 +290,13 @@ export default function CaseStudySection() {
     return () => window.removeEventListener("resize", onResize);
   }, [activeIdx, applyTransforms]);
 
-  /* ── Switch card with smooth meta text fade ── */
+  /* ── Switch card ── */
   const goTo = useCallback((idx) => {
     if (isAnimating.current || idx === activeIdx) return;
     isAnimating.current = true;
-
-    // 1. Fade out meta text
-    setIsSwitching(true);
-
-    setTimeout(() => {
-      // 2. Mid-fade: swap text & trigger card spring
-      setActiveIdx(idx);
-      setDisplayIdx(idx);
-      applyTransforms(idx, true);
-
-      // 3. Fade meta text back in
-      setIsSwitching(false);
-
-      setTimeout(() => { isAnimating.current = false; }, 700);
-    }, 200); // matches .cs-meta transition duration
+    setActiveIdx(idx);
+    applyTransforms(idx, true);
+    setTimeout(() => { isAnimating.current = false; }, 700);
   }, [activeIdx, applyTransforms]);
 
   /* ── Click ── */
@@ -429,8 +387,6 @@ export default function CaseStudySection() {
   const onMove  = (e) => { tipPos.current = { x: e.clientX, y: e.clientY - 48 }; };
   useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
 
-  const displayCard = CARDS[displayIdx];
-
   return (
     <>
       <style>{styles}</style>
@@ -453,19 +409,12 @@ export default function CaseStudySection() {
 
       <section className="cs-section">
 
-        {/* ── Left-aligned header: label → title → subtitle → year ── */}
+        {/* ── Header: label + bold heading only ── */}
         <div className="cs-header" ref={headerRef}>
           <p className="cs-label">Featured Work</p>
           <h2 className="cs-title">
-            Designed with <em>intention.</em>
+            Designed with <span className="cs-title-stroke">Intention.</span>
           </h2>
-          <div
-            ref={metaRef}
-            className={`cs-meta${isSwitching ? " is-switching" : ""}`}
-          >
-            <p className="cs-subtitle">{displayCard.subtitle}</p>
-            <span className="cs-year">{displayCard.year}</span>
-          </div>
         </div>
 
         <div

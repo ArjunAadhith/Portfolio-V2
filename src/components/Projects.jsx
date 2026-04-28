@@ -18,7 +18,6 @@ function LazyImage({ src, alt, className }) {
     const el = imgRef.current;
     if (!el) return;
 
-    // Already cached — mark loaded immediately
     if (el.complete && el.naturalWidth > 0) {
       setLoaded(true);
       return;
@@ -34,7 +33,7 @@ function LazyImage({ src, alt, className }) {
           observer.disconnect();
         }
       },
-      { rootMargin: "200px 0px" } // start loading 200px before card is visible
+      { rootMargin: "200px 0px" }
     );
 
     observer.observe(el);
@@ -44,10 +43,10 @@ function LazyImage({ src, alt, className }) {
   return (
     <img
       ref={imgRef}
-      data-src={src}      // real src held here until observer fires
-      src=""              // empty until intersection
-      loading="lazy"      // native browser hint as fallback
-      decoding="async"    // non-blocking decode
+      data-src={src}
+      src=""
+      loading="lazy"
+      decoding="async"
       alt={alt}
       className={className}
       draggable={false}
@@ -60,8 +59,177 @@ function LazyImage({ src, alt, className }) {
   );
 }
 
+/* ─── Mobile Desktop-Only Popup ─────────────────────────────────────── */
+function DesktopOnlyPopup({ visible, onClose }) {
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    if (visible) {
+      timerRef.current = setTimeout(onClose, 2800);
+    }
+    return () => clearTimeout(timerRef.current);
+  }, [visible, onClose]);
+
+  return (
+    <>
+      <style>{`
+        .dop-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 99999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(0, 0, 0, 0.55);
+          backdrop-filter: blur(6px);
+          -webkit-backdrop-filter: blur(6px);
+          padding: 24px;
+          /* entry */
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.22s ease;
+        }
+        .dop-overlay.dop-show {
+          opacity: 1;
+          pointer-events: all;
+        }
+
+        .dop-card {
+          background: rgba(255, 255, 255, 0.10);
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          border-radius: 24px;
+          padding: 28px 28px 32px;
+          width: min(320px, calc(100vw - 48px));
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 20px;
+          box-shadow:
+            0 32px 80px rgba(0, 0, 0, 0.55),
+            0 8px 24px rgba(0, 0, 0, 0.35),
+            inset 0 1px 0 rgba(255,255,255,0.12);
+          /* card spring */
+          transform: scale(0.88) translateY(10px);
+          transition:
+            transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1),
+            opacity   0.22s ease;
+          opacity: 0;
+        }
+        .dop-overlay.dop-show .dop-card {
+          transform: scale(1) translateY(0);
+          opacity: 1;
+        }
+
+        /* GIF placeholder */
+        .dop-gif-wrap {
+          width: 140px;
+          height: 140px;
+          border-radius: 18px;
+          background: rgba(255,255,255,0.07);
+          border: 1px solid rgba(255,255,255,0.10);
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .dop-gif-wrap img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+        /* text block */
+        .dop-text {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          text-align: center;
+        }
+        .dop-title {
+          font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+          font-size: 17px;
+          font-weight: 800;
+          letter-spacing: -0.02em;
+          color: #ffffff;
+          line-height: 1.2;
+        }
+        .dop-sub {
+          font-family: 'SF Pro Display', -apple-system, sans-serif;
+          font-size: 13px;
+          font-weight: 500;
+          color: rgba(255,255,255,0.52);
+          line-height: 1.5;
+          letter-spacing: -0.005em;
+          max-width: 220px;
+        }
+
+        /* progress bar */
+        .dop-bar-track {
+          width: 100%;
+          height: 3px;
+          background: rgba(255,255,255,0.10);
+          border-radius: 99px;
+          overflow: hidden;
+        }
+        .dop-bar-fill {
+          height: 100%;
+          width: 0%;
+          background: rgba(255,255,255,0.50);
+          border-radius: 99px;
+          transition: none;
+        }
+        .dop-overlay.dop-show .dop-bar-fill {
+          width: 100%;
+          transition: width 2.8s linear;
+        }
+      `}</style>
+
+      <div
+        className={`dop-overlay${visible ? " dop-show" : ""}`}
+        onClick={onClose}
+      >
+        <div
+          className="dop-card"
+          onClick={e => e.stopPropagation()}
+        >
+          {/* ── GIF Zone ── swap src to update the image/gif anytime ── */}
+          <div className="dop-gif-wrap">
+            <img src="/gif.png" alt="Desktop only" />
+          </div>
+
+          {/* ── Message ── */}
+          <div className="dop-text">
+            <p className="dop-title">Desktop Only Experience</p>
+            <p className="dop-sub">
+              This project is best viewed on a desktop browser for the full experience.
+            </p>
+          </div>
+
+          {/* ── Auto-close progress bar ── */}
+          <div className="dop-bar-track">
+            <div className="dop-bar-fill" />
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 /* ─── Main ──────────────────────────────────────────────────────────── */
 export default function Projects() {
+  const [popupVisible, setPopupVisible] = useState(false);
+
+  const showPopup = useCallback(() => {
+    if (popupVisible) return; // prevent stacking
+    // Haptic feedback (supported on mobile browsers)
+    if (navigator.vibrate) navigator.vibrate(30);
+    setPopupVisible(true);
+  }, [popupVisible]);
+
+  const hidePopup = useCallback(() => setPopupVisible(false), []);
+
   return (
     <>
       <style>{`
@@ -465,15 +633,23 @@ export default function Projects() {
 
       <div id="pj-outer">
         {CARDS.map((card, i) => (
-          <StickyCard key={card.id} card={card} index={i} />
+          <StickyCard
+            key={card.id}
+            card={card}
+            index={i}
+            onMobileTap={showPopup}
+          />
         ))}
       </div>
+
+      {/* ── Mobile popup — rendered outside scroll container ── */}
+      <DesktopOnlyPopup visible={popupVisible} onClose={hidePopup} />
     </>
   );
 }
 
 /* ─── StickyCard ────────────────────────────────────────────────────── */
-function StickyCard({ card, index }) {
+function StickyCard({ card, index, onMobileTap }) {
   const wrapperRef = useRef(null);
   const cardRef    = useRef(null);
   const [entered,  setEntered]  = useState(index === 0);
@@ -502,6 +678,16 @@ function StickyCard({ card, index }) {
 
   const onLeave = useCallback(() => setTip(t => ({ ...t, show: false })), []);
 
+  const handleClick = useCallback(() => {
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    // Popup restriction applies only to the first 3 cards (index 0, 1, 2)
+    if (isMobile && index < 3) {
+      onMobileTap();       // show popup, do NOT navigate
+    } else {
+      window.location.href = card.link;
+    }
+  }, [card.link, index, onMobileTap]);
+
   return (
     <div
       ref={wrapperRef}
@@ -513,7 +699,7 @@ function StickyCard({ card, index }) {
         className={`pj-card ${index === 0 ? "init" : entered ? "entered" : ""}`}
         onMouseMove={onMove}
         onMouseLeave={onLeave}
-        onClick={() => { window.location.href = card.link; }}
+        onClick={handleClick}
       >
         <span
           className={`pj-tip${tip.show ? " on" : ""}`}
@@ -522,7 +708,6 @@ function StickyCard({ card, index }) {
           Visit Now
         </span>
 
-        {/* ↓ Replaced plain <img> with lazy-loading wrapper */}
         <LazyImage
           src={card.image}
           alt={`Project ${card.id}`}
