@@ -2,32 +2,32 @@ import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 
 const IMAGES = [
-   { id: 1,     src: "/case study/SWAYAM/S1.png" },
-  { id: 2,     src: "/case study/SWAYAM/S2.png" },
-  { id: 3,     src: "/case study/SWAYAM/S3.png" },
-  { id: 4,     src: "/case study/SWAYAM/S4.png" },
-  { id: 5,     src: "/case study/SWAYAM/S5.png" },
-  { id: 6,     src: "/case study/SWAYAM/S6.png" },
-  { id: 7,     src: "/case study/SWAYAM/S7.png" },
-  { id: 8,     src: "/case study/SWAYAM/S8.png" },
-  { id: 9,     src: "/case study/SWAYAM/S9.png" },
-  { id: 10,    src: "/case study/SWAYAM/S10.png" },
-  { id: 11,    src: "/case study/SWAYAM/S11.png" },
-  { id: 12,    src: "/case study/SWAYAM/S12.png" },
-  { id: 13,    src: "/case study/SWAYAM/S13.png" },
-  { id: 14,    src: "/case study/SWAYAM/S14.png" },
-  { id: 15,    src: "/case study/SWAYAM/S15.png" },
-  { id: 16,    src: "/case study/SWAYAM/S16.png" },
-  { id: 17,    src: "/case study/SWAYAM/S17.png" },
-  { id: 18,    src: "/case study/SWAYAM/S18.png" },
-  { id: 19,    src: "/case study/SWAYAM/S19.png" },
-  { id: 20,    src: "/case study/SWAYAM/S20.png" },
-  { id: 21,    src: "/case study/SWAYAM/S21.png" },
-  { id: 22,    src: "/case study/SWAYAM/S22.png" },
-  { id: 23,    src: "/case study/SWAYAM/S23.png" },
-  { id: 24,    src: "/case study/SWAYAM/S24.png" },
-  { id: 25,    src: "/case study/SWAYAM/S25.png" },
-  { id: 26,    src: "/case study/SWAYAM/S26.png" },
+  { id: 1,  src: "/case study/SWAYAM/S1.png" },
+  { id: 2,  src: "/case study/SWAYAM/S2.png" },
+  { id: 3,  src: "/case study/SWAYAM/S3.png" },
+  { id: 4,  src: "/case study/SWAYAM/S4.png" },
+  { id: 5,  src: "/case study/SWAYAM/S5.png" },
+  { id: 6,  src: "/case study/SWAYAM/S6.png" },
+  { id: 7,  src: "/case study/SWAYAM/S7.png" },
+  { id: 8,  src: "/case study/SWAYAM/S8.png" },
+  { id: 9,  src: "/case study/SWAYAM/S9.png" },
+  { id: 10, src: "/case study/SWAYAM/S10.png" },
+  { id: 11, src: "/case study/SWAYAM/S11.png" },
+  { id: 12, src: "/case study/SWAYAM/S12.png" },
+  { id: 13, src: "/case study/SWAYAM/S13.png" },
+  { id: 14, src: "/case study/SWAYAM/S14.png" },
+  { id: 15, src: "/case study/SWAYAM/S15.png" },
+  { id: 16, src: "/case study/SWAYAM/S16.png" },
+  { id: 17, src: "/case study/SWAYAM/S17.png" },
+  { id: 18, src: "/case study/SWAYAM/S18.png" },
+  { id: 19, src: "/case study/SWAYAM/S19.png" },
+  { id: 20, src: "/case study/SWAYAM/S20.png" },
+  { id: 21, src: "/case study/SWAYAM/S21.png" },
+  { id: 22, src: "/case study/SWAYAM/S22.png" },
+  { id: 23, src: "/case study/SWAYAM/S23.png" },
+  { id: 24, src: "/case study/SWAYAM/S24.png" },
+  { id: 25, src: "/case study/SWAYAM/S25.png" },
+  { id: 26, src: "/case study/SWAYAM/S26.png" },
 ];
 
 /* ── Scroll-reveal image / video item ── */
@@ -44,7 +44,6 @@ function RevealImg({ src, index }) {
       ([entry]) => {
         if (entry.isIntersecting) {
           el.classList.add("swayam-img--visible");
-
           if (isVideo && videoRef.current) {
             const vid = videoRef.current;
             if (!vid.src) {
@@ -53,7 +52,6 @@ function RevealImg({ src, index }) {
               vid.play().catch(() => {});
             }
           }
-
           io.unobserve(el);
         }
       },
@@ -144,8 +142,8 @@ export default function SwayamCaseStudyPage({ isOpen, onClose }) {
   useEffect(() => {
     const el = pageRef.current;
     if (!el) return;
-    let lastY    = 0;
-    let ticking  = false;
+    let lastY   = 0;
+    let ticking = false;
     const onScroll = () => {
       if (ticking) return;
       ticking = true;
@@ -184,14 +182,12 @@ export default function SwayamCaseStudyPage({ isOpen, onClose }) {
         aria-hidden={!isOpen}
         style={{ pointerEvents: isOpen ? "auto" : "none" }}
       >
-        {/* Image / video stack */}
         <div className="swayam-stack">
           {IMAGES.map((img, i) => (
             <RevealImg key={img.id} src={img.src} index={i} />
           ))}
         </div>
 
-        {/* Footer */}
         <div className="swayam-footer">
           <div className="swayam-footer-line" />
           <button className="swayam-back-btn" onClick={onClose}>
@@ -214,7 +210,7 @@ export default function SwayamCaseStudyPage({ isOpen, onClose }) {
   );
 }
 
-/* ── Styles ─────────────────────────────────────── */
+/* ── Styles ── */
 const CSS = `
   .swayam-page {
     position: fixed;
@@ -271,7 +267,6 @@ const CSS = `
     color: rgba(0,0,0,0.22);
   }
 
-  /* ── Footer ── */
   .swayam-footer {
     display: flex;
     flex-direction: column;
@@ -287,7 +282,6 @@ const CSS = `
     background: rgba(0,0,0,0.1);
   }
 
-  /* Pill button — bottom-to-top fill on hover */
   .swayam-back-btn {
     position: relative;
     display: inline-flex;
@@ -352,14 +346,13 @@ const CSS = `
     transform: translateX(-2px);
   }
 
-  /* ── Responsive ── */
   @media (max-width: 768px) {
-    .swayam-stack   { padding: 80px 20px 0; gap: 0; }
-    .swayam-footer  { padding: 56px 20px 52px; gap: 36px; }
+    .swayam-stack  { padding: 80px 20px 0; gap: 0; }
+    .swayam-footer { padding: 56px 20px 52px; gap: 36px; }
   }
   @media (max-width: 480px) {
-    .swayam-stack   { padding: 72px 14px 0; gap: 0; }
-    .swayam-footer  { padding: 44px 14px 44px; gap: 28px; }
+    .swayam-stack  { padding: 72px 14px 0; gap: 0; }
+    .swayam-footer { padding: 44px 14px 44px; gap: 28px; }
     .swayam-back-btn { height: 50px; font-size: 14px; }
   }
 `;
