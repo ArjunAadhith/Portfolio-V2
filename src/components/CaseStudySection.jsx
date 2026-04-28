@@ -26,20 +26,19 @@ const styles = `
     flex-direction: column;
   }
 
+  /* ── Header — full left-aligned stack ── */
   .cs-header {
     display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: flex-start;
     padding: 0 80px;
-    margin-bottom: 32px;
-    gap: 32px;
+    margin-bottom: 36px;
     opacity: 0;
     transform: translateY(28px);
     transition: opacity 0.8s var(--ts), transform 0.8s var(--ts);
     flex-shrink: 0;
   }
   .cs-header.visible { opacity: 1; transform: translateY(0); }
-  .cs-header-left { flex: 1; }
 
   .cs-label {
     font-family: var(--sf);
@@ -48,16 +47,17 @@ const styles = `
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--grey);
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   .cs-title {
     font-family: var(--sf);
-    font-size: clamp(32px, 4vw, 58px);
+    font-size: clamp(36px, 5vw, 64px);
     font-weight: 300;
-    line-height: 1.06;
+    line-height: 1.05;
     color: var(--ink);
-    letter-spacing: -0.03em;
+    letter-spacing: -0.035em;
+    margin-bottom: 16px;
   }
   .cs-title em {
     font-style: italic;
@@ -65,23 +65,26 @@ const styles = `
     color: var(--grey);
   }
 
-  .cs-header-right {
-    flex: 0 0 auto;
-    max-width: 300px;
+  /* Subtitle + year sit directly below the title, left-aligned */
+  .cs-meta {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
-    gap: 12px;
-    padding-bottom: 4px;
+    gap: 6px;
+    /* Fade-slide when card changes */
+    transition: opacity 0.35s var(--ts), transform 0.35s var(--ts);
   }
+  .cs-meta.is-switching {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
   .cs-subtitle {
     font-family: var(--sf);
     font-size: 14px;
     font-weight: 300;
     color: var(--ink-muted);
     line-height: 1.75;
-    text-align: right;
-    transition: opacity 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    max-width: 480px;
   }
   .cs-year {
     font-family: var(--sf);
@@ -90,9 +93,9 @@ const styles = `
     letter-spacing: 0.16em;
     text-transform: uppercase;
     color: rgba(0,0,0,0.22);
-    transition: opacity 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
+  /* ── Stage ── */
   .cs-stage {
     position: relative;
     display: flex;
@@ -101,13 +104,20 @@ const styles = `
     height: calc(min(68vw, 820px) * 0.63);
     user-select: none;
     -webkit-user-select: none;
+    cursor: grab;
   }
+  .cs-stage.is-dragging { cursor: grabbing; }
 
+  /* ── Card items ── */
   .cs-card-item {
     position: absolute;
     width: min(68vw, 820px);
-    will-change: transform;
+    will-change: transform, opacity;
   }
+
+  /* Fade the back card slightly so depth is clear */
+  .cs-card-item.is-back  { opacity: 0.72; }
+  .cs-card-item.is-front { opacity: 1; }
 
   .cs-bezel {
     border-radius: 40px;
@@ -147,6 +157,7 @@ const styles = `
     pointer-events: none;
   }
 
+  /* ── Tooltip ── */
   .cs-tooltip {
     position: fixed;
     pointer-events: none;
@@ -167,7 +178,7 @@ const styles = `
     padding: 10px 18px;
     border-radius: 100px;
     white-space: nowrap;
-    background: rgb(255, 255, 255);
+    background: rgba(255,255,255,0.82);
     backdrop-filter: blur(16px) saturate(180%);
     -webkit-backdrop-filter: blur(16px) saturate(180%);
     border: 1px solid rgba(255,255,255,0.6);
@@ -196,38 +207,31 @@ const styles = `
 
   /* ── Responsive ── */
   @media (max-width: 1024px) {
-    .cs-header    { padding: 0 48px; margin-bottom: 28px; }
+    .cs-header    { padding: 0 48px; }
     .cs-card-item { width: min(76vw, 680px); }
     .cs-stage     { height: calc(min(76vw, 680px) * 0.63); }
   }
 
   @media (max-width: 768px) {
     .cs-section   { padding: 20px 0 20px; }
-    .cs-header    {
-      flex-direction: column;
-      align-items: flex-start;
-      padding: 0 24px;
-      margin-bottom: 18px;
-      gap: 10px;
-    }
-    .cs-header-right { align-items: flex-start; max-width: 100%; }
-    .cs-subtitle     { text-align: left; font-size: 13px; }
-    .cs-title        { font-size: clamp(28px, 6vw, 40px); }
-    .cs-card-item    { width: 78vw; }
-    .cs-stage        { height: calc(78vw * 0.63); }
-    .cs-bezel        { border-radius: 22px; outline-offset: 4px; }
-    .cs-card         { border-radius: 20px; }
+    .cs-header    { padding: 0 24px; margin-bottom: 24px; }
+    .cs-title     { font-size: clamp(28px, 6vw, 44px); margin-bottom: 12px; }
+    .cs-subtitle  { font-size: 13px; max-width: 100%; }
+    .cs-card-item { width: 78vw; }
+    .cs-stage     { height: calc(78vw * 0.63); cursor: default; }
+    .cs-bezel     { border-radius: 22px; outline-offset: 4px; }
+    .cs-card      { border-radius: 20px; }
   }
 
   @media (max-width: 480px) {
     .cs-section   { padding: 16px 0 16px; }
-    .cs-header    { padding: 0 18px; margin-bottom: 14px; gap: 8px; }
-    .cs-title     { font-size: clamp(24px, 7.5vw, 32px); }
+    .cs-header    { padding: 0 18px; margin-bottom: 18px; }
+    .cs-title     { font-size: clamp(26px, 7.5vw, 34px); }
     .cs-subtitle  { font-size: 12px; line-height: 1.6; }
     .cs-year      { font-size: 10px; }
     .cs-tooltip   { display: none; }
     .cs-card-item { width: 82vw; }
-    .cs-stage     { height: calc(82vw * 0.63); }
+    .cs-stage     { height: calc(82vw * 0.63); cursor: default; }
     .cs-bezel     { border-radius: 16px; outline-offset: 3px; }
     .cs-card      { border-radius: 14px; }
   }
@@ -235,8 +239,8 @@ const styles = `
 
 const getOffset = () => {
   const w = window.innerWidth;
-  if (w <= 480) return "7vw";
-  if (w <= 768) return "8vw";
+  if (w <= 480)  return "7vw";
+  if (w <= 768)  return "8vw";
   if (w <= 1024) return "9vw";
   return "13vw";
 };
@@ -244,15 +248,18 @@ const getOffset = () => {
 const buildStates = (offset) => [
   [
     { x: "0vw",        scale: 1,    z: 2 },
-    { x: offset,       scale: 0.93, z: 1 },
+    { x: offset,       scale: 0.90, z: 1 },
   ],
   [
-    { x: `-${offset}`, scale: 0.93, z: 1 },
+    { x: `-${offset}`, scale: 0.90, z: 1 },
     { x: "0vw",        scale: 1,    z: 2 },
   ],
 ];
 
-const SPRING_TRANSITION = "transform 0.65s cubic-bezier(0.34, 1.12, 0.64, 1)";
+// Silky spring for position + separate fast fade for opacity
+const SPRING_TRANSITION  = "transform 0.7s cubic-bezier(0.34, 1.12, 0.64, 1), opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+const SWIPE_THRESHOLD    = 48;
+const DRAG_CANCEL_THRESHOLD = 6;
 
 const CARDS = [
   {
@@ -270,19 +277,27 @@ const CARDS = [
 ];
 
 export default function CaseStudySection() {
-  const headerRef   = useRef(null);
-  const cardRefs    = [useRef(null), useRef(null)];
-  const tooltipRef  = useRef(null);
-  const rafRef      = useRef(null);
-  const tipPos      = useRef({ x: 0, y: 0 });
-  const touchStart  = useRef(null);
+  const headerRef  = useRef(null);
+  const metaRef    = useRef(null);
+  const stageRef   = useRef(null);
+  const cardRefs   = [useRef(null), useRef(null)];
+  const tooltipRef = useRef(null);
+  const rafRef     = useRef(null);
+  const tipPos     = useRef({ x: 0, y: 0 });
+
+  const touchStart = useRef(null);
+  const mouseStart = useRef(null);
+  const isDragging = useRef(false);
   const isAnimating = useRef(false);
 
   const [activeIdx,  setActiveIdx]  = useState(0);
+  const [displayIdx, setDisplayIdx] = useState(0); // lags behind for text fade
+  const [isSwitching, setIsSwitching] = useState(false);
   const [tnstcOpen,  setTnstcOpen]  = useState(false);
   const [swayamOpen, setSwayamOpen] = useState(false);
   const [tipOn,      setTipOn]      = useState(false);
 
+  /* ── Apply card transforms ── */
   const applyTransforms = useCallback((idx, animate) => {
     const states = buildStates(getOffset());
     states[idx].forEach(({ x, scale, z }, i) => {
@@ -291,7 +306,7 @@ export default function CaseStudySection() {
       el.style.transition = animate ? SPRING_TRANSITION : "none";
       el.style.transform  = `translateX(${x}) scale(${scale})`;
       el.style.zIndex     = z;
-      el.style.cursor     = i === idx ? "none" : "pointer";
+      // opacity handled by CSS classes is-front / is-back
       el.classList.toggle("is-front", i === idx);
       el.classList.toggle("is-back",  i !== idx);
     });
@@ -305,16 +320,30 @@ export default function CaseStudySection() {
     return () => window.removeEventListener("resize", onResize);
   }, [activeIdx, applyTransforms]);
 
+  /* ── Switch card with smooth meta text fade ── */
   const goTo = useCallback((idx) => {
     if (isAnimating.current || idx === activeIdx) return;
     isAnimating.current = true;
-    setActiveIdx(idx);
-    applyTransforms(idx, true);
-    setTimeout(() => { isAnimating.current = false; }, 700);
+
+    // 1. Fade out meta text
+    setIsSwitching(true);
+
+    setTimeout(() => {
+      // 2. Mid-fade: swap text & trigger card spring
+      setActiveIdx(idx);
+      setDisplayIdx(idx);
+      applyTransforms(idx, true);
+
+      // 3. Fade meta text back in
+      setIsSwitching(false);
+
+      setTimeout(() => { isAnimating.current = false; }, 700);
+    }, 200); // matches .cs-meta transition duration
   }, [activeIdx, applyTransforms]);
 
+  /* ── Click ── */
   const handleCardClick = (clickedIdx) => {
-    if (isAnimating.current) return;
+    if (isAnimating.current || isDragging.current) return;
     if (clickedIdx !== activeIdx) {
       goTo(clickedIdx);
     } else {
@@ -323,16 +352,57 @@ export default function CaseStudySection() {
     }
   };
 
+  /* ── Touch swipe ── */
   const onTouchStart = (e) => { touchStart.current = e.touches[0].clientX; };
   const onTouchEnd   = (e) => {
     if (touchStart.current === null || isAnimating.current) return;
     const dx = e.changedTouches[0].clientX - touchStart.current;
     touchStart.current = null;
-    if (Math.abs(dx) < 40) return;
+    if (Math.abs(dx) < SWIPE_THRESHOLD) return;
     if (dx < 0 && activeIdx === 0) goTo(1);
     if (dx > 0 && activeIdx === 1) goTo(0);
   };
 
+  /* ── Mouse drag swipe ── */
+  const onMouseDown = (e) => {
+    if (e.button !== 0) return;
+    mouseStart.current = e.clientX;
+    isDragging.current = false;
+    if (stageRef.current) stageRef.current.classList.remove("is-dragging");
+  };
+
+  useEffect(() => {
+    const onMouseMove = (e) => {
+      if (mouseStart.current === null) return;
+      const dx = e.clientX - mouseStart.current;
+      if (!isDragging.current && Math.abs(dx) > DRAG_CANCEL_THRESHOLD) {
+        isDragging.current = true;
+        if (stageRef.current) stageRef.current.classList.add("is-dragging");
+        setTipOn(false);
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
+    const onMouseUp = (e) => {
+      if (mouseStart.current === null) return;
+      const dx = e.clientX - mouseStart.current;
+      const wasDrag = isDragging.current;
+      mouseStart.current = null;
+      isDragging.current = false;
+      if (stageRef.current) stageRef.current.classList.remove("is-dragging");
+      if (!wasDrag || isAnimating.current) return;
+      if (Math.abs(dx) < SWIPE_THRESHOLD) return;
+      if (dx < 0 && activeIdx === 0) goTo(1);
+      if (dx > 0 && activeIdx === 1) goTo(0);
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup",   onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup",   onMouseUp);
+    };
+  }, [activeIdx, goTo]);
+
+  /* ── Scroll reveal ── */
   useEffect(() => {
     const io = new IntersectionObserver(
       (es) => es.forEach((e) => e.isIntersecting && e.target.classList.add("visible")),
@@ -342,6 +412,7 @@ export default function CaseStudySection() {
     return () => io.disconnect();
   }, []);
 
+  /* ── Tooltip RAF ── */
   const loopTip = () => {
     if (tooltipRef.current) {
       tooltipRef.current.style.left = tipPos.current.x + "px";
@@ -349,12 +420,16 @@ export default function CaseStudySection() {
     }
     rafRef.current = requestAnimationFrame(loopTip);
   };
-  const onEnter = () => { setTipOn(true);  rafRef.current = requestAnimationFrame(loopTip); };
+  const onEnter = () => {
+    if (isDragging.current) return;
+    setTipOn(true);
+    rafRef.current = requestAnimationFrame(loopTip);
+  };
   const onLeave = () => { setTipOn(false); cancelAnimationFrame(rafRef.current); };
   const onMove  = (e) => { tipPos.current = { x: e.clientX, y: e.clientY - 48 }; };
   useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
 
-  const activeCard = CARDS[activeIdx];
+  const displayCard = CARDS[displayIdx];
 
   return (
     <>
@@ -378,22 +453,25 @@ export default function CaseStudySection() {
 
       <section className="cs-section">
 
+        {/* ── Left-aligned header: label → title → subtitle → year ── */}
         <div className="cs-header" ref={headerRef}>
-          <div className="cs-header-left">
-            <p className="cs-label">Featured Work</p>
-            <h2 className="cs-title">
-              Designed with<br />
-              <em>intention.</em>
-            </h2>
-          </div>
-          <div className="cs-header-right">
-            <p className="cs-subtitle">{activeCard.subtitle}</p>
-            <span className="cs-year">{activeCard.year}</span>
+          <p className="cs-label">Featured Work</p>
+          <h2 className="cs-title">
+            Designed with <em>intention.</em>
+          </h2>
+          <div
+            ref={metaRef}
+            className={`cs-meta${isSwitching ? " is-switching" : ""}`}
+          >
+            <p className="cs-subtitle">{displayCard.subtitle}</p>
+            <span className="cs-year">{displayCard.year}</span>
           </div>
         </div>
 
         <div
+          ref={stageRef}
           className="cs-stage"
+          onMouseDown={onMouseDown}
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
         >
