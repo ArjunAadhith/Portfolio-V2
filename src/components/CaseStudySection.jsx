@@ -194,7 +194,6 @@ const styles = `
     .cs-section   { padding: 20px 0 20px; }
     .cs-header    { padding: 0 24px; margin-bottom: 24px; }
     .cs-title     { font-size: clamp(28px, 6vw, 44px); }
-    .cs-title-stroke { -webkit-text-stroke: 1.5px var(--ink); }
     .cs-card-item { width: 78vw; }
     .cs-stage     { height: calc(78vw * 0.63); cursor: default; }
     .cs-bezel     { border-radius: 22px; outline-offset: 4px; }
@@ -206,7 +205,6 @@ const styles = `
     .cs-section   { padding: 16px 0 16px; }
     .cs-header    { padding: 0 18px; margin-bottom: 18px; }
     .cs-title     { font-size: clamp(26px, 7.5vw, 34px); }
-    .cs-title-stroke { -webkit-text-stroke: 1px var(--ink); }
     .cs-tooltip   { display: none; }
     .cs-card-item { width: 82vw; }
     .cs-stage     { height: calc(82vw * 0.63); cursor: default; }
