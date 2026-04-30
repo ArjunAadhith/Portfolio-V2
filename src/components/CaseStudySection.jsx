@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import CaseStudyPage        from "./Casestudypage.jsx";
 import SwayamCaseStudyPage  from "./SwayamCaseStudyPage.jsx";
 
+/* ─── Lerp helper ───────────────────────────────────────────────────── */
+const lerp = (a, b, t) => a + (b - a) * t;
 
 const styles = `
   :root {
@@ -20,7 +22,7 @@ const styles = `
 
   .cs-section {
     background: var(--white);
-    padding: 32px 0 32px;
+    padding: 32px 0 100px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -50,7 +52,6 @@ const styles = `
     margin-bottom: 10px;
   }
 
-  /* Bold heading, no italic anywhere */
   .cs-title {
     font-family: var(--sf);
     font-size: clamp(36px, 5vw, 64px);
@@ -61,7 +62,6 @@ const styles = `
     font-style: normal;
   }
 
-  /* "Intention" — outline/stroke only, transparent fill */
   .cs-title-stroke {
     color: #b9b9b9;
     font-style: normal;
@@ -85,12 +85,12 @@ const styles = `
     position: absolute;
     width: min(68vw, 820px);
     will-change: transform, opacity;
+    cursor: none;
   }
-
-  .cs-card-item.is-back  { opacity: 0.72; }
+  .cs-card-item.is-back { opacity: 0.72; cursor: pointer; }
   .cs-card-item.is-front { opacity: 1; }
 
-  /* Bezel — outline ONLY on active (is-front) card */
+  /* Bezel */
   .cs-bezel {
     border-radius: 40px;
     box-shadow:
@@ -101,12 +101,10 @@ const styles = `
       outline-color  0.4s var(--ts),
       outline-offset 0.4s var(--ts),
       box-shadow     0.4s var(--ts);
-    /* No outline by default */
     outline: 1.5px solid transparent;
     outline-offset: 6px;
   }
 
-  /* Active card — grey external outline */
   .cs-card-item.is-front .cs-bezel {
     outline-color: rgba(130, 130, 150, 0.75);
     outline-offset: 6px;
@@ -115,7 +113,6 @@ const styles = `
       0  4px 12px rgba(0,0,0,0.05);
   }
 
-  /* Inactive card — no outline at all */
   .cs-card-item.is-back .cs-bezel {
     outline-color: transparent;
     box-shadow:
@@ -135,52 +132,70 @@ const styles = `
     pointer-events: none;
   }
 
-  /* ── Tooltip ── */
-  .cs-tooltip {
-    position: fixed;
+  /* ── Circular Cursor ── */
+  .cs-cursor {
+    position: absolute;
+    width: 96px;
+    height: 96px;
+    margin-left: -48px;
+    margin-top: -48px;
+    border-radius: 50%;
     pointer-events: none;
     z-index: 9999;
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.84);
-    transition: opacity 0.22s var(--ts), transform 0.22s var(--tsp);
-    will-change: transform, opacity;
-  }
-  .cs-tooltip.active {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-  .cs-tooltip-inner {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 18px;
-    border-radius: 100px;
-    white-space: nowrap;
-    background: rgba(255,255,255,0.82);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-    border: 1px solid rgba(255,255,255,0.6);
-    box-shadow:
-      0 2px 8px   rgba(0,0,0,0.09),
-      0 8px 24px  rgba(0,0,0,0.09),
-      inset 0 1px 0 rgba(255,255,255,0.85);
+    justify-content: center;
+    mix-blend-mode: difference;
+    background: #ffffff;
+    opacity: 0;
+    transform: translate3d(0px, 0px, 0) scale(0.4);
+    transition:
+      opacity  0.28s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform, opacity;
+  }
+
+  .cs-cursor-label {
     font-family: var(--sf);
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    color: #0a0a0a;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: #000;
+    white-space: nowrap;
+    user-select: none;
+    pointer-events: none;
   }
-  .cs-tooltip-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--grey);
-    flex-shrink: 0;
-    animation: tdot 1.5s ease-in-out infinite;
-  }
-  @keyframes tdot {
-    0%,100% { opacity:1;  transform:scale(1);   }
-    50%      { opacity:.4; transform:scale(1.45); }
+
+  /* ── Mobile segmented progress bar ── */
+  .cs-progress { display: none; }
+
+  @media (max-width: 768px) {
+    .cs-progress {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      margin-top: 20px;
+      flex-shrink: 0;
+    }
+
+    .cs-progress-segment {
+      width: 36px;
+      height: 2.5px;
+      background: rgba(0,0,0,0.12);
+      border-radius: 99px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .cs-progress-fill {
+      position: absolute;
+      left: 0; top: 0;
+      height: 100%;
+      width: 0%;
+      background: #0a0a0a;
+      border-radius: 99px;
+    }
   }
 
   /* ── Responsive ── */
@@ -191,26 +206,27 @@ const styles = `
   }
 
   @media (max-width: 768px) {
-    .cs-section   { padding: 20px 0 20px; }
+    .cs-section   { padding: 20px 0 72px; }
     .cs-header    { padding: 0 24px; margin-bottom: 24px; }
     .cs-title     { font-size: clamp(28px, 6vw, 44px); }
-    .cs-card-item { width: 78vw; }
+    .cs-card-item { width: 78vw; cursor: pointer; }
     .cs-stage     { height: calc(78vw * 0.63); cursor: default; }
     .cs-bezel     { border-radius: 22px; outline-offset: 4px; }
     .cs-card      { border-radius: 20px; }
     .cs-card-item.is-front .cs-bezel { outline-offset: 4px; }
+    .cs-cursor    { display: none; }
   }
 
   @media (max-width: 480px) {
-    .cs-section   { padding: 16px 0 16px; }
+    .cs-section   { padding: 16px 0 60px; }
     .cs-header    { padding: 0 18px; margin-bottom: 18px; }
     .cs-title     { font-size: clamp(26px, 7.5vw, 34px); }
-    .cs-tooltip   { display: none; }
-    .cs-card-item { width: 82vw; }
+    .cs-card-item { width: 82vw; cursor: pointer; }
     .cs-stage     { height: calc(82vw * 0.63); cursor: default; }
     .cs-bezel     { border-radius: 16px; outline-offset: 3px; }
     .cs-card      { border-radius: 14px; }
     .cs-card-item.is-front .cs-bezel { outline-offset: 3px; }
+    .cs-cursor    { display: none; }
   }
 `;
 
@@ -233,38 +249,42 @@ const buildStates = (offset) => [
   ],
 ];
 
-const SPRING_TRANSITION  = "transform 0.7s cubic-bezier(0.34, 1.12, 0.64, 1), opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
-const SWIPE_THRESHOLD    = 48;
+const SPRING_TRANSITION     = "transform 0.7s cubic-bezier(0.34, 1.12, 0.64, 1), opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+const SWIPE_THRESHOLD       = 48;
 const DRAG_CANCEL_THRESHOLD = 6;
+const AUTO_ADVANCE_MS       = 5000;
 
 const CARDS = [
-  {
-    src:      "/case study/TNSTC Case Study.png",
-    alt:      "TNSTC Bus Booking Redesign",
-  },
-  {
-    src:      "/case study/Swayam Case Study.png",
-    alt:      "Swayam Case Study",
-  },
+  { src: "/case study/TNSTC Case Study.png", alt: "TNSTC Bus Booking Redesign" },
+  { src: "/case study/Swayam Case Study.png", alt: "Swayam Case Study" },
 ];
 
 export default function CaseStudySection() {
   const headerRef  = useRef(null);
   const stageRef   = useRef(null);
   const cardRefs   = [useRef(null), useRef(null)];
-  const tooltipRef = useRef(null);
-  const rafRef     = useRef(null);
-  const tipPos     = useRef({ x: 0, y: 0 });
+
+  /* ── Circular cursor refs ── */
+  const cursorRefs = [useRef(null), useRef(null)];
+
+  /* RAF lerp state per card */
+  const rafIds   = [useRef(null), useRef(null)];
+  const currents = [useRef({ x: 0, y: 0 }), useRef({ x: 0, y: 0 })];
+  const targets  = [useRef({ x: 0, y: 0 }), useRef({ x: 0, y: 0 })];
+  const isHovers = [useRef(false), useRef(false)];
 
   const touchStart  = useRef(null);
   const mouseStart  = useRef(null);
   const isDragging  = useRef(false);
   const isAnimating = useRef(false);
+  const autoTimer   = useRef(null);
+
+  /* ── Segmented progress refs (one per card) ── */
+  const segmentFillRefs = [useRef(null), useRef(null)];
 
   const [activeIdx,  setActiveIdx]  = useState(0);
   const [tnstcOpen,  setTnstcOpen]  = useState(false);
   const [swayamOpen, setSwayamOpen] = useState(false);
-  const [tipOn,      setTipOn]      = useState(false);
 
   /* ── Apply card transforms ── */
   const applyTransforms = useCallback((idx, animate) => {
@@ -291,6 +311,14 @@ export default function CaseStudySection() {
   /* ── Switch card ── */
   const goTo = useCallback((idx) => {
     if (isAnimating.current || idx === activeIdx) return;
+    const oldCursor = cursorRefs[activeIdx].current;
+    if (oldCursor) { oldCursor.style.opacity = "0"; }
+    isHovers[activeIdx].current = false;
+    if (rafIds[activeIdx].current) {
+      cancelAnimationFrame(rafIds[activeIdx].current);
+      rafIds[activeIdx].current = null;
+    }
+
     isAnimating.current = true;
     setActiveIdx(idx);
     applyTransforms(idx, true);
@@ -315,6 +343,7 @@ export default function CaseStudySection() {
     const dx = e.changedTouches[0].clientX - touchStart.current;
     touchStart.current = null;
     if (Math.abs(dx) < SWIPE_THRESHOLD) return;
+    resetProgress();
     if (dx < 0 && activeIdx === 0) goTo(1);
     if (dx > 0 && activeIdx === 1) goTo(0);
   };
@@ -334,8 +363,11 @@ export default function CaseStudySection() {
       if (!isDragging.current && Math.abs(dx) > DRAG_CANCEL_THRESHOLD) {
         isDragging.current = true;
         if (stageRef.current) stageRef.current.classList.add("is-dragging");
-        setTipOn(false);
-        cancelAnimationFrame(rafRef.current);
+        cursorRefs.forEach((r, i) => {
+          if (r.current) r.current.style.opacity = "0";
+          isHovers[i].current = false;
+          if (rafIds[i].current) { cancelAnimationFrame(rafIds[i].current); rafIds[i].current = null; }
+        });
       }
     };
     const onMouseUp = (e) => {
@@ -347,6 +379,7 @@ export default function CaseStudySection() {
       if (stageRef.current) stageRef.current.classList.remove("is-dragging");
       if (!wasDrag || isAnimating.current) return;
       if (Math.abs(dx) < SWIPE_THRESHOLD) return;
+      resetProgress();
       if (dx < 0 && activeIdx === 0) goTo(1);
       if (dx > 0 && activeIdx === 1) goTo(0);
     };
@@ -368,22 +401,109 @@ export default function CaseStudySection() {
     return () => io.disconnect();
   }, []);
 
-  /* ── Tooltip RAF ── */
-  const loopTip = () => {
-    if (tooltipRef.current) {
-      tooltipRef.current.style.left = tipPos.current.x + "px";
-      tooltipRef.current.style.top  = tipPos.current.y + "px";
-    }
-    rafRef.current = requestAnimationFrame(loopTip);
-  };
-  const onEnter = () => {
-    if (isDragging.current) return;
-    setTipOn(true);
-    rafRef.current = requestAnimationFrame(loopTip);
-  };
-  const onLeave = () => { setTipOn(false); cancelAnimationFrame(rafRef.current); };
-  const onMove  = (e) => { tipPos.current = { x: e.clientX, y: e.clientY - 48 }; };
-  useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
+  /* ── Mobile helpers ── */
+  const isMobileView = () => window.innerWidth <= 768;
+
+  const startProgress = useCallback(() => {
+    if (!isMobileView()) return;
+    const fill = segmentFillRefs[activeIdx].current;
+    if (!fill) return;
+    fill.style.transition = "none";
+    fill.style.width = "0%";
+    void fill.offsetWidth;
+    fill.style.transition = `width ${AUTO_ADVANCE_MS}ms linear`;
+    fill.style.width = "100%";
+  }, [activeIdx]);
+
+  const resetProgress = useCallback(() => {
+    if (autoTimer.current) clearTimeout(autoTimer.current);
+    segmentFillRefs.forEach((r) => {
+      if (r.current) {
+        r.current.style.transition = "none";
+        r.current.style.width = "0%";
+      }
+    });
+  }, []);
+
+  /* ── Auto-advance (mobile only) ── */
+  const sectionInViewRef = useRef(false);
+
+  useEffect(() => {
+    if (!isMobileView()) return;
+    const section = document.querySelector(".cs-section");
+    if (!section) return;
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !sectionInViewRef.current) {
+          sectionInViewRef.current = true;
+          startProgress();
+          autoTimer.current = setTimeout(() => {
+            const next = (activeIdx + 1) % CARDS.length;
+            goTo(next);
+          }, AUTO_ADVANCE_MS);
+        }
+        if (!entry.isIntersecting) {
+          sectionInViewRef.current = false;
+          resetProgress();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    io.observe(section);
+    return () => { io.disconnect(); if (autoTimer.current) clearTimeout(autoTimer.current); };
+  }, [activeIdx, startProgress, resetProgress, goTo]);
+
+  /* Cleanup all RAFs on unmount */
+  useEffect(() => () => {
+    rafIds.forEach(r => { if (r.current) cancelAnimationFrame(r.current); });
+  }, []);
+
+  /* ── Circular cursor handlers ── */
+  const makeCursorHandlers = useCallback((idx) => {
+    const tick = () => {
+      const el = cursorRefs[idx].current;
+      if (!el) return;
+      const EASE = 0.13;
+      currents[idx].current.x = lerp(currents[idx].current.x, targets[idx].current.x, EASE);
+      currents[idx].current.y = lerp(currents[idx].current.y, targets[idx].current.y, EASE);
+      const cx = currents[idx].current.x;
+      const cy = currents[idx].current.y;
+      el.style.transform = `translate3d(${cx}px, ${cy}px, 0) scale(${isHovers[idx].current ? 1 : 0.4})`;
+      rafIds[idx].current = requestAnimationFrame(tick);
+    };
+    const startRAF = () => { if (!rafIds[idx].current) rafIds[idx].current = requestAnimationFrame(tick); };
+    const stopRAF  = () => { if (rafIds[idx].current) { cancelAnimationFrame(rafIds[idx].current); rafIds[idx].current = null; } };
+
+    const onEnter = (e) => {
+      if (idx !== activeIdx || isDragging.current) return;
+      const r = cardRefs[idx].current.getBoundingClientRect();
+      currents[idx].current = { x: e.clientX - r.left, y: e.clientY - r.top };
+      targets[idx].current  = { x: e.clientX - r.left, y: e.clientY - r.top };
+      isHovers[idx].current = true;
+      const el = cursorRefs[idx].current;
+      if (el) {
+        el.style.opacity   = "1";
+        el.style.transform = `translate3d(${currents[idx].current.x}px, ${currents[idx].current.y}px, 0) scale(1)`;
+      }
+      startRAF();
+    };
+    const onMove = (e) => {
+      if (idx !== activeIdx) return;
+      const r = cardRefs[idx].current.getBoundingClientRect();
+      targets[idx].current = { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+    const onLeave = () => {
+      isHovers[idx].current = false;
+      const el = cursorRefs[idx].current;
+      if (el) {
+        el.style.opacity   = "0";
+        el.style.transform = `translate3d(${currents[idx].current.x}px, ${currents[idx].current.y}px, 0) scale(0.4)`;
+      }
+      stopRAF();
+    };
+    return { onEnter, onMove, onLeave };
+  }, [activeIdx]);
 
   return (
     <>
@@ -398,16 +518,8 @@ export default function CaseStudySection() {
         onClose={() => setSwayamOpen(false)}
       />
 
-      <div ref={tooltipRef} className={`cs-tooltip${tipOn ? " active" : ""}`}>
-        <div className="cs-tooltip-inner">
-          <span className="cs-tooltip-dot" />
-          View Case Study
-        </div>
-      </div>
-
       <section className="cs-section">
 
-        {/* ── Header: label + bold heading only ── */}
         <div className="cs-header" ref={headerRef}>
           <p className="cs-label">Featured Work</p>
           <h2 className="cs-title">
@@ -424,6 +536,7 @@ export default function CaseStudySection() {
         >
           {CARDS.map((card, idx) => {
             const isFront = idx === activeIdx;
+            const { onEnter, onMove, onLeave } = makeCursorHandlers(idx);
             return (
               <div
                 key={idx}
@@ -434,6 +547,29 @@ export default function CaseStudySection() {
                 onMouseLeave={isFront ? onLeave : undefined}
                 onMouseMove={isFront  ? onMove  : undefined}
               >
+                {isFront && (
+                  <div
+                    ref={cursorRefs[idx]}
+                    className="cs-cursor"
+                    aria-hidden="true"
+                  >
+                    <span className="cs-cursor-label">
+                      VIEW
+                      <svg
+                        width="11"
+                        height="11"
+                        viewBox="0 0 11 11"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        style={{ display: "inline-block", marginLeft: "5px", verticalAlign: "middle", marginTop: "-1px" }}
+                      >
+                        <line x1="1" y1="10" x2="10" y2="1" stroke="#000" strokeWidth="1.6" strokeLinecap="round"/>
+                        <polyline points="4,1 10,1 10,7" fill="none" stroke="#000" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </span>
+                  </div>
+                )}
+
                 <div className="cs-bezel">
                   <div className="cs-card">
                     <img src={card.src} alt={card.alt} draggable={false} />
@@ -442,6 +578,15 @@ export default function CaseStudySection() {
               </div>
             );
           })}
+        </div>
+
+        {/* ── Mobile-only segmented progress bar ── */}
+        <div className="cs-progress">
+          {CARDS.map((_, idx) => (
+            <div key={idx} className="cs-progress-segment">
+              <div ref={segmentFillRefs[idx]} className="cs-progress-fill" />
+            </div>
+          ))}
         </div>
 
       </section>

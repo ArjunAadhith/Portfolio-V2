@@ -16,8 +16,10 @@ const CARD_W        = 644;
 const GAP           = 28;
 const SIDE_PADDING  = 80;
 const SMOOTHNESS    = 0.010;
-const TIP_LERP      = 0.12;
 const MARQUEE_SPEED = 0.6;
+
+/* ─── Lerp helper ───────────────────────────────────────────────────── */
+const lerp = (a, b, t) => a + (b - a) * t;
 
 const MQ_ITEMS = [
   "UI Design", "UX Research", "Figma Prototypes",
@@ -162,7 +164,6 @@ export default function Showcase() {
       position: sticky;
       top: 0;
       height: 100vh;
-      /* ✦ visible — nothing clips the cards */
       overflow: visible;
       display: flex;
       flex-direction: column;
@@ -267,7 +268,6 @@ export default function Showcase() {
     /* ── Track ── */
     #sc-overflow-clip {
       width: 100%;
-      /* ✦ visible on desktop so images are never clipped by this container */
       overflow: visible;
       position: relative;
       z-index: 1;
@@ -284,54 +284,40 @@ export default function Showcase() {
       -webkit-backface-visibility: hidden;
     }
 
-    /* ── Cards ──────────────────────────────────────────────────────────────
-       KEY FIXES:
-         overflow: visible   — nothing clips the image edges or top
-         height: auto        — card grows to fit the image naturally
-         background: transparent — no shading behind the image
-         box-shadow: none    — no shadow of any kind
-    ─────────────────────────────────────────────────────────────────────── */
+    /* ── Cards ── */
     .sc-card-link {
       display: flex;
       flex-direction: column;
       width: 644px;
-      /* ✦ height auto — card fits image, nothing is cropped */
       height: auto;
       border-radius: 38px;
-      /* ✦ overflow visible — image edges are never clipped */
       overflow: visible;
       flex-shrink: 0;
       position: relative;
       text-decoration: none;
+      /* cursor: none on desktop so the custom circle shows */
       cursor: none;
-      /* ✦ no box-shadow anywhere */
       box-shadow: none;
       filter: none;
-      /* ✦ transparent — no background shading */
       background: transparent;
       transition: border-color 0.35s ease;
     }
     .sc-card-link:hover {
       border-color: #dddddd;
-      /* ✦ explicitly keep no shadow on hover */
       box-shadow: none;
     }
 
     .sc-right {
       width: 100%;
-      /* ✦ height auto — wraps image naturally */
       height: auto;
       position: relative;
-      /* ✦ overflow visible — nothing clips */
       overflow: visible;
     }
 
-    /* Skeleton placeholder — sized by the image inside it */
     .sc-img-placeholder {
       position: relative;
       width: 100%;
       height: auto;
-      /* ✦ background only shown before image loads */
       background: #f5f5f5;
       overflow: hidden;
       border-radius: 30px;
@@ -358,74 +344,68 @@ export default function Showcase() {
       100% { background-position:  200% 0; }
     }
 
-    /* ── Image ────────────────────────────────────────────────────────────
-       object-fit: contain  — full image always visible, never cropped
-       width: 100%          — fills card width
-       height: auto         — natural height, no squashing
-       object-position: center top — top edge is never cut off
-    ─────────────────────────────────────────────────────────────────────── */
     .sc-img {
       display: block;
       width: 100%;
       height: auto;
-      /* ✦ contain — entire image visible, original proportions kept */
       object-fit: contain;
       object-position: center top;
       pointer-events: none;
       user-select: none;
       -webkit-user-drag: none;
-      /* ✦ no shadow or filter on the image itself */
       box-shadow: none;
       filter: none;
       border-radius: 30px;
-      /* fade-in only — no scale crop */
       opacity: 0;
       transition: opacity 0.5s ease;
-      /* GPU hint for smooth rendering */
       will-change: opacity;
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
     }
     .sc-img.sc-img-visible { opacity: 1; }
-
-    /* ✦ no scale-in on hover (scale causes visual crop) */
     .sc-card-link:hover .sc-img { transform: none; }
 
-    /* Tooltip */
-    .sc-tooltip {
+    /* ── Circular Cursor (ported from Projects) ── */
+    .sc-cursor {
       position: absolute;
+      width: 96px;
+      height: 96px;
+      margin-left: -48px;
+      margin-top: -48px;
+      border-radius: 50%;
       pointer-events: none;
-      z-index: 10;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      mix-blend-mode: difference;
       background: #ffffff;
-      color: #111111;
-      font-family: 'SF Pro Display', -apple-system, sans-serif;
-      font-size: 10px; font-weight: 600;
-      letter-spacing: 0.14em;
-      padding: 8px 18px;
-      border-radius: 100px;
-      white-space: nowrap;
       opacity: 0;
-      border: 1px solid #eeeeee;
-      box-shadow: none;
-      transform: translate(-50%, -50%) scale(0.72);
+      transform: translate3d(0px, 0px, 0) scale(0.4);
       transition:
-        opacity 0.20s ease,
-        transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
-      top: 50%; left: 50%;
-      will-change: left, top, transform, opacity;
-    }
-    .sc-tooltip.visible {
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(1);
+        opacity  0.28s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+      will-change: transform, opacity;
     }
 
-    /* ════════ ULTRA-WIDE ≥ 1920px ═══════════════════════════════════════ */
+    .sc-cursor-label {
+      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      color: #000;
+      white-space: nowrap;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    /* ════ ULTRA-WIDE ≥ 1920px ═══════════════════════════════════════ */
     @media (min-width: 1920px) {
       #sc-heading-block { padding: 0 120px; }
       #sc-track         { padding: 0 120px; }
     }
 
-    /* ════════ SMALL DESKTOP 1024–1279px ══════════════════════════════════ */
+    /* ════ SMALL DESKTOP 1024–1279px ══════════════════════════════════ */
     @media (min-width: 1024px) and (max-width: 1279px) {
       #sc-heading-block { padding: 0 48px; margin-bottom: 36px; }
       #sc-track         { padding: 0 48px; gap: 20px; }
@@ -434,7 +414,7 @@ export default function Showcase() {
       .sc-img-placeholder { border-radius: 22px; }
     }
 
-    /* ════════ TABLET 768–1023px ═══════════════════════════════════════════ */
+    /* ════ TABLET 768–1023px ═══════════════════════════════════════════ */
     @media (min-width: 768px) and (max-width: 1023px) {
       #sc-section { padding-bottom: 60px; }
       #sc-sticky {
@@ -470,10 +450,11 @@ export default function Showcase() {
       }
       .sc-img             { border-radius: 20px; }
       .sc-img-placeholder { border-radius: 20px; }
-      .sc-tooltip { display: none; }
+      /* Hide circular cursor on tablet/mobile */
+      .sc-cursor { display: none; }
     }
 
-    /* ════════ MOBILE < 768px ══════════════════════════════════════════════ */
+    /* ════ MOBILE < 768px ══════════════════════════════════════════════ */
     @media (max-width: 767px) {
       #sc-section { padding-bottom: 48px; }
       #sc-sticky {
@@ -515,11 +496,12 @@ export default function Showcase() {
       }
       .sc-img             { border-radius: 16px; }
       .sc-img-placeholder { border-radius: 16px; }
-      .sc-tooltip { display: none; }
+      /* Hide circular cursor on mobile */
+      .sc-cursor { display: none; }
       #sc-bg .sc-x { display: none; }
     }
 
-    /* ════════ EXTRA-SMALL < 480px ════════════════════════════════════════ */
+    /* ════ EXTRA-SMALL < 480px ════════════════════════════════════════ */
     @media (max-width: 479px) {
       #sc-heading-block { padding: 0 16px; }
       #sc-track         { padding: 0 16px 16px; gap: 12px; }
@@ -530,7 +512,7 @@ export default function Showcase() {
       .sc-t-italic              { font-size: clamp(14px, 5.5vw, 22px); padding: 0 8px 6px; }
     }
 
-    /* ════════ iOS safe-area ══════════════════════════════════════════════ */
+    /* ════ iOS safe-area ══════════════════════════════════════════════ */
     @supports (padding-bottom: env(safe-area-inset-bottom)) {
       @media (max-width: 1023px) {
         #sc-section { padding-bottom: max(48px, env(safe-area-inset-bottom)); }
@@ -538,16 +520,16 @@ export default function Showcase() {
       }
     }
 
-    /* ════════ Scroll snap — mobile/tablet ════════════════════════════════ */
+    /* ════ Scroll snap — mobile/tablet ════════════════════════════════ */
     @media (max-width: 1023px) {
       #sc-overflow-clip { scroll-snap-type: x mandatory; }
       .sc-card-link     { scroll-snap-align: start; }
     }
 
-    /* ════════ Reduced motion ═════════════════════════════════════════════ */
+    /* ════ Reduced motion ═════════════════════════════════════════════ */
     @media (prefers-reduced-motion: reduce) {
       .sc-img                    { transition: opacity 0.1s ease; }
-      .sc-tooltip                { transition: opacity 0.1s ease; }
+      .sc-cursor                 { transition: opacity 0.1s ease; }
       .sc-img-placeholder::after { animation: none; }
     }
   `;
@@ -593,7 +575,7 @@ export default function Showcase() {
           <div id="sc-overflow-clip">
             <div id="sc-track" ref={trackRef}>
               {CARDS.map((card) => (
-                <Card key={card.id} card={card} useTooltip={!useNative} />
+                <Card key={card.id} card={card} useCircleCursor={!useNative} />
               ))}
             </div>
           </div>
@@ -605,64 +587,76 @@ export default function Showcase() {
 }
 
 /* ── Card ──────────────────────────────────────────────────────────────── */
-function Card({ card, useTooltip }) {
+function Card({ card, useCircleCursor }) {
   const cardRef    = useRef(null);
-  const tipRef     = useRef(null);
-  const targetRef  = useRef({ x: 0, y: 0 });
-  const currentPos = useRef({ x: 0, y: 0 });
-  const rafRef     = useRef(null);
-  const activeRef  = useRef(false);
+  const cursorRef  = useRef(null);
+
+  /* RAF lerp state — stored in refs, never triggers re-renders */
+  const rafId   = useRef(null);
+  const current = useRef({ x: 0, y: 0 });
+  const target  = useRef({ x: 0, y: 0 });
+  const isHover = useRef(false);
 
   const { imgRef, src: lazySrc, loaded, setLoaded } = useLazyImage(card.image);
 
-  const startLoop = useCallback(() => {
-    if (rafRef.current) return;
-    const loop = () => {
-      const tip = tipRef.current;
-      if (!tip || !activeRef.current) { rafRef.current = null; return; }
-      currentPos.current.x += (targetRef.current.x - currentPos.current.x) * TIP_LERP;
-      currentPos.current.y += (targetRef.current.y - currentPos.current.y) * TIP_LERP;
-      tip.style.left = currentPos.current.x + "px";
-      tip.style.top  = currentPos.current.y + "px";
-      rafRef.current = requestAnimationFrame(loop);
-    };
-    rafRef.current = requestAnimationFrame(loop);
+  /* ── RAF loop: lerp current → target every frame ── */
+  const tick = useCallback(() => {
+    const el = cursorRef.current;
+    if (!el) return;
+
+    const EASE = 0.13;
+    current.current.x = lerp(current.current.x, target.current.x, EASE);
+    current.current.y = lerp(current.current.y, target.current.y, EASE);
+
+    const cx = current.current.x;
+    const cy = current.current.y;
+
+    el.style.transform = `translate3d(${cx}px, ${cy}px, 0) scale(${isHover.current ? 1 : 0.4})`;
+
+    rafId.current = requestAnimationFrame(tick);
   }, []);
 
-  const toLocal = useCallback((e) => {
-    const rect = cardRef.current.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  const startRAF = useCallback(() => {
+    if (!rafId.current) rafId.current = requestAnimationFrame(tick);
+  }, [tick]);
+
+  const stopRAF = useCallback(() => {
+    if (rafId.current) { cancelAnimationFrame(rafId.current); rafId.current = null; }
   }, []);
 
+  useEffect(() => () => stopRAF(), [stopRAF]);
+
+  /* ── Mouse events ── */
   const onMouseEnter = useCallback((e) => {
-    if (!useTooltip) return;
-    const local = toLocal(e);
-    currentPos.current = { ...local };
-    targetRef.current  = { ...local };
-    activeRef.current  = true;
-    const tip = tipRef.current;
-    if (tip) {
-      tip.style.left = local.x + "px";
-      tip.style.top  = local.y + "px";
-      requestAnimationFrame(() => tip.classList.add("visible"));
+    if (!useCircleCursor || !cardRef.current) return;
+    const r = cardRef.current.getBoundingClientRect();
+    current.current = { x: e.clientX - r.left, y: e.clientY - r.top };
+    target.current  = { x: e.clientX - r.left, y: e.clientY - r.top };
+
+    isHover.current = true;
+    const el = cursorRef.current;
+    if (el) {
+      el.style.opacity   = "1";
+      el.style.transform = `translate3d(${current.current.x}px, ${current.current.y}px, 0) scale(1)`;
     }
-    startLoop();
-  }, [toLocal, startLoop, useTooltip]);
+    startRAF();
+  }, [startRAF, useCircleCursor]);
 
   const onMouseMove = useCallback((e) => {
-    if (!useTooltip) return;
-    targetRef.current = toLocal(e);
-  }, [toLocal, useTooltip]);
+    if (!useCircleCursor || !cardRef.current) return;
+    const r = cardRef.current.getBoundingClientRect();
+    target.current = { x: e.clientX - r.left, y: e.clientY - r.top };
+  }, [useCircleCursor]);
 
   const onMouseLeave = useCallback(() => {
-    activeRef.current = false;
-    if (tipRef.current) tipRef.current.classList.remove("visible");
-    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
-  }, []);
-
-  useEffect(() => () => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-  }, []);
+    isHover.current = false;
+    const el = cursorRef.current;
+    if (el) {
+      el.style.opacity   = "0";
+      el.style.transform = `translate3d(${current.current.x}px, ${current.current.y}px, 0) scale(0.4)`;
+    }
+    stopRAF();
+  }, [stopRAF]);
 
   return (
     <a
@@ -675,11 +669,27 @@ function Card({ card, useTooltip }) {
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
     >
-      {useTooltip && (
-        <div ref={tipRef} className="sc-tooltip">
-          {"Explore Now \u2197"}
-        </div>
-      )}
+      {/* ── Circular cursor (same as Projects) ── */}
+      <div
+        ref={cursorRef}
+        className="sc-cursor"
+        aria-hidden="true"
+      >
+        <span className="sc-cursor-label">
+          VIEW
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 11 11"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{ display: "inline-block", marginLeft: "5px", verticalAlign: "middle", marginTop: "-1px" }}
+          >
+            <line x1="1" y1="10" x2="10" y2="1" stroke="#000" strokeWidth="1.6" strokeLinecap="round"/>
+            <polyline points="4,1 10,1 10,7" fill="none" stroke="#000" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </span>
+      </div>
 
       <div className="sc-right">
         <div className={`sc-img-placeholder${loaded ? " sc-loaded" : ""}`}>
