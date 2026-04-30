@@ -109,6 +109,12 @@ export const ParallaxSection = memo(function ParallaxSection({
   );
 });
 
+/* ─── ParallaxImage — mobile-clipping fix ───────────────────────────────────
+   Animation (spring / useScroll / useTransform) is 100% untouched.
+   Fix: apply the parallax y to an absolutely-positioned wrapper that
+   extends 8 % beyond the clipping container on each side, guaranteeing
+   image content is always visible regardless of scroll position / device.
+   ─────────────────────────────────────────────────────────────────────────── */
 export const ParallaxImage = memo(function ParallaxImage({
   scroller,
   src,
@@ -130,21 +136,39 @@ export const ParallaxImage = memo(function ParallaxImage({
   return (
     <div
       ref={ref}
-      style={{ overflow: "hidden", borderRadius: "inherit", ...style }}
       className={className}
+      style={{
+        overflow: "hidden",
+        borderRadius: "inherit",
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        ...style,
+      }}
     >
-      <motion.img
-        src={src}
-        alt={alt}
+      {/* Wrapper extends 8 % above + below clip boundary to match ±8 % range */}
+      <motion.div
         style={{
           y: smoothY,
-          display: "block",
-          width: "100%",
-          height: "116%",
-          objectFit: "cover",
+          position: "absolute",
+          top: "-8%",
+          left: 0,
+          right: 0,
+          bottom: "-8%",
           willChange: "transform",
         }}
-      />
+      >
+        <img
+          src={src}
+          alt={alt}
+          style={{
+            display: "block",
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
+        />
+      </motion.div>
     </div>
   );
 });
@@ -251,6 +275,7 @@ const MAAbout = memo(function MAAbout({ scroller }) {
         </RevealText>
 
         <RevealText delay={0.1}>
+          {/* aspect-ratio gives ParallaxImage a real height on every device */}
           <div className="ma-img-card">
             <ParallaxImage
               scroller={scroller}
@@ -296,7 +321,7 @@ const MAAbout = memo(function MAAbout({ scroller }) {
 });
 
 /* ════════════════════════════════════════════════════════════════════════════
-   SECTION 3  —  EXPERIENCE
+   SECTION 3  —  EXPERIENCE  (redesigned — editorial header + list cards)
    ════════════════════════════════════════════════════════════════════════════ */
 const JOBS = [
   {
@@ -354,7 +379,12 @@ const CompanyLogo = memo(function CompanyLogo({ src, fallback, logoBg }) {
   return (
     <div className="exp-logo-wrap" style={{ background: logoBg }}>
       {!err ? (
-        <img src={src} alt={fallback} className="exp-logo-img" onError={() => setErr(true)} />
+        <img
+          src={src}
+          alt={fallback}
+          className="exp-logo-img"
+          onError={() => setErr(true)}
+        />
       ) : (
         <span className="exp-logo-fallback">{fallback}</span>
       )}
@@ -362,62 +392,73 @@ const CompanyLogo = memo(function CompanyLogo({ src, fallback, logoBg }) {
   );
 });
 
-const ExperienceCard = memo(function ExperienceCard({ job, i }) {
+const ExperienceRow = memo(function ExperienceRow({ job, i }) {
   const [hovered, setHovered] = useState(false);
+
   return (
     <motion.div
-      className="exp-card"
+      className={`exp-row ${hovered ? "exp-row--hovered" : ""}`}
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
-      initial={{ opacity: 0, y: 32 }}
+      initial={{ opacity: 0, y: 28 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: false, margin: "-6% 0px -6% 0px" }}
-      transition={{ duration: 0.72, ease: [0.22, 1, 0.36, 1], delay: i * 0.08 }}
+      transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: i * 0.08 }}
     >
-      <motion.div
-        className="exp-card-header"
-        animate={{ backgroundColor: hovered ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.03)" }}
-        transition={{ duration: 0.35 }}
-      >
-        <span className="exp-card-index">{job.index}</span>
+      {/* Main row */}
+      <div className="exp-row-main">
         <CompanyLogo src={job.logo} fallback={job.fallback} logoBg={job.logoBg} />
-        <div className="exp-card-header-right">
-          <span className="exp-card-company">{job.company}</span>
-          <span className="exp-card-period">{job.periodFull}</span>
-        </div>
-        <span className="exp-card-type">{job.type}</span>
-      </motion.div>
 
-      <div className="exp-card-body">
-        <div className="exp-card-body-top">
-          <span className="exp-card-role">{job.role}</span>
-          <motion.div
-            className="exp-card-arrow"
-            animate={{ rotate: hovered ? 90 : 0, opacity: hovered ? 1 : 0.3 }}
+        <div className="exp-row-text">
+          <span className="exp-row-role">{job.role}</span>
+          <span className="exp-row-company">
+            {job.company}
+            <span className="exp-row-dot"> · </span>
+            {job.type}
+          </span>
+        </div>
+
+        <div className="exp-row-right">
+          <span className="exp-row-date">{job.periodFull}</span>
+          <motion.span
+            className="exp-row-chevron"
+            animate={{ rotate: hovered ? 180 : 0 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 3v10M4 9l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path
+                d="M3 5l4 4 4-4"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
-          </motion.div>
+          </motion.span>
         </div>
-        <AnimatePresence>
-          {hovered && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-              style={{ overflow: "hidden" }}
-            >
-              <p className="exp-card-desc">{job.desc}</p>
-              <div className="exp-card-tags">
-                {job.tags.map((t) => <span key={t} className="exp-card-tag">{t}</span>)}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
+
+      {/* Expandable detail */}
+      <AnimatePresence>
+        {hovered && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            style={{ overflow: "hidden" }}
+          >
+            <div className="exp-row-detail">
+              <p className="exp-row-desc">{job.desc}</p>
+              <div className="exp-row-tags">
+                {job.tags.map((t) => (
+                  <span key={t} className="exp-row-tag">{t}</span>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 });
@@ -425,52 +466,42 @@ const ExperienceCard = memo(function ExperienceCard({ job, i }) {
 const MAExperience = memo(function MAExperience({ scroller }) {
   return (
     <section className="ma-exp">
-      <div className="ma-exp-wrapper">
-        <div className="exp-layout">
-          <div className="exp-left-col">
-            <RevealText>
-              <span className="exp-eyebrow"><span className="exp-eyebrow-line" />Selected Experience</span>
-            </RevealText>
-            <RevealText delay={0.06}>
-              <div className="exp-left-numeral" aria-hidden="true">IV</div>
-            </RevealText>
-            <RevealText delay={0.1}>
-              <h2 className="exp-headline">Craft.<br /><em className="exp-headline-em">Precision.</em><br />Legacy.</h2>
-            </RevealText>
-            <RevealText delay={0.16}>
-              <p className="exp-left-quote">"Every role I've held has been a deliberate step — not just employment, but the refinement of a standard I hold myself to."</p>
-            </RevealText>
-            <RevealText delay={0.22}>
-              <div className="exp-left-stat">
-                <div className="exp-stat-item">
-                  <span className="exp-stat-num">4</span>
-                  <span className="exp-stat-label">Companies</span>
-                </div>
-                <div className="exp-stat-divider" />
-                <div className="exp-stat-item">
-                  <span className="exp-stat-num">2+</span>
-                  <span className="exp-stat-label">Years Active</span>
-                </div>
-                <div className="exp-stat-divider" />
-                <div className="exp-stat-item">
-                  <span className="exp-stat-num">∞</span>
-                  <span className="exp-stat-label">Problems Solved</span>
-                </div>
-              </div>
-            </RevealText>
-            <RevealText delay={0.26}>
-              <p className="exp-hover-hint"><span className="exp-hint-dot" />Hover to reveal each story</p>
-            </RevealText>
-          </div>
 
-          <div className="exp-right-col">
-            {JOBS.map((job, i) => <ExperienceCard key={job.index} job={job} i={i} />)}
-          </div>
-        </div>
+      {/* Editorial centred header */}
+      <div className="ma-exp-header">
+        <RevealText>
+          <p className="exp-header-script">companies i worked for</p>
+        </RevealText>
+        <RevealText delay={0.07}>
+          <h2 className="exp-header-big">EXPERIENCE</h2>
+        </RevealText>
       </div>
 
-      <ParallaxSection scroller={scroller} bgColor="#080808" height="130px" overlay={0} className="ma-exp-strip">
-        <RevealText style={{ width: "100%", maxWidth: 1100, padding: "0 72px" }}>
+      {/* List */}
+      <div className="exp-list-wrapper">
+        <div className="exp-list">
+          {JOBS.map((job, i) => (
+            <ExperienceRow key={job.index} job={job} i={i} />
+          ))}
+        </div>
+
+        <RevealText delay={0.2}>
+          <p className="exp-hover-hint">
+            <span className="exp-hint-dot" />
+            Hover each card to reveal the full story
+          </p>
+        </RevealText>
+      </div>
+
+      {/* Bottom strip */}
+      <ParallaxSection
+        scroller={scroller}
+        bgColor="#080808"
+        height="130px"
+        overlay={0}
+        className="ma-exp-strip"
+      >
+        <RevealText style={{ width: "100%", maxWidth: 1100, padding: "0 48px" }}>
           <p className="ma-strip-text">Every project is a new problem worth solving.</p>
         </RevealText>
       </ParallaxSection>
@@ -622,17 +653,10 @@ const MAFooter = memo(function MAFooter({ onGetInTouch }) {
 
   return (
     <footer className="ma-footer">
-
-      {/* ── Top divider line ── */}
       <div className="ma-footer-topline" aria-hidden="true" />
-
-      {/* ── Ghost watermark ── */}
       <div className="ma-footer-watermark" aria-hidden="true">WORK</div>
 
-      {/* ── Main content ── */}
       <div className="ma-footer-body">
-
-        {/* Eyebrow row */}
         <RevealText>
           <div className="ma-footer-eyebrow-row">
             <span className="ma-footer-eyebrow">
@@ -643,7 +667,6 @@ const MAFooter = memo(function MAFooter({ onGetInTouch }) {
           </div>
         </RevealText>
 
-        {/* Giant headline */}
         <RevealText delay={0.06}>
           <h2 className="ma-footer-big">
             <span className="ma-footer-big-line">Let's build</span>
@@ -652,7 +675,6 @@ const MAFooter = memo(function MAFooter({ onGetInTouch }) {
           </h2>
         </RevealText>
 
-        {/* CTA button */}
         <RevealText delay={0.14}>
           <button
             className={`ma-footer-cta-btn ${hovered ? "is-hovered" : ""}`}
@@ -664,20 +686,23 @@ const MAFooter = memo(function MAFooter({ onGetInTouch }) {
             <span className="ma-footer-cta-label">Get in touch</span>
             <span className="ma-footer-cta-arrow">
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M3 9h12M10 4l5 5-5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M3 9h12M10 4l5 5-5 5"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </span>
           </button>
         </RevealText>
-
       </div>
 
-      {/* ── Bottom bar ── */}
       <div className="ma-footer-bottom">
         <span className="ma-footer-copy">© 2026 Arjun Aadhith</span>
         <span className="ma-footer-made">Designed &amp; Built by Arjun</span>
       </div>
-
     </footer>
   );
 });
@@ -743,16 +768,14 @@ export default function MoreAbout({ isOpen, onClose }) {
     pageRef.current?.scrollTo({ top: window.innerHeight, behavior: "smooth" });
   }, []);
 
-  /* ── "Get in touch" — close this panel, then scroll the main page
-        to the element with id="contact"                             ── */
   const handleGetInTouch = useCallback(() => {
-    onClose(); // slide panel down (0.72 s transition)
+    onClose();
     setTimeout(() => {
       const contactSection = document.getElementById("contact");
       if (contactSection) {
         contactSection.scrollIntoView({ behavior: "smooth", block: "start" });
       }
-    }, 760); // wait for panel slide-down to finish before scrolling
+    }, 760);
   }, [onClose]);
 
   return (
@@ -784,6 +807,8 @@ export default function MoreAbout({ isOpen, onClose }) {
    STYLES
    ══════════════════════════════════════════════════════════════════════════ */
 const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+
   /* ── Shell ── */
   .ma-page {
     position: fixed; inset: 0; z-index: 100000;
@@ -854,7 +879,17 @@ const CSS = `
     color: rgba(255,255,255,0.58); margin: 0;
     font-weight: 400; letter-spacing: -0.01em;
   }
-  .ma-img-card { width: 100%; border-radius: 20px; overflow: hidden; }
+
+  /* Image card — explicit aspect-ratio so ParallaxImage always has
+     a real container height to work against on every device           */
+  .ma-img-card {
+    width: 100%;
+    border-radius: 20px;
+    overflow: hidden;
+    aspect-ratio: 4 / 3;
+    position: relative;
+  }
+
   .ma-about-band { border-top: 1px solid rgba(255,255,255,0.05); }
   .ma-band-quote {
     font-size: clamp(18px, 2.8vw, 30px); font-weight: 600;
@@ -865,244 +900,316 @@ const CSS = `
     padding-left: 24px; display: block;
   }
 
-  /* ── Experience ── */
-  .ma-exp { background: #0A0A0A; border-top: 1px solid rgba(255,255,255,0.06); }
-  .ma-exp-wrapper { max-width: 1240px; margin: 0 auto; padding: 130px 72px 110px; }
-  .exp-layout { display: grid; grid-template-columns: 42fr 58fr; gap: 0 100px; align-items: start; }
-  .exp-left-col { position: sticky; top: 64px; display: flex; flex-direction: column; gap: 0; }
-  .exp-eyebrow { display: flex; align-items: center; gap: 14px; font-size: 10px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.22); margin-bottom: 36px; }
-  .exp-eyebrow-line { display: inline-block; width: 28px; height: 1px; background: rgba(255,255,255,0.22); flex-shrink: 0; }
-  .exp-left-numeral { font-size: clamp(80px, 10vw, 130px); font-weight: 900; color: rgba(255,255,255,0.04); letter-spacing: -0.04em; line-height: 1; font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont, sans-serif; margin-bottom: -20px; user-select: none; }
-  .exp-headline { font-size: clamp(48px, 5.6vw, 76px); font-weight: 900; color: #fff; letter-spacing: -0.05em; line-height: 1.01; margin: 0 0 36px; font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont, sans-serif; }
-  .exp-headline-em { color: rgba(255,255,255,0.22); font-style: italic; font-weight: 700; }
-  .exp-left-quote { font-size: 14px; line-height: 1.85; color: rgba(255,255,255,0.38); margin: 0 0 40px; font-style: italic; font-weight: 400; letter-spacing: 0.01em; border-left: 1px solid rgba(255,255,255,0.14); padding-left: 20px; max-width: 320px; }
-  .exp-left-stat { display: flex; align-items: center; gap: 20px; margin-bottom: 36px; }
-  .exp-stat-item { display: flex; flex-direction: column; gap: 4px; }
-  .exp-stat-num { font-size: 22px; font-weight: 800; color: #fff; letter-spacing: -0.04em; line-height: 1; font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont, sans-serif; }
-  .exp-stat-label { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.22); }
-  .exp-stat-divider { width: 1px; height: 32px; background: rgba(255,255,255,0.1); flex-shrink: 0; }
-  .exp-hover-hint { display: flex; align-items: center; gap: 10px; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.18); margin: 0; }
-  .exp-hint-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.32); animation: exp-pulse 2.4s ease-in-out infinite; flex-shrink: 0; }
-  @keyframes exp-pulse { 0%, 100% { opacity: 0.2; transform: scale(1); } 50% { opacity: 1; transform: scale(1.6); } }
-  .exp-right-col { display: flex; flex-direction: column; gap: 14px; }
-  .exp-card { border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; overflow: hidden; cursor: default; }
-  .exp-card-header { display: grid; grid-template-columns: 36px 52px 1fr auto; gap: 0 14px; align-items: center; padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.07); }
-  .exp-card-index { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.2); letter-spacing: 0.06em; font-family: "SF Mono","Fira Code",monospace; font-variant-numeric: tabular-nums; }
-  .exp-logo-wrap { width: 52px; height: 52px; border-radius: 13px; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1); }
+  /* ══════════════════════════════════════════════════════════════════════
+     EXPERIENCE — editorial header + list-style cards
+     ══════════════════════════════════════════════════════════════════════ */
+  .ma-exp {
+    background: #0A0A0A;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* Centred header */
+  .ma-exp-header {
+    text-align: center;
+    padding: 100px 24px 72px;
+    position: relative;
+  }
+  .exp-header-script {
+    font-family: 'Great Vibes', cursive;
+    font-size: clamp(26px, 4vw, 62px);
+    color: #c0392b;
+    margin: 0 0 -4px;
+    font-weight: 400;
+    line-height: 1.25;
+    letter-spacing: 0.02em;
+  }
+  .exp-header-big {
+    font-size: clamp(72px, 18vw, 248px);
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: -0.04em;
+    line-height: 0.85;
+    margin: 0;
+    font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont, sans-serif;
+    text-shadow: 0 8px 80px rgba(0,0,0,0.55);
+  }
+
+  /* List wrapper */
+  .exp-list-wrapper {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 48px 100px;
+  }
+  .exp-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 36px;
+  }
+
+  /* Card */
+  .exp-row {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
+    overflow: hidden;
+    cursor: default;
+    transition: border-color 0.3s ease, background 0.3s ease;
+  }
+  .exp-row--hovered {
+    background: rgba(255,255,255,0.055);
+    border-color: rgba(255,255,255,0.15);
+  }
+
+  /* Main row */
+  .exp-row-main {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 20px 24px;
+  }
+
+  /* Logo */
+  .exp-logo-wrap {
+    width: 52px; height: 52px;
+    border-radius: 13px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; flex-shrink: 0;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1);
+  }
   .exp-logo-img { width: 70%; height: 70%; object-fit: contain; display: block; }
-  .exp-logo-fallback { font-size: 13px; font-weight: 900; color: #111; letter-spacing: 0.04em; font-family: -apple-system,"SF Pro Display",BlinkMacSystemFont,sans-serif; }
-  .exp-card-header-right { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
-  .exp-card-company { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.85); letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .exp-card-period { font-size: 12px; color: rgba(255,255,255,0.32); font-weight: 500; letter-spacing: 0; font-variant-numeric: tabular-nums; }
-  .exp-card-type { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 100px; padding: 4px 10px; white-space: nowrap; flex-shrink: 0; }
-  .exp-card-body { padding: 18px 20px 20px; }
-  .exp-card-body-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-  .exp-card-role { font-size: clamp(15px, 1.6vw, 18px); font-weight: 700; color: #fff; letter-spacing: -0.03em; line-height: 1.25; font-family: -apple-system,"SF Pro Display",BlinkMacSystemFont,sans-serif; }
-  .exp-card-arrow { width: 30px; height: 30px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 50%; margin-top: 2px; }
-  .exp-card-desc { font-size: 13.5px; line-height: 1.8; color: rgba(255,255,255,0.48); margin: 16px 0 14px; font-weight: 400; letter-spacing: -0.005em; }
-  .exp-card-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-  .exp-card-tag { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.055); border: 1px solid rgba(255,255,255,0.09); border-radius: 6px; padding: 4px 10px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .exp-logo-fallback {
+    font-size: 13px; font-weight: 900; color: #111;
+    letter-spacing: 0.04em;
+    font-family: -apple-system,"SF Pro Display",BlinkMacSystemFont,sans-serif;
+  }
+
+  /* Text */
+  .exp-row-text {
+    flex: 1;
+    display: flex; flex-direction: column; gap: 5px;
+    min-width: 0;
+  }
+  .exp-row-role {
+    font-size: clamp(14px, 1.7vw, 19px);
+    font-weight: 700; color: #fff;
+    letter-spacing: -0.03em; line-height: 1.2;
+    font-family: -apple-system,"SF Pro Display",BlinkMacSystemFont,sans-serif;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .exp-row-company {
+    font-size: 13px; color: rgba(255,255,255,0.38);
+    font-weight: 400;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .exp-row-dot { opacity: 0.45; margin: 0 2px; }
+
+  /* Right: date + chevron */
+  .exp-row-right {
+    display: flex; align-items: center; gap: 12px;
+    flex-shrink: 0; margin-left: auto;
+  }
+  .exp-row-date {
+    font-size: 13px; color: rgba(255,255,255,0.28);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap; letter-spacing: 0.01em;
+  }
+  .exp-row-chevron {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.45); flex-shrink: 0;
+  }
+
+  /* Expandable detail — indented past the logo */
+  .exp-row-detail {
+    padding: 0 24px 20px calc(24px + 52px + 18px);
+  }
+  .exp-row-desc {
+    font-size: 13.5px; line-height: 1.82;
+    color: rgba(255,255,255,0.46);
+    margin: 0 0 14px; font-weight: 400;
+    letter-spacing: -0.005em; max-width: 680px;
+  }
+  .exp-row-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .exp-row-tag {
+    font-size: 10px; font-weight: 700;
+    color: rgba(255,255,255,0.35);
+    background: rgba(255,255,255,0.055);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 6px; padding: 4px 10px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+
+  /* Hint */
+  .exp-hover-hint {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: rgba(255,255,255,0.18); margin: 0;
+  }
+  .exp-hint-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(255,255,255,0.32);
+    animation: exp-pulse 2.4s ease-in-out infinite; flex-shrink: 0;
+  }
+  @keyframes exp-pulse {
+    0%, 100% { opacity: 0.2; transform: scale(1);   }
+    50%       { opacity: 1;   transform: scale(1.6); }
+  }
+
+  /* Strip */
   .ma-exp-strip { border-top: 1px solid rgba(255,255,255,0.04); }
-  .ma-strip-text { font-size: clamp(13px, 1.6vw, 17px); color: rgba(255,255,255,0.22); font-style: italic; margin: 0; letter-spacing: 0.02em; text-align: left; display: block; border-left: 1px solid rgba(255,255,255,0.12); padding-left: 20px; }
+  .ma-strip-text {
+    font-size: clamp(13px, 1.6vw, 17px);
+    color: rgba(255,255,255,0.22); font-style: italic;
+    margin: 0; letter-spacing: 0.02em; display: block;
+    border-left: 1px solid rgba(255,255,255,0.12); padding-left: 20px;
+  }
 
   /* ── Beyond Design ── */
-  .ma-beyond { position: relative; width: 100%; height: 100vh; min-height: 600px; background: #000; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: crosshair; user-select: none; }
-  .ma-beyond-img { position: absolute; pointer-events: none; border-radius: 14px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 4px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06); transform-origin: center center; will-change: transform, opacity; }
-  .ma-beyond-img img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; -webkit-user-drag: none; }
-  .ma-beyond-center { position: relative; z-index: 20; text-align: center; pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 32px; }
-  .ma-beyond-headline { font-size: clamp(72px, 13vw, 180px); font-weight: 900; letter-spacing: -0.055em; line-height: 0.92; font-family: -apple-system,"SF Pro Display",BlinkMacSystemFont,sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .ma-beyond {
+    position: relative; width: 100%; height: 100vh; min-height: 600px;
+    background: #000; border-top: 1px solid rgba(255,255,255,0.05);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; cursor: crosshair; user-select: none;
+  }
+  .ma-beyond-img {
+    position: absolute; pointer-events: none;
+    border-radius: 14px; overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 4px 16px rgba(0,0,0,0.5),
+                0 0 0 1px rgba(255,255,255,0.06);
+    transform-origin: center center; will-change: transform, opacity;
+  }
+  .ma-beyond-img img {
+    display: block; width: 100%; height: 100%;
+    object-fit: cover; pointer-events: none; -webkit-user-drag: none;
+  }
+  .ma-beyond-center {
+    position: relative; z-index: 20; text-align: center;
+    pointer-events: none; display: flex; flex-direction: column;
+    align-items: center; gap: 32px;
+  }
+  .ma-beyond-headline {
+    font-size: clamp(72px, 13vw, 180px); font-weight: 900;
+    letter-spacing: -0.055em; line-height: 0.92;
+    font-family: -apple-system,"SF Pro Display",BlinkMacSystemFont,sans-serif;
+    margin: 0; display: flex; flex-direction: column; align-items: center;
+  }
   .ma-beyond-line { display: block; color: #EDE8E0; letter-spacing: -0.055em; }
   .ma-beyond-stroke { color: transparent; -webkit-text-stroke: 2px rgba(237,232,224,0.55); letter-spacing: -0.045em; }
-  .ma-beyond-hint { display: flex; align-items: center; gap: 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.2); margin: 0; }
-  .ma-beyond-hint-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(237,232,224,0.5); animation: bd-pulse 2.8s ease-in-out infinite; flex-shrink: 0; }
-  @keyframes bd-pulse { 0%, 100% { opacity: 0.2; transform: scale(1); } 50% { opacity: 1; transform: scale(1.7); } }
-  .ma-beyond-grain { position: absolute; inset: 0; z-index: 10; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E"); opacity: 0.4; mix-blend-mode: overlay; }
+  .ma-beyond-hint {
+    display: flex; align-items: center; gap: 10px; font-size: 11px;
+    font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(255,255,255,0.2); margin: 0;
+  }
+  .ma-beyond-hint-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(237,232,224,0.5);
+    animation: bd-pulse 2.8s ease-in-out infinite; flex-shrink: 0;
+  }
+  @keyframes bd-pulse {
+    0%, 100% { opacity: 0.2; transform: scale(1);   }
+    50%       { opacity: 1;   transform: scale(1.7); }
+  }
+  .ma-beyond-grain {
+    position: absolute; inset: 0; z-index: 10; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    opacity: 0.4; mix-blend-mode: overlay;
+  }
 
   /* ── Beyond Content ── */
   .ma-beyond-content-sec { background: #000; border-top: 1px solid rgba(255,255,255,0.05); }
   .ma-beyond-content-inner {
-    max-width: 820px; margin: 0 auto;
-    padding: 110px 48px 0;
+    max-width: 820px; margin: 0 auto; padding: 110px 48px 0;
     display: flex; flex-direction: column; gap: 0;
   }
-  .ma-bc-eyebrow { display: flex; align-items: center; gap: 14px; font-size: 10px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.2); margin-bottom: 56px; }
+  .ma-bc-eyebrow {
+    display: flex; align-items: center; gap: 14px; font-size: 10px;
+    font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(255,255,255,0.2); margin-bottom: 56px;
+  }
   .ma-bc-eyebrow-line { display: inline-block; width: 28px; height: 1px; background: rgba(255,255,255,0.2); flex-shrink: 0; }
-
-  /* All paragraphs get generous bottom margin */
   .ma-bc-para {
     font-size: clamp(17px, 1.9vw, 21px); line-height: 1.9;
     color: rgba(237,232,224,0.52); margin: 0 0 30px;
     font-weight: 400; letter-spacing: -0.008em;
   }
-  .ma-bc-para:first-of-type {
-    color: rgba(237,232,224,0.72);
-    font-size: clamp(19px, 2.1vw, 24px);
-    font-weight: 500;
-  }
+  .ma-bc-para:first-of-type { color: rgba(237,232,224,0.72); font-size: clamp(19px, 2.1vw, 24px); font-weight: 500; }
+  .ma-bc-para--last { margin-bottom: 120px; }
 
-  /* Last paragraph — keeps its own margin-bottom for section breathing room */
-  .ma-bc-para--last {
-    margin-bottom: 120px;
-  }
-
-  /* ════════════════════════════════════════════════════════════════════════
-     FOOTER  —  modern editorial
-     ════════════════════════════════════════════════════════════════════════ */
+  /* ── Footer ── */
   .ma-footer {
-    position: relative;
-    background: #050505;
-    overflow: hidden;
-    padding: 0 72px 0;
-    min-height: 88vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+    position: relative; background: #050505; overflow: hidden;
+    padding: 0 72px 0; min-height: 88vh;
+    display: flex; flex-direction: column; justify-content: space-between;
   }
   .ma-footer-topline {
-    width: 100%;
-    height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(255,255,255,0.18) 30%,
-      rgba(255,255,255,0.18) 70%,
-      transparent 100%
-    );
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.18) 30%, rgba(255,255,255,0.18) 70%, transparent 100%);
   }
   .ma-footer-watermark {
-    position: absolute;
-    bottom: -0.12em;
-    right: -0.04em;
-    font-size: clamp(200px, 32vw, 480px);
-    font-weight: 900;
-    letter-spacing: -0.06em;
-    line-height: 1;
-    color: rgba(255,255,255,0.028);
-    font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont, sans-serif;
-    pointer-events: none;
-    user-select: none;
-    z-index: 0;
+    position: absolute; bottom: -0.12em; right: -0.04em;
+    font-size: clamp(200px, 32vw, 480px); font-weight: 900;
+    letter-spacing: -0.06em; line-height: 1; color: rgba(255,255,255,0.028);
+    font-family: -apple-system,"SF Pro Display",BlinkMacSystemFont,sans-serif;
+    pointer-events: none; user-select: none; z-index: 0;
   }
-  .ma-footer-body {
-    position: relative;
-    z-index: 1;
-    padding: 80px 0 60px;
-    max-width: 1100px;
-    width: 100%;
-  }
-  .ma-footer-eyebrow-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 52px;
-  }
-  .ma-footer-eyebrow {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.28);
-  }
-  .ma-footer-eyebrow-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: #4ade80;
-    box-shadow: 0 0 0 3px rgba(74,222,128,0.18);
-    animation: dot-breathe 2.6s ease-in-out infinite;
-    flex-shrink: 0;
-  }
-  @keyframes dot-breathe {
-    0%, 100% { box-shadow: 0 0 0 3px rgba(74,222,128,0.18); }
-    50%       { box-shadow: 0 0 0 7px rgba(74,222,128,0.06); }
-  }
-  .ma-footer-year {
-    font-size: 11px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.16);
-    letter-spacing: 0.1em;
-    font-variant-numeric: tabular-nums;
-  }
-  .ma-footer-big {
-    font-size: clamp(60px, 10.5vw, 148px);
-    font-weight: 900;
-    letter-spacing: -0.05em;
-    line-height: 0.94;
-    margin: 0 0 64px;
-    font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont, sans-serif;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
+  .ma-footer-body { position: relative; z-index: 1; padding: 80px 0 60px; max-width: 1100px; width: 100%; }
+  .ma-footer-eyebrow-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 52px; }
+  .ma-footer-eyebrow { display: flex; align-items: center; gap: 10px; font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.28); }
+  .ma-footer-eyebrow-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 0 3px rgba(74,222,128,0.18); animation: dot-breathe 2.6s ease-in-out infinite; flex-shrink: 0; }
+  @keyframes dot-breathe { 0%, 100% { box-shadow: 0 0 0 3px rgba(74,222,128,0.18); } 50% { box-shadow: 0 0 0 7px rgba(74,222,128,0.06); } }
+  .ma-footer-year { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.16); letter-spacing: 0.1em; font-variant-numeric: tabular-nums; }
+  .ma-footer-big { font-size: clamp(60px, 10.5vw, 148px); font-weight: 900; letter-spacing: -0.05em; line-height: 0.94; margin: 0 0 64px; font-family: -apple-system,"SF Pro Display",BlinkMacSystemFont,sans-serif; display: flex; flex-direction: column; gap: 0; }
   .ma-footer-big-line { display: block; color: #ffffff; }
   .ma-footer-big-italic { color: rgba(255,255,255,0.28); font-style: italic; font-weight: 700; }
-  .ma-footer-cta-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0;
-    height: 60px;
-    padding: 0 8px 0 32px;
-    background: #fff;
-    color: #111;
-    border: none;
-    border-radius: 100px;
-    font-size: 15px;
-    font-weight: 700;
-    font-family: inherit;
-    letter-spacing: -0.01em;
-    cursor: pointer;
-    transition: background 0.22s, transform 0.18s;
-    overflow: hidden;
-  }
+  .ma-footer-cta-btn { display: inline-flex; align-items: center; gap: 0; height: 60px; padding: 0 8px 0 32px; background: #fff; color: #111; border: none; border-radius: 100px; font-size: 15px; font-weight: 700; font-family: inherit; letter-spacing: -0.01em; cursor: pointer; transition: background 0.22s, transform 0.18s; overflow: hidden; }
   .ma-footer-cta-btn:hover  { background: #f0f0f0; transform: translateY(-2px); }
   .ma-footer-cta-btn:active { transform: scale(0.97); }
   .ma-footer-cta-label { flex-shrink: 0; margin-right: 16px; }
-  .ma-footer-cta-arrow {
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    background: #111;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: background 0.22s, transform 0.22s;
-  }
+  .ma-footer-cta-arrow { width: 44px; height: 44px; border-radius: 50%; background: #111; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.22s, transform 0.22s; }
   .ma-footer-cta-btn:hover .ma-footer-cta-arrow { transform: translateX(3px); }
-  .ma-footer-bottom {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 28px 0 40px;
-    border-top: 1px solid rgba(255,255,255,0.07);
-  }
+  .ma-footer-bottom { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; padding: 28px 0 40px; border-top: 1px solid rgba(255,255,255,0.07); }
   .ma-footer-copy { font-size: 13px; color: rgba(255,255,255,0.2); font-weight: 400; letter-spacing: 0.01em; }
   .ma-footer-made { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.12); }
 
-  /* ── Responsive ── */
-  @media (max-width: 1000px) {
-    .exp-layout { grid-template-columns: 1fr; gap: 60px 0; }
-    .exp-left-col { position: static; }
-    .exp-left-quote { max-width: 100%; }
+  /* ══════════════════════════════════════════════════════════════════════
+     RESPONSIVE
+     ══════════════════════════════════════════════════════════════════════ */
+
+  /* Tablet ≤ 900px */
+  @media (max-width: 900px) {
+    .exp-list-wrapper { padding: 0 32px 80px; }
+    .exp-row-main     { padding: 18px 20px; gap: 14px; }
+    .exp-row-detail   { padding: 0 20px 20px calc(20px + 52px + 14px); }
   }
+
+  /* Mobile ≤ 768px */
   @media (max-width: 768px) {
     .ma-home          { padding: 0 24px; }
     .ma-section-inner { padding: 80px 24px; }
     .ma-band-quote    { padding-left: 20px; }
-    .ma-exp-wrapper   { padding: 72px 24px 60px; }
+
+    /* Taller aspect ratio on mobile = more room for parallax travel */
+    .ma-img-card      { aspect-ratio: 3 / 4; }
+
+    .ma-exp-header    { padding: 72px 20px 52px; }
+    .exp-header-big   { letter-spacing: -0.03em; }
+    .exp-list-wrapper { padding: 0 20px 72px; }
+    .exp-list         { gap: 10px; }
+    .exp-row-main     { padding: 16px 18px; gap: 12px; }
+    .exp-row-date     { display: none; }           /* save space */
+    .exp-logo-wrap    { width: 44px; height: 44px; border-radius: 11px; }
+    .exp-row-detail   { padding: 0 18px 18px calc(18px + 44px + 12px); }
+    .exp-row-desc     { font-size: 13px; }
+    .exp-row-role     { font-size: 15px; }
+
+    .ma-beyond        { height: 80vh; min-height: 480px; }
     .ma-beyond-content-inner { padding: 80px 24px 0; }
     .ma-bc-para       { margin-bottom: 52px; }
     .ma-bc-para--last { margin-bottom: 80px; }
-
-    .exp-card-header  { grid-template-columns: 28px 44px 1fr; gap: 0 10px; }
-    .exp-card-type    { display: none; }
-    .exp-logo-wrap    { width: 44px; height: 44px; border-radius: 11px; }
-    .exp-card-role    { font-size: 15px; }
-    .ma-beyond        { height: 80vh; min-height: 480px; }
 
     .ma-footer        { padding: 0 24px; min-height: auto; }
     .ma-footer-body   { padding: 60px 0 48px; }
@@ -1110,8 +1217,19 @@ const CSS = `
     .ma-footer-watermark { font-size: clamp(140px, 40vw, 260px); }
     .ma-footer-bottom { padding: 24px 0 32px; }
     .ma-footer-made   { display: none; }
+    .ma-strip-text    { font-size: 13px; padding: 0 24px; }
   }
+
+  /* Small mobile ≤ 480px */
   @media (max-width: 480px) {
+    .ma-exp-header    { padding: 56px 16px 40px; }
+    .exp-list-wrapper { padding: 0 16px 60px; }
+    .exp-row-main     { padding: 14px 14px; gap: 10px; }
+    .exp-logo-wrap    { width: 40px; height: 40px; border-radius: 10px; }
+    .exp-row-role     { font-size: 14px; }
+    .exp-row-company  { font-size: 11px; }
+    .exp-row-chevron  { width: 24px; height: 24px; }
+    .exp-row-detail   { padding: 0 14px 16px calc(14px + 40px + 10px); }
     .ma-beyond-stroke { -webkit-text-stroke-width: 1.5px; }
     .ma-footer-big    { font-size: clamp(40px, 13vw, 64px); }
   }
