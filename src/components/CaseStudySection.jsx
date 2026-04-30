@@ -282,6 +282,9 @@ export default function CaseStudySection() {
   /* ── Segmented progress refs (one per card) ── */
   const segmentFillRefs = [useRef(null), useRef(null)];
 
+  /* ── Track whether the section is visible on screen ── */
+  const sectionInViewRef = useRef(false);
+
   const [activeIdx,  setActiveIdx]  = useState(0);
   const [tnstcOpen,  setTnstcOpen]  = useState(false);
   const [swayamOpen, setSwayamOpen] = useState(false);
@@ -343,9 +346,9 @@ export default function CaseStudySection() {
     const dx = e.changedTouches[0].clientX - touchStart.current;
     touchStart.current = null;
     if (Math.abs(dx) < SWIPE_THRESHOLD) return;
-    resetProgress();
     if (dx < 0 && activeIdx === 0) goTo(1);
     if (dx > 0 && activeIdx === 1) goTo(0);
+    /* goTo triggers activeIdx change → the continuous-loop effect restarts the timer */
   };
 
   /* ── Mouse drag swipe ── */
@@ -379,7 +382,6 @@ export default function CaseStudySection() {
       if (stageRef.current) stageRef.current.classList.remove("is-dragging");
       if (!wasDrag || isAnimating.current) return;
       if (Math.abs(dx) < SWIPE_THRESHOLD) return;
-      resetProgress();
       if (dx < 0 && activeIdx === 0) goTo(1);
       if (dx > 0 && activeIdx === 1) goTo(0);
     };
@@ -404,55 +406,93 @@ export default function CaseStudySection() {
   /* ── Mobile helpers ── */
   const isMobileView = () => window.innerWidth <= 768;
 
-  const startProgress = useCallback(() => {
+  /* ── Animate the fill for the active segment ── */
+  const startProgress = useCallback((idx) => {
     if (!isMobileView()) return;
-    const fill = segmentFillRefs[activeIdx].current;
-    if (!fill) return;
-    fill.style.transition = "none";
-    fill.style.width = "0%";
-    void fill.offsetWidth;
-    fill.style.transition = `width ${AUTO_ADVANCE_MS}ms linear`;
-    fill.style.width = "100%";
-  }, [activeIdx]);
 
-  const resetProgress = useCallback(() => {
-    if (autoTimer.current) clearTimeout(autoTimer.current);
+    /* Reset all segments first */
     segmentFillRefs.forEach((r) => {
       if (r.current) {
         r.current.style.transition = "none";
         r.current.style.width = "0%";
       }
     });
+
+    /* Kick off fill animation on the active one */
+    const fill = segmentFillRefs[idx].current;
+    if (!fill) return;
+
+    /* Force a reflow so the transition fires from 0% */
+    void fill.offsetWidth;
+    fill.style.transition = `width ${AUTO_ADVANCE_MS}ms linear`;
+    fill.style.width = "100%";
   }, []);
 
-  /* ── Auto-advance (mobile only) ── */
-  const sectionInViewRef = useRef(false);
-
+  /* ─────────────────────────────────────────────────────────────────
+   *  EFFECT 1 — IntersectionObserver (runs once on mount)
+   *  Only job: flip sectionInViewRef and start/stop the cycle.
+   * ───────────────────────────────────────────────────────────────── */
   useEffect(() => {
-    if (!isMobileView()) return;
     const section = document.querySelector(".cs-section");
     if (!section) return;
 
     const io = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !sectionInViewRef.current) {
+        if (entry.isIntersecting) {
           sectionInViewRef.current = true;
-          startProgress();
+          /* Trigger the continuous loop for whatever card is active now */
+          startProgress(activeIdx);
+          if (autoTimer.current) clearTimeout(autoTimer.current);
           autoTimer.current = setTimeout(() => {
             const next = (activeIdx + 1) % CARDS.length;
             goTo(next);
           }, AUTO_ADVANCE_MS);
-        }
-        if (!entry.isIntersecting) {
+        } else {
           sectionInViewRef.current = false;
-          resetProgress();
+          /* Pause everything while off-screen */
+          if (autoTimer.current) clearTimeout(autoTimer.current);
+          segmentFillRefs.forEach((r) => {
+            if (r.current) {
+              r.current.style.transition = "none";
+              r.current.style.width = "0%";
+            }
+          });
         }
       },
       { threshold: 0.3 }
     );
     io.observe(section);
-    return () => { io.disconnect(); if (autoTimer.current) clearTimeout(autoTimer.current); };
-  }, [activeIdx, startProgress, resetProgress, goTo]);
+    return () => {
+      io.disconnect();
+      if (autoTimer.current) clearTimeout(autoTimer.current);
+    };
+  /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, []); /* intentionally empty — observer set up once */
+
+  /* ─────────────────────────────────────────────────────────────────
+   *  EFFECT 2 — Continuous loop (re-runs every time activeIdx changes)
+   *  If the section is in view, restart progress + schedule next advance.
+   * ───────────────────────────────────────────────────────────────── */
+  useEffect(() => {
+    if (!isMobileView()) return;
+    if (!sectionInViewRef.current) return;
+
+    /* Clear any stale timer from the previous card */
+    if (autoTimer.current) clearTimeout(autoTimer.current);
+
+    /* Animate the bar for the newly active card */
+    startProgress(activeIdx);
+
+    /* Schedule the next card change */
+    autoTimer.current = setTimeout(() => {
+      const next = (activeIdx + 1) % CARDS.length;
+      goTo(next);
+    }, AUTO_ADVANCE_MS);
+
+    return () => {
+      if (autoTimer.current) clearTimeout(autoTimer.current);
+    };
+  }, [activeIdx, startProgress, goTo]);
 
   /* Cleanup all RAFs on unmount */
   useEffect(() => () => {

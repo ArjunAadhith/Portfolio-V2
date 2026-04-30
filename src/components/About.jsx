@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import Shuffle from "./Shuffle";
 import ScrollReveal from "./ScrollReveal";
 import MoreAbout from "./Moreabout.jsx";
@@ -64,13 +64,65 @@ function PixelOverlay({ reveal }) {
   );
 }
 
+/* ─── Lerp helper ────────────────────────────────────────────────────── */
+const lerp = (a, b, t) => a + (b - a) * t;
+
+/* ─── Lazy Image ─────────────────────────────────────────────────────── */
+function LazyImage({ src, alt, className, style }) {
+  const imgRef  = useRef(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const el = imgRef.current;
+    if (!el) return;
+    if (el.complete && el.naturalWidth > 0) { setLoaded(true); return; }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        if (el.dataset.src) { el.src = el.dataset.src; delete el.dataset.src; }
+        observer.disconnect();
+      }
+    }, { rootMargin: "200px 0px" });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <img
+      ref={imgRef}
+      data-src={src}
+      src=""
+      loading="lazy"
+      decoding="async"
+      alt={alt}
+      className={className}
+      draggable={false}
+      onLoad={() => setLoaded(true)}
+      style={{
+        ...style,
+        opacity: loaded ? 1 : 0,
+        transition: loaded ? "opacity 0.45s ease" : "none",
+      }}
+    />
+  );
+}
+
 export default function About() {
-  const sectionRef = useRef(null);
-  const [visible, setVisible] = useState(false);
+  const sectionRef  = useRef(null);
+  const imgWrapRef  = useRef(null);
+  const cursorRef   = useRef(null);
+
+  const [visible,    setVisible]    = useState(false);
   const [imgVisible, setImgVisible] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
+  const [moreOpen,   setMoreOpen]   = useState(false);
   const typedTitle = useTypewriter(TITLES);
 
+  /* ── RAF lerp state ── */
+  const rafId   = useRef(null);
+  const current = useRef({ x: 0, y: 0 });
+  const target  = useRef({ x: 0, y: 0 });
+  const isHover = useRef(false);
+
+  /* ── Intersection observer (section reveal) ── */
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -98,6 +150,61 @@ export default function About() {
     return () => clearTimeout(timer);
   }, []);
 
+  /* ── RAF tick ── */
+  const tick = useCallback(() => {
+    const el = cursorRef.current;
+    if (!el) return;
+    const EASE = 0.13;
+    current.current.x = lerp(current.current.x, target.current.x, EASE);
+    current.current.y = lerp(current.current.y, target.current.y, EASE);
+    const { x: cx, y: cy } = current.current;
+    el.style.transform = `translate3d(${cx}px, ${cy}px, 0) scale(${isHover.current ? 1 : 0.4})`;
+    rafId.current = requestAnimationFrame(tick);
+  }, []);
+
+  const startRAF = useCallback(() => {
+    if (!rafId.current) rafId.current = requestAnimationFrame(tick);
+  }, [tick]);
+
+  const stopRAF = useCallback(() => {
+    if (rafId.current) { cancelAnimationFrame(rafId.current); rafId.current = null; }
+  }, []);
+
+  useEffect(() => () => stopRAF(), [stopRAF]);
+
+  /* ── Mouse events on the image wrapper ── */
+  const onEnter = useCallback((e) => {
+    const wrap = imgWrapRef.current;
+    if (!wrap) return;
+    const r = wrap.getBoundingClientRect();
+    current.current = { x: e.clientX - r.left, y: e.clientY - r.top };
+    target.current  = { x: e.clientX - r.left, y: e.clientY - r.top };
+    isHover.current = true;
+    const el = cursorRef.current;
+    if (el) {
+      el.style.opacity   = "1";
+      el.style.transform = `translate3d(${current.current.x}px, ${current.current.y}px, 0) scale(1)`;
+    }
+    startRAF();
+  }, [startRAF]);
+
+  const onMove = useCallback((e) => {
+    const wrap = imgWrapRef.current;
+    if (!wrap) return;
+    const r = wrap.getBoundingClientRect();
+    target.current = { x: e.clientX - r.left, y: e.clientY - r.top };
+  }, []);
+
+  const onLeave = useCallback(() => {
+    isHover.current = false;
+    const el = cursorRef.current;
+    if (el) {
+      el.style.opacity   = "0";
+      el.style.transform = `translate3d(${current.current.x}px, ${current.current.y}px, 0) scale(0.4)`;
+    }
+    stopRAF();
+  }, [stopRAF]);
+
   return (
     <>
       <style>{`
@@ -108,6 +215,43 @@ export default function About() {
         @font-face { font-family:'SF Pro Text'; src:url('/src/assets/fonts/SF-Pro-Text-Light.otf') format('opentype'); font-weight:300; }
 
         *, *::before, *::after { box-sizing: border-box; }
+
+        /* ─── Cursor Circle ─────────────────────────────── */
+        .ab-cursor {
+          position: absolute;
+          width: 120px;
+          height: 120px;
+          margin-left: -60px;
+          margin-top: -60px;
+          border-radius: 50%;
+          pointer-events: none;
+          z-index: 9999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          mix-blend-mode: difference;
+          background: #ffffff;
+          opacity: 0;
+          transform: translate3d(0px, 0px, 0) scale(0.4);
+          transition:
+            opacity  0.28s cubic-bezier(0.22, 1, 0.36, 1),
+            transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: transform, opacity;
+        }
+
+        .ab-cursor-label {
+          font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          color: #000;
+          white-space: nowrap;
+          user-select: none;
+          pointer-events: none;
+          text-transform: uppercase;
+          text-align: center;
+          line-height: 1.3;
+        }
 
         /* ═══════════════════════════════════════════
            DESKTOP BASE — UNTOUCHED
@@ -225,7 +369,6 @@ export default function About() {
           flex-shrink: 0;
         }
 
-        /* ── Shuffle component visibility ── */
         .hname-shuffle .shuffle-parent {
           visibility: hidden;
           display: inline-block;
@@ -326,15 +469,27 @@ export default function About() {
           justify-content: flex-end;
           margin-right: -8%;
         }
+
+        /* ─── Image outer: relative + cursor:none so custom cursor shows ── */
         .about-img-outer {
           position: relative;
           display: inline-block;
           opacity: 0;
           transform: translateY(40px);
           transition: opacity 0.9s cubic-bezier(0.22,1,0.36,1) 0.15s, transform 0.9s cubic-bezier(0.22,1,0.36,1) 0.15s;
+          cursor: none;
         }
         .about-img-outer.visible { opacity: 1; transform: translateY(0); }
-        .about-img { display: block; max-width: 100%; height: auto; position: relative; z-index: 1; }
+        .about-img {
+          display: block;
+          max-width: 100%;
+          height: auto;
+          position: relative;
+          z-index: 1;
+          pointer-events: none;
+          user-select: none;
+          -webkit-user-drag: none;
+        }
 
         /* ═══════════════════════════════════════════
            ULTRA-WIDE: 1440px – 1599px
@@ -388,7 +543,7 @@ export default function About() {
           }
           .about-left { width: 100%; margin-left: 0; }
           .about-right { width: 100%; justify-content: center; margin-right: 0; }
-          .about-img-outer { max-width: 420px; width: 100%; }
+          .about-img-outer { max-width: 420px; width: 100%; cursor: none; }
           .about-img { width: 100%; max-width: 420px; }
           .about-heading {
             font-size: clamp(38px, 5.5vw, 56px);
@@ -401,6 +556,7 @@ export default function About() {
           .about-para-wrap { max-width: 100%; }
           .about-btns { gap: 12px; }
           .btn-pill { height: 48px; font-size: 15px; }
+          .ab-cursor { display: none; }
         }
 
         /* ═══════════════════════════════════════════
@@ -436,6 +592,7 @@ export default function About() {
           .about-img-outer {
             width: min(72vw, 280px);
             max-width: 280px;
+            cursor: pointer;
           }
           .about-img { width: 100%; height: auto; }
 
@@ -545,6 +702,9 @@ export default function About() {
             padding: 0 24px;
             font-size: 14px;
           }
+
+          /* Hide cursor on mobile */
+          .ab-cursor { display: none; }
         }
 
         /* ═══════════════════════════════════════════
@@ -624,7 +784,7 @@ export default function About() {
           }
           .about-left { width: 55%; margin-left: 0; }
           .about-right { width: 40%; justify-content: center; margin-right: 0; }
-          .about-img-outer { width: min(34vw, 190px); max-width: 190px; }
+          .about-img-outer { width: min(34vw, 190px); max-width: 190px; cursor: none; }
           .about-heading {
             font-size: clamp(20px, 3.8vw, 30px);
             margin-bottom: 12px;
@@ -651,6 +811,8 @@ export default function About() {
             transform: none !important;
             transition: opacity 0.6s ease, filter 0.6s ease !important;
           }
+
+          .ab-cursor { display: none; }
         }
       `}</style>
 
@@ -714,15 +876,32 @@ export default function About() {
           </div>
 
           <div className="about-right">
-            <div className={`about-img-outer ${imgVisible ? "visible" : ""}`}>
-              <PixelOverlay reveal={imgVisible}/>
-              {/* ↓ lazy load + async decode added here */}
-              <img
+            {/* ── Image wrapper with cursor tooltip ── */}
+            <div
+              ref={imgWrapRef}
+              className={`about-img-outer ${imgVisible ? "visible" : ""}`}
+              onMouseEnter={onEnter}
+              onMouseMove={onMove}
+              onMouseLeave={onLeave}
+            >
+              {/* ── Premium cursor circle (same system as Projects) ── */}
+              <div
+                ref={cursorRef}
+                className="ab-cursor"
+                aria-hidden="true"
+              >
+                <span className="ab-cursor-label">
+                  The<br />Creator
+                </span>
+              </div>
+
+              <PixelOverlay reveal={imgVisible} />
+
+              {/* ── Lazy-loaded profile image ── */}
+              <LazyImage
                 src="/arjun profile.png"
                 alt="Arjun Aadhith"
                 className="about-img"
-                loading="lazy"
-                decoding="async"
               />
             </div>
           </div>
