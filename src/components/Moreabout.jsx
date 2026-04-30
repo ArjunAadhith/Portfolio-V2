@@ -913,10 +913,12 @@ const CSS = `
     text-align: center;
     padding: 100px 24px 72px;
     position: relative;
+    overflow: hidden;          /* safety net — never bleeds past section edge */
   }
   .exp-header-script {
     font-family: 'Great Vibes', cursive;
-    font-size: clamp(26px, 4vw, 62px);
+    /* vw-driven so it scales with viewport; no hard minimum that could overflow */
+    font-size: clamp(20px, 4.5vw, 62px);
     color: #c0392b;
     margin: 0 0 -4px;
     font-weight: 400;
@@ -924,7 +926,18 @@ const CSS = `
     letter-spacing: 0.02em;
   }
   .exp-header-big {
-    font-size: clamp(72px, 18vw, 248px);
+    /*
+      Root cause of overflow:
+        old clamp(72px, 18vw, 248px) → at 375 px, 18 vw = 67.5 px < 72 px minimum,
+        so the browser uses 72 px and "EXPERIENCE" (10 chars) bleeds past the container.
+
+      Fix: drop the minimum well below the vw value at the smallest viewport,
+      and pick a vw that naturally fits at every width:
+        16 vw × 375 px = 60 px → estimated text-width ≈ 326 px < 335 px available ✓
+        16 vw × 768 px = 123 px ✓
+        16 vw × 1440 px = 230 px (capped by max) ✓
+    */
+    font-size: clamp(32px, 16vw, 248px);
     font-weight: 900;
     color: #fff;
     letter-spacing: -0.04em;
@@ -932,6 +945,9 @@ const CSS = `
     margin: 0;
     font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont, sans-serif;
     text-shadow: 0 8px 80px rgba(0,0,0,0.55);
+    /* prevent any residual overflow on very narrow viewports */
+    max-width: 100%;
+    word-break: keep-all;
   }
 
   /* List wrapper */
@@ -1193,18 +1209,26 @@ const CSS = `
     .ma-band-quote    { padding-left: 20px; }
 
     /* Taller aspect ratio on mobile = more room for parallax travel */
-    .ma-img-card      { aspect-ratio: 3 / 4; }
+    .ma-img-card { aspect-ratio: 3 / 4; }
 
-    .ma-exp-header    { padding: 72px 20px 52px; }
-    .exp-header-big   { letter-spacing: -0.03em; }
+    /* Experience header — tighter padding, tighter letter-spacing */
+    .ma-exp-header  { padding: 64px 20px 48px; }
+    /*
+      At 768 px: 16 vw is already 123 px — perfect for this breakpoint.
+      No font-size override needed; the clamp handles it automatically.
+      We only tighten letter-spacing a touch to reclaim a few extra px.
+    */
+    .exp-header-big { letter-spacing: -0.045em; }
+
+    /* Experience list */
     .exp-list-wrapper { padding: 0 20px 72px; }
     .exp-list         { gap: 10px; }
     .exp-row-main     { padding: 16px 18px; gap: 12px; }
-    .exp-row-date     { display: none; }           /* save space */
+    .exp-row-date     { display: none; }
     .exp-logo-wrap    { width: 44px; height: 44px; border-radius: 11px; }
+    .exp-row-role     { font-size: 15px; }
     .exp-row-detail   { padding: 0 18px 18px calc(18px + 44px + 12px); }
     .exp-row-desc     { font-size: 13px; }
-    .exp-row-role     { font-size: 15px; }
 
     .ma-beyond        { height: 80vh; min-height: 480px; }
     .ma-beyond-content-inner { padding: 80px 24px 0; }
@@ -1217,20 +1241,43 @@ const CSS = `
     .ma-footer-watermark { font-size: clamp(140px, 40vw, 260px); }
     .ma-footer-bottom { padding: 24px 0 32px; }
     .ma-footer-made   { display: none; }
-    .ma-strip-text    { font-size: 13px; padding: 0 24px; }
+    .ma-strip-text    { font-size: 13px; }
   }
 
   /* Small mobile ≤ 480px */
   @media (max-width: 480px) {
-    .ma-exp-header    { padding: 56px 16px 40px; }
+    .ma-exp-header  { padding: 52px 16px 40px; }
+    /*
+      At 480 px: 16 vw = 76.8 px → "EXPERIENCE" ≈ 418 px wide
+      Available with 32 px total padding = 448 px → still fits ✓.
+      No override needed. Just keep letter-spacing tighter.
+    */
+    .exp-header-big  { letter-spacing: -0.048em; }
+    .exp-header-script { font-size: clamp(18px, 5.5vw, 30px); }
+
     .exp-list-wrapper { padding: 0 16px 60px; }
+    .exp-list         { gap: 8px; }
     .exp-row-main     { padding: 14px 14px; gap: 10px; }
     .exp-logo-wrap    { width: 40px; height: 40px; border-radius: 10px; }
     .exp-row-role     { font-size: 14px; }
     .exp-row-company  { font-size: 11px; }
     .exp-row-chevron  { width: 24px; height: 24px; }
     .exp-row-detail   { padding: 0 14px 16px calc(14px + 40px + 10px); }
+
     .ma-beyond-stroke { -webkit-text-stroke-width: 1.5px; }
     .ma-footer-big    { font-size: clamp(40px, 13vw, 64px); }
+  }
+
+  /* Very small — 360 px and below (Galaxy S8 etc.) */
+  @media (max-width: 360px) {
+    .ma-exp-header  { padding: 44px 12px 36px; }
+    /*
+      At 360 px: 16 vw = 57.6 px → text-width ≈ 313 px
+      Available with 24 px total padding = 336 px ✓
+    */
+    .exp-header-script { font-size: clamp(16px, 5vw, 22px); }
+    .exp-list-wrapper { padding: 0 12px 48px; }
+    .exp-row-main     { padding: 12px 12px; gap: 8px; }
+    .exp-row-detail   { padding: 0 12px 14px calc(12px + 40px + 8px); }
   }
 `;
