@@ -21,7 +21,6 @@ function LazyImage({ src, alt, className }) {
     const el = imgRef.current;
     if (!el) return;
 
-    // If browser already decoded it (cache hit), mark loaded immediately
     if (el.complete && el.naturalWidth > 0) {
       setLoaded(true);
       return;
@@ -30,7 +29,6 @@ function LazyImage({ src, alt, className }) {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          // Set src only when the card is about to enter the viewport
           if (el.dataset.src) {
             el.src = el.dataset.src;
             delete el.dataset.src;
@@ -38,7 +36,7 @@ function LazyImage({ src, alt, className }) {
           observer.disconnect();
         }
       },
-      { rootMargin: "200px 0px" } // start loading 200px before visible
+      { rootMargin: "200px 0px" }
     );
 
     observer.observe(el);
@@ -48,13 +46,10 @@ function LazyImage({ src, alt, className }) {
   return (
     <img
       ref={imgRef}
-      /* Use data-src so IntersectionObserver controls when src is set.
-         Native loading="lazy" is also set as a fallback for browsers
-         that don't need the observer approach. */
       data-src={src}
-      src=""                // empty until observer fires
-      loading="lazy"        // native browser hint (fallback / progressive enhancement)
-      decoding="async"      // non-blocking decode
+      src=""
+      loading="lazy"
+      decoding="async"
       alt={alt}
       className={className}
       draggable={false}
@@ -70,20 +65,22 @@ function LazyImage({ src, alt, className }) {
 /* ─── Card ─────────────────────────────────────────────────────────── */
 function ShowcaseCard({ img }) {
   const cardRef    = useRef(null);
-  const tipRef     = useRef(null);
+  const cursorRef  = useRef(null);
   const targetPos  = useRef({ x: 0, y: 0 });
   const currentPos = useRef({ x: 0, y: 0 });
   const rafRef     = useRef(null);
-  const active     = useRef(false);
+  const isHover    = useRef(false);
 
+  /* ── RAF lerp loop ── */
   const startLoop = useCallback(() => {
     if (rafRef.current) return;
+    const EASE = 0.13;
     const loop = () => {
-      if (!active.current || !tipRef.current) { rafRef.current = null; return; }
-      currentPos.current.x += (targetPos.current.x - currentPos.current.x) * 0.12;
-      currentPos.current.y += (targetPos.current.y - currentPos.current.y) * 0.12;
-      tipRef.current.style.transform =
-        `translate3d(calc(${currentPos.current.x}px - 50%), calc(${currentPos.current.y}px - 50%), 0) scale(1)`;
+      const el = cursorRef.current;
+      if (!el) { rafRef.current = null; return; }
+      currentPos.current.x += (targetPos.current.x - currentPos.current.x) * EASE;
+      currentPos.current.y += (targetPos.current.y - currentPos.current.y) * EASE;
+      el.style.transform = `translate3d(${currentPos.current.x}px, ${currentPos.current.y}px, 0) scale(${isHover.current ? 1 : 0.4})`;
       rafRef.current = requestAnimationFrame(loop);
     };
     rafRef.current = requestAnimationFrame(loop);
@@ -94,25 +91,31 @@ function ShowcaseCard({ img }) {
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   }, []);
 
+  /* ── Mouse enter: snap to position instantly then start lerp ── */
   const onEnter = useCallback((e) => {
     const p = toLocal(e);
     currentPos.current = { ...p };
     targetPos.current  = { ...p };
-    active.current     = true;
-    const tip = tipRef.current;
-    if (tip) {
-      tip.style.transform =
-        `translate3d(calc(${p.x}px - 50%), calc(${p.y}px - 50%), 0) scale(1)`;
-      requestAnimationFrame(() => tip && tip.classList.add("tip-on"));
+    isHover.current    = true;
+    const el = cursorRef.current;
+    if (el) {
+      el.style.opacity   = "1";
+      el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0) scale(1)`;
     }
     startLoop();
   }, [toLocal, startLoop]);
 
-  const onMove  = useCallback((e) => { targetPos.current = toLocal(e); }, [toLocal]);
+  const onMove = useCallback((e) => {
+    targetPos.current = toLocal(e);
+  }, [toLocal]);
 
   const onLeave = useCallback(() => {
-    active.current = false;
-    tipRef.current?.classList.remove("tip-on");
+    isHover.current = false;
+    const el = cursorRef.current;
+    if (el) {
+      el.style.opacity   = "0";
+      el.style.transform = `translate3d(${currentPos.current.x}px, ${currentPos.current.y}px, 0) scale(0.4)`;
+    }
     if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
   }, []);
 
@@ -134,9 +137,24 @@ function ShowcaseCard({ img }) {
       onClick={onClick}
       rel="noopener noreferrer"
     >
-      <div ref={tipRef} className="sc2-tip">Discover Now</div>
+      {/* ── Circle cursor (mix-blend-mode: difference) ── */}
+      <div ref={cursorRef} className="sc2-cursor" aria-hidden="true">
+<span className="sc2-cursor-label">
+  Discover
+  <svg
+    width="11"
+    height="11"
+    viewBox="0 0 11 11"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ display: "inline-block", marginLeft: "5px", verticalAlign: "middle", marginTop: "-1px" }}
+  >
+    <line x1="1" y1="10" x2="10" y2="1" stroke="#000" strokeWidth="1.6" strokeLinecap="round"/>
+    <polyline points="4,1 10,1 10,7" fill="none" stroke="#000" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+</span>        
+      </div>
 
-      {/* ↓ Replaced plain <img> with lazy-loading wrapper */}
       <LazyImage src={img.src} alt={img.label} className="sc2-card-img" />
 
       <div className="sc2-card-overlay">
@@ -250,12 +268,6 @@ export default function SplitShowcase() {
                 <span className="sc2-btn-bg" />
                 <span className="sc2-btn-text">Explore More</span>
               </button>
-
-              <div className="sc2-counter">
-                <span className="sc2-counter-num">05+</span>
-                <span className="sc2-counter-divider" />
-                <span className="sc2-counter-label">Projects</span>
-              </div>
             </div>
           </div>
 
@@ -366,7 +378,7 @@ const CSS = `
     border-radius: 100px;
     cursor: pointer;
     background: transparent;
-    margin-bottom: 56px;
+    margin-bottom: 0;
     font-family: inherit;
     min-height: 44px;
     -webkit-tap-highlight-color: transparent;
@@ -397,27 +409,6 @@ const CSS = `
   }
 
   .sc2-btn:hover .sc2-btn-text { color: #0a0a0a; }
-
-  /* Counter */
-  .sc2-counter { display: flex; align-items: center; gap: 14px; }
-  .sc2-counter-num {
-    font-size: 36px;
-    font-weight: 700;
-    letter-spacing: -0.04em;
-    color: rgba(255,255,255,0.12);
-    line-height: 1;
-  }
-  .sc2-counter-divider {
-    display: block; width: 32px; height: 1px;
-    background: rgba(255,255,255,0.12);
-  }
-  .sc2-counter-label {
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.18);
-  }
 
   /* ── Right — pure clip box, NO overflow scrolling ── */
   .sc2-right {
@@ -492,31 +483,45 @@ const CSS = `
     color: rgba(255,255,255,0.70);
   }
 
-  /* ── Tooltip — transform-only positioning ── */
-  .sc2-tip {
+  /* ══════════════════════════════════════════
+     CIRCLE CURSOR — exact pj-cursor style
+  ══════════════════════════════════════════ */
+  .sc2-cursor {
     position: absolute;
-    top: 0; left: 0;
+    width: 96px;
+    height: 96px;
+    margin-left: -48px;
+    margin-top: -48px;
+    border-radius: 50%;
     pointer-events: none;
-    z-index: 20;
-    background: #f0ede8;
-    color: #0a0a0a;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    padding: 7px 16px;
-    border-radius: 100px;
-    white-space: nowrap;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.28);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    /* inverts any background it sits on */
+    mix-blend-mode: difference;
+    background: #ffffff;
+
     opacity: 0;
-    transform: translate3d(calc(0px - 50%), calc(0px - 50%), 0) scale(0.72);
-    transition: opacity 0.20s ease, scale 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
-    will-change: transform;
-    backface-visibility: hidden;
+    transform: translate3d(0px, 0px, 0) scale(0.4);
+    transition:
+      opacity  0.28s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+
+    will-change: transform, opacity;
   }
 
-  .sc2-tip.tip-on {
-    opacity: 1;
-    scale: 1;
+  .sc2-cursor-label {
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #000;
+    white-space: nowrap;
+    user-select: none;
+    pointer-events: none;
   }
 
 
@@ -576,15 +581,10 @@ const CSS = `
 
     .sc2-btn {
       padding: 14px 34px;
-      margin-bottom: 64px;
     }
 
     .sc2-btn-text {
       font-size: 13px;
-    }
-
-    .sc2-counter-num {
-      font-size: 42px;
     }
 
     .sc2-cards {
@@ -618,14 +618,6 @@ const CSS = `
       font-size: 12.5px;
       max-width: 240px;
       margin-bottom: 36px;
-    }
-
-    .sc2-btn {
-      margin-bottom: 44px;
-    }
-
-    .sc2-counter-num {
-      font-size: 30px;
     }
 
     .sc2-cards {
@@ -682,12 +674,7 @@ const CSS = `
 
     .sc2-btn {
       padding: 13px 32px;
-      margin-bottom: 48px;
       min-height: 48px;
-    }
-
-    .sc2-counter-num {
-      font-size: 38px;
     }
 
     .sc2-right {
@@ -708,7 +695,7 @@ const CSS = `
       cursor: pointer;
     }
 
-    .sc2-tip {
+    .sc2-cursor {
       display: none;
     }
   }
@@ -762,24 +749,11 @@ const CSS = `
 
     .sc2-btn {
       padding: 13px 28px;
-      margin-bottom: 40px;
       min-height: 48px;
     }
 
     .sc2-btn-text {
       font-size: 11px;
-    }
-
-    .sc2-counter {
-      gap: 12px;
-    }
-
-    .sc2-counter-num {
-      font-size: 30px;
-    }
-
-    .sc2-counter-divider {
-      width: 24px;
     }
 
     .sc2-right {
@@ -810,7 +784,7 @@ const CSS = `
       letter-spacing: 0.08em;
     }
 
-    .sc2-tip {
+    .sc2-cursor {
       display: none;
     }
   }
@@ -835,11 +809,6 @@ const CSS = `
 
     .sc2-btn {
       padding: 12px 24px;
-      margin-bottom: 36px;
-    }
-
-    .sc2-counter-num {
-      font-size: 26px;
     }
 
     .sc2-cards {
@@ -871,11 +840,6 @@ const CSS = `
 
     .sc2-btn {
       padding: 11px 20px;
-      margin-bottom: 32px;
-    }
-
-    .sc2-counter-num {
-      font-size: 24px;
     }
 
     .sc2-cards {
@@ -981,7 +945,7 @@ const CSS = `
       transition: color 0.22s ease;
     }
 
-    .sc2-tip {
+    .sc2-cursor {
       display: none !important;
     }
   }

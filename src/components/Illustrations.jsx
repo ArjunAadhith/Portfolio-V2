@@ -8,13 +8,16 @@ const ROW_1 = [
   { id: 5, src: "/illustration/i5.png", alt: "Illustration 5" },
 ];
 const ROW_2 = [
-  { id: 6, src: "/illustration/i6.png", alt: "Illustration 6" },
-  { id: 7, src: "/illustration/i7.jpg", alt: "Illustration 7" },
-  { id: 8, src: "/illustration/i8.png", alt: "Illustration 8" },
-  { id: 9, src: "/illustration/i9.png", alt: "Illustration 9" },
+  { id: 6,  src: "/illustration/i6.png",  alt: "Illustration 6"  },
+  { id: 7,  src: "/illustration/i7.jpg",  alt: "Illustration 7"  },
+  { id: 8,  src: "/illustration/i8.png",  alt: "Illustration 8"  },
+  { id: 9,  src: "/illustration/i9.png",  alt: "Illustration 9"  },
   { id: 10, src: "/illustration/i10.png", alt: "Illustration 10" },
-  { id: 11, src: "/illustration/i11.png", alt: "Illustration 11" }
+  { id: 11, src: "/illustration/i11.png", alt: "Illustration 11" },
 ];
+
+/* ─── Lerp helper (exact copy from Projects) ──────────────────────── */
+const lerp = (a, b, t) => a + (b - a) * t;
 
 // ── Lazy Image Hook ───────────────────────────────────────────────────────────
 function useLazyImage(src) {
@@ -25,17 +28,12 @@ function useLazyImage(src) {
   useEffect(() => {
     const el = wrapperRef.current;
     if (!el) return;
-
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setLazySrc(src);
-          observer.disconnect();
-        }
+        if (entry.isIntersecting) { setLazySrc(src); observer.disconnect(); }
       },
       { rootMargin: "200px 200px 200px 200px", threshold: 0 }
     );
-
     observer.observe(el);
     return () => observer.disconnect();
   }, [src]);
@@ -46,12 +44,8 @@ function useLazyImage(src) {
 // ── LazyImage component ───────────────────────────────────────────────────────
 function LazyImage({ src, alt }) {
   const { wrapperRef, lazySrc, loaded, setLoaded } = useLazyImage(src);
-
   return (
-    <div
-      ref={wrapperRef}
-      className={`il-lazy-wrap${loaded ? " il-lazy-wrap--loaded" : ""}`}
-    >
+    <div ref={wrapperRef} className={`il-lazy-wrap${loaded ? " il-lazy-wrap--loaded" : ""}`}>
       <img
         src={lazySrc}
         loading="lazy"
@@ -67,11 +61,11 @@ function LazyImage({ src, alt }) {
 
 // ── Scroll Row with indicators ────────────────────────────────────────────────
 function ScrollRow({ items }) {
-  const rowRef                        = useRef(null);
-  const rafRef                        = useRef(null);
-  const [hovered,       setHovered  ] = useState(false);
-  const [canScrollLeft, setCanLeft  ] = useState(false);
-  const [canScrollRight,setCanRight ] = useState(true);
+  const rowRef                          = useRef(null);
+  const rafRef                          = useRef(null);
+  const [hovered,        setHovered   ] = useState(false);
+  const [canScrollLeft,  setCanLeft   ] = useState(false);
+  const [canScrollRight, setCanRight  ] = useState(true);
 
   const syncScroll = useCallback(() => {
     const el = rowRef.current;
@@ -85,12 +79,10 @@ function ScrollRow({ items }) {
     const el = rowRef.current;
     if (!el) return;
     syncScroll();
-
     const onScroll = () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(syncScroll);
     };
-
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       el.removeEventListener("scroll", onScroll);
@@ -101,8 +93,7 @@ function ScrollRow({ items }) {
   const nudge = useCallback((dir) => {
     const el = rowRef.current;
     if (!el) return;
-    const amount = Math.round(el.clientWidth * 0.72);
-    el.scrollBy({ left: dir * amount, behavior: "smooth" });
+    el.scrollBy({ left: dir * Math.round(el.clientWidth * 0.72), behavior: "smooth" });
   }, []);
 
   return (
@@ -119,7 +110,6 @@ function ScrollRow({ items }) {
         ))}
       </div>
 
-      {/* Left indicator */}
       <button
         className={`il-scroll-btn il-scroll-btn--left${hovered && canScrollLeft ? " il-scroll-btn--visible" : ""}`}
         onClick={() => nudge(-1)}
@@ -131,7 +121,6 @@ function ScrollRow({ items }) {
         </svg>
       </button>
 
-      {/* Right indicator */}
       <button
         className={`il-scroll-btn il-scroll-btn--right${hovered && canScrollRight ? " il-scroll-btn--visible" : ""}`}
         onClick={() => nudge(1)}
@@ -148,18 +137,71 @@ function ScrollRow({ items }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function Illustrations() {
-  const [tip, setTip] = useState({ visible: false, x: 0, y: 0 });
-  const sectionRef    = useRef(null);
+  const sectionRef  = useRef(null);
+  const cursorRef   = useRef(null);
 
+  /* ── RAF lerp state (exact mirror of Projects' StickyCard) ── */
+  const rafId   = useRef(null);
+  const current = useRef({ x: 0, y: 0 });   // smoothed position
+  const target  = useRef({ x: 0, y: 0 });   // raw mouse position
+  const isHover = useRef(false);
+
+  /* RAF tick — lerps current → target every frame */
+  const tick = useCallback(() => {
+    const el = cursorRef.current;
+    if (!el) return;
+    const EASE = 0.13;
+    current.current.x = lerp(current.current.x, target.current.x, EASE);
+    current.current.y = lerp(current.current.y, target.current.y, EASE);
+    el.style.transform = `translate3d(${current.current.x}px, ${current.current.y}px, 0) scale(${isHover.current ? 1 : 0.4})`;
+    rafId.current = requestAnimationFrame(tick);
+  }, []);
+
+  const startRAF = useCallback(() => {
+    if (!rafId.current) rafId.current = requestAnimationFrame(tick);
+  }, [tick]);
+
+  const stopRAF = useCallback(() => {
+    if (rafId.current) { cancelAnimationFrame(rafId.current); rafId.current = null; }
+  }, []);
+
+  useEffect(() => () => stopRAF(), [stopRAF]);
+
+  /* ── Mouse enter on section ── */
+  const handleMouseEnter = useCallback((e) => {
+    const rect = sectionRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    /* Snap on entry to avoid slide-from-corner */
+    current.current = { x, y };
+    target.current  = { x, y };
+    isHover.current = true;
+    const el = cursorRef.current;
+    if (el) {
+      el.style.opacity   = "1";
+      el.style.transform = `translate3d(${x}px, ${y}px, 0) scale(1)`;
+    }
+    startRAF();
+  }, [startRAF]);
+
+  /* ── Mouse move on section ── */
   const handleMouseMove = useCallback((e) => {
     const rect = sectionRef.current?.getBoundingClientRect();
     if (!rect) return;
-    setTip({ visible: true, x: e.clientX - rect.left, y: e.clientY - rect.top });
+    target.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }, []);
 
+  /* ── Mouse leave on section ── */
   const handleMouseLeave = useCallback(() => {
-    setTip((t) => ({ ...t, visible: false }));
-  }, []);
+    isHover.current = false;
+    const el = cursorRef.current;
+    if (el) {
+      el.style.opacity   = "0";
+      el.style.transform = `translate3d(${current.current.x}px, ${current.current.y}px, 0) scale(0.4)`;
+    }
+    stopRAF();
+  }, [stopRAF]);
 
   return (
     <>
@@ -167,16 +209,13 @@ export default function Illustrations() {
       <section
         className="il-section"
         ref={sectionRef}
+        onMouseEnter={handleMouseEnter}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
-        {/* Cursor-following tooltip */}
-        <div
-          className={`il-tip${tip.visible ? " il-tip--visible" : ""}`}
-          style={{ left: tip.x, top: tip.y }}
-          aria-hidden="true"
-        >
-          My Illustrations
+        {/* ── RAF-lerped cursor circle (exact Projects style) ── */}
+        <div ref={cursorRef} className="il-cursor" aria-hidden="true">
+          <span className="il-cursor-label">Artworks</span>
         </div>
 
         <h2 className="il-title">Illustrations</h2>
@@ -191,6 +230,49 @@ export default function Illustrations() {
 }
 
 const CSS = `
+  /* ══════════════════════════════════════════
+     CURSOR CIRCLE  —  exact Projects style
+  ══════════════════════════════════════════ */
+
+  .il-cursor {
+    position: absolute;
+    width: 108px;
+    height: 108px;
+    margin-left: -64px;
+    margin-top: -64px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    /* Identical to .pj-cursor */
+    mix-blend-mode: difference;
+    background: #ffffff;
+
+    opacity: 0;
+    transform: translate3d(0px, 0px, 0) scale(0.4);
+    transition:
+      opacity   0.28s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform, opacity;
+  }
+
+  .il-cursor-label {
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #000;              /* black on white circle inverts to white on dark bg */
+    white-space: nowrap;
+    user-select: none;
+    pointer-events: none;
+    text-align: center;
+  }
+
+
   /* ══════════════════════════════════════════
      DESKTOP BASE (1280px)
   ══════════════════════════════════════════ */
@@ -220,7 +302,6 @@ const CSS = `
     line-height: 1;
   }
 
-  /* ── Rows container ── */
   .il-rows {
     flex: 1;
     min-height: 0;
@@ -230,7 +311,6 @@ const CSS = `
     overflow: hidden;
   }
 
-  /* ── NEW: Outer wrapper per row ── */
   .il-row-outer {
     flex: 1;
     min-height: 0;
@@ -254,9 +334,7 @@ const CSS = `
     will-change: scroll-position;
   }
 
-  .il-row::-webkit-scrollbar {
-    display: none;
-  }
+  .il-row::-webkit-scrollbar { display: none; }
 
   .il-card {
     flex-shrink: 0;
@@ -276,7 +354,6 @@ const CSS = `
     overflow: hidden;
   }
 
-  /* Shimmer sweep while image is loading */
   .il-lazy-wrap::after {
     content: '';
     position: absolute;
@@ -284,16 +361,14 @@ const CSS = `
     background: linear-gradient(
       90deg,
       transparent 0%,
-      rgba(255, 255, 255, 0.45) 50%,
+      rgba(255,255,255,.45) 50%,
       transparent 100%
     );
     background-size: 200% 100%;
     animation: il-shimmer 1.6s infinite linear;
   }
 
-  .il-lazy-wrap--loaded::after {
-    display: none;
-  }
+  .il-lazy-wrap--loaded::after { display: none; }
 
   @keyframes il-shimmer {
     0%   { background-position: -200% 0; }
@@ -314,46 +389,11 @@ const CSS = `
       transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
-  .il-img--visible {
-    opacity: 1;
-  }
+  .il-img--visible { opacity: 1; }
 
-  .il-card:hover .il-img {
-    transform: scale(1.04);
-  }
+  .il-card:hover .il-img { transform: scale(1.04); }
 
-  /* ── Cursor-following tooltip ── */
-  .il-tip {
-    position: absolute;
-    pointer-events: none;
-    z-index: 50;
-    transform: translate(-50%, -50%);
-    background: rgba(10, 10, 10, 0.84);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
-    color: #fff;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    padding: 8px 20px;
-    border-radius: 100px;
-    white-space: nowrap;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
-    opacity: 0;
-    scale: 0.76;
-    transition:
-      opacity 0.18s ease,
-      scale 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
-    will-change: left, top;
-  }
-
-  .il-tip--visible {
-    opacity: 1;
-    scale: 1;
-  }
-
-  /* ── NEW: Scroll indicator buttons ── */
+  /* ── Scroll indicator buttons ── */
   .il-scroll-btn {
     position: absolute;
     top: 50%;
@@ -365,12 +405,12 @@ const CSS = `
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    background: rgba(12, 12, 12, 0.76);
+    background: rgba(12,12,12,.76);
     -webkit-backdrop-filter: blur(16px);
     backdrop-filter: blur(16px);
     color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.13);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(255,255,255,.13);
+    box-shadow: 0 4px 20px rgba(0,0,0,.28);
     cursor: pointer;
     padding: 0;
     opacity: 0;
@@ -382,18 +422,10 @@ const CSS = `
       background 0.15s ease;
   }
 
-  .il-scroll-btn:hover {
-    background: rgba(12, 12, 12, 0.92);
-  }
-
+  .il-scroll-btn:hover { background: rgba(12,12,12,.92); }
   .il-scroll-btn--left  { left: 12px; }
   .il-scroll-btn--right { right: 12px; }
-
-  .il-scroll-btn--visible {
-    opacity: 1;
-    scale: 1;
-    pointer-events: auto;
-  }
+  .il-scroll-btn--visible { opacity: 1; scale: 1; pointer-events: auto; }
 
 
   /* ══════════════════════════════════════════
@@ -406,22 +438,16 @@ const CSS = `
     .il-row     { gap: 16px; }
   }
 
-
   /* ══════════════════════════════════════════
      ULTRA-WIDE (1920px+)
   ══════════════════════════════════════════ */
   @media (min-width: 1920px) {
-    .il-section {
-      max-width: 1920px;
-      margin: 0 auto;
-      padding: 64px 120px;
-    }
-    .il-title { font-size: clamp(30px, 2.4vw, 48px); margin-bottom: 32px; }
-    .il-rows  { gap: 20px; }
-    .il-row   { gap: 20px; }
-    .il-card  { border-radius: 4px; }
+    .il-section { max-width: 1920px; margin: 0 auto; padding: 64px 120px; }
+    .il-title   { font-size: clamp(30px, 2.4vw, 48px); margin-bottom: 32px; }
+    .il-rows    { gap: 20px; }
+    .il-row     { gap: 20px; }
+    .il-card    { border-radius: 4px; }
   }
-
 
   /* ══════════════════════════════════════════
      TABLET LANDSCAPE (1024px – 1279px)
@@ -433,158 +459,60 @@ const CSS = `
     .il-row     { gap: 12px; }
   }
 
-
   /* ══════════════════════════════════════════
      TABLET PORTRAIT (768px – 1023px)
-     — 2-col grid, vertical layout
   ══════════════════════════════════════════ */
   @media (min-width: 768px) and (max-width: 1023px) {
     .il-section {
-      height: auto;
-      min-height: unset;
+      height: auto; min-height: unset;
       padding: 48px 40px 56px;
-      overflow: visible;
-      cursor: auto;
+      overflow: visible; cursor: auto;
     }
-    .il-tip { display: none; }
-
-    .il-title {
-      font-size: clamp(26px, 4.5vw, 36px);
-      margin-bottom: 24px;
-      padding-left: 4px;
-    }
-
-    .il-rows {
-      flex: unset;
-      overflow: visible;
-      gap: 14px;
-    }
-
-    .il-row-outer {
-      flex: unset;
-      min-height: unset;
-    }
-
+    .il-cursor  { display: none; }
+    .il-title   { font-size: clamp(26px, 4.5vw, 36px); margin-bottom: 24px; padding-left: 4px; }
+    .il-rows    { flex: unset; overflow: visible; gap: 14px; }
+    .il-row-outer { flex: unset; min-height: unset; }
     .il-scroll-btn { display: none; }
-
     .il-row {
-      flex: unset;
-      height: auto;
-      min-height: unset;
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 14px;
-      align-items: stretch;
-      justify-content: unset;
-      overflow-x: unset;
-      overflow-y: unset;
-      scrollbar-width: unset;
-      -ms-overflow-style: unset;
+      flex: unset; height: auto; min-height: unset;
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 14px; align-items: stretch; justify-content: unset;
+      overflow-x: unset; overflow-y: unset;
+      scrollbar-width: unset; -ms-overflow-style: unset;
     }
-
-    .il-card {
-      height: auto;
-      border-radius: 14px;
-      width: 100%;
-    }
-
-    /* ── FIX: last odd card spans full width ── */
-    .il-row > .il-card:last-child:nth-child(odd) {
-      grid-column: 1 / -1;
-    }
-
-    .il-lazy-wrap {
-      height: auto;
-      width: 100%;
-      min-width: unset;
-      aspect-ratio: 4 / 3;
-    }
-
-    .il-img {
-      height: 100%;
-      width: 100%;
-      object-fit: cover;
-    }
+    .il-card    { height: auto; border-radius: 14px; width: 100%; }
+    .il-row > .il-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+    .il-lazy-wrap { height: auto; width: 100%; min-width: unset; aspect-ratio: 4 / 3; }
+    .il-img     { height: 100%; width: 100%; object-fit: cover; }
   }
-
 
   /* ══════════════════════════════════════════
      MOBILE — ALL DEVICES (≤ 767px)
-     — 2-col grid, vertical layout
   ══════════════════════════════════════════ */
   @media (max-width: 767px) {
     .il-section {
-      height: auto;
-      min-height: unset;
+      height: auto; min-height: unset;
       padding: 44px 20px 52px;
-      overflow: visible;
-      cursor: auto;
+      overflow: visible; cursor: auto;
     }
-    .il-tip { display: none; }
-
-    .il-title {
-      font-size: clamp(22px, 6.5vw, 30px);
-      margin-bottom: 18px;
-      padding-left: 4px;
-    }
-
-    .il-rows {
-      flex: unset;
-      overflow: visible;
-      gap: 10px;
-    }
-
-    .il-row-outer {
-      flex: unset;
-      min-height: unset;
-    }
-
+    .il-cursor  { display: none; }
+    .il-title   { font-size: clamp(22px, 6.5vw, 30px); margin-bottom: 18px; padding-left: 4px; }
+    .il-rows    { flex: unset; overflow: visible; gap: 10px; }
+    .il-row-outer { flex: unset; min-height: unset; }
     .il-scroll-btn { display: none; }
-
     .il-row {
-      flex: unset;
-      height: auto;
-      min-height: unset;
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      align-items: stretch;
-      justify-content: unset;
-      overflow-x: unset;
-      overflow-y: unset;
-      scrollbar-width: unset;
-      -ms-overflow-style: unset;
+      flex: unset; height: auto; min-height: unset;
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 10px; align-items: stretch; justify-content: unset;
+      overflow-x: unset; overflow-y: unset;
+      scrollbar-width: unset; -ms-overflow-style: unset;
     }
-
-    .il-card {
-      height: auto;
-      border-radius: 12px;
-      width: 100%;
-    }
-
-    /* ── FIX: last odd card spans full width ── */
-    .il-row > .il-card:last-child:nth-child(odd) {
-      grid-column: 1 / -1;
-    }
-
-    .il-lazy-wrap {
-      height: auto;
-      width: 100%;
-      min-width: unset;
-      aspect-ratio: 4 / 3;
-    }
-
-    .il-img {
-      height: 100%;
-      width: 100%;
-      object-fit: cover;
-    }
-
-    .il-card:hover .il-img {
-      transform: none;
-    }
+    .il-card    { height: auto; border-radius: 12px; width: 100%; }
+    .il-row > .il-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+    .il-lazy-wrap { height: auto; width: 100%; min-width: unset; aspect-ratio: 4 / 3; }
+    .il-img     { height: 100%; width: 100%; object-fit: cover; }
+    .il-card:hover .il-img { transform: none; }
   }
-
 
   /* ══════════════════════════════════════════
      SMALL MOBILE (≤ 375px)
@@ -598,7 +526,6 @@ const CSS = `
     .il-lazy-wrap, .il-img { aspect-ratio: 1 / 1; }
   }
 
-
   /* ══════════════════════════════════════════
      TINY SCREENS (≤ 320px)
   ══════════════════════════════════════════ */
@@ -611,7 +538,6 @@ const CSS = `
     .il-lazy-wrap, .il-img { aspect-ratio: 1 / 1; }
   }
 
-
   /* ══════════════════════════════════════════
      LARGE MOBILE (428px – 767px)
   ══════════════════════════════════════════ */
@@ -621,15 +547,9 @@ const CSS = `
     .il-rows    { gap: 12px; }
     .il-row     { gap: 12px; }
     .il-card    { border-radius: 14px; }
-
-    /* ── FIX: last odd card spans full width ── */
-    .il-row > .il-card:last-child:nth-child(odd) {
-      grid-column: 1 / -1;
-    }
-
+    .il-row > .il-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
     .il-lazy-wrap, .il-img { aspect-ratio: 4 / 3; }
   }
-
 
   /* ══════════════════════════════════════════
      iOS SAFE AREA
@@ -658,36 +578,21 @@ const CSS = `
     }
   }
 
-
   /* ══════════════════════════════════════════
      TOUCH DEVICES
   ══════════════════════════════════════════ */
   @media (hover: none) and (pointer: coarse) {
-    .il-card:hover .il-img {
-      transform: none;
-    }
-    .il-card:active .il-img {
-      transform: scale(1.02);
-      transition: transform 0.18s ease;
-    }
-    .il-tip {
-      display: none !important;
-    }
-    .il-scroll-btn {
-      display: none !important;
-    }
+    .il-card:hover .il-img  { transform: none; }
+    .il-card:active .il-img { transform: scale(1.02); transition: transform 0.18s ease; }
+    .il-cursor              { display: none !important; }
+    .il-scroll-btn          { display: none !important; }
   }
-
 
   /* ══════════════════════════════════════════
      REDUCED MOTION
   ══════════════════════════════════════════ */
   @media (prefers-reduced-motion: reduce) {
-    .il-img {
-      transition: opacity 0.1s ease;
-    }
-    .il-lazy-wrap::after {
-      animation: none;
-    }
+    .il-img { transition: opacity 0.1s ease; }
+    .il-lazy-wrap::after { animation: none; }
   }
 `;
