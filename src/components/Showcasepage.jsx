@@ -98,7 +98,7 @@ const ALL_PROJECTS = [
   },
   {
     id: 12,
-    src: "/multidisciplinary/DDDAS App.png",
+    src: "/multidisciplinary/DDDAS App.gif",
     title: "Duplicate Finder Pro App",
     category: "Others",
     label: "App Development",

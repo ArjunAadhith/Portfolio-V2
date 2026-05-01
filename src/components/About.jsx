@@ -561,21 +561,30 @@ export default function About() {
 
         /* ═══════════════════════════════════════════
            MOBILE: ≤ 767px
+           KEY FIX: use min-height with a fixed fallback
+           instead of 100dvh which causes layout jumps
+           when the browser chrome shows/hides.
+           svh = smallest stable viewport (no jump).
         ═══════════════════════════════════════════ */
         @media (max-width: 767px) {
           .about-section {
             align-items: flex-start;
-            padding-top: env(safe-area-inset-top, 0px);
-            padding-bottom: env(safe-area-inset-bottom, 0px);
+            /* No min-height here — let content define height */
           }
           .about-inner {
             flex-direction: column-reverse;
             padding: 64px 6% 60px;
             gap: 36px;
-            min-height: 100dvh;
+            /* ✅ FIX: Remove 100dvh — use auto height so the section
+               doesn't resize when mobile browser chrome appears/hides */
+            min-height: auto;
+            height: auto;
             align-items: flex-start;
-            justify-content: center;
+            justify-content: flex-start;
             width: 100%;
+            /* Add comfortable vertical padding instead of stretching to fill */
+            padding-top: 72px;
+            padding-bottom: 72px;
           }
           .about-left {
             width: 100%;
@@ -713,8 +722,9 @@ export default function About() {
         @media (max-width: 480px) {
           .about-inner {
             padding: 56px 5.5% 52px;
-            padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
-            gap: 32px;
+            /* ✅ FIX: no dvh — stays stable */
+            min-height: auto;
+            height: auto;
           }
           .about-img-outer { width: min(68vw, 240px); max-width: 240px; }
           .about-heading { font-size: clamp(27px, 7.5vw, 38px); margin-bottom: 18px; }
@@ -778,7 +788,9 @@ export default function About() {
             flex-direction: row;
             padding: 28px 5%;
             gap: 28px;
-            min-height: 100dvh;
+            /* ✅ FIX: no dvh */
+            min-height: auto;
+            height: auto;
             align-items: center;
             justify-content: space-between;
           }
