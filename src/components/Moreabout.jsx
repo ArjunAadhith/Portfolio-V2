@@ -275,31 +275,28 @@ const CompanyLogo = memo(function CompanyLogo({ src, fallback, logoBg }) {
 });
 
 /* ─── ExperienceRow ───────────────────────────────────────────────────────────
-   Desktop  → hover to expand (original behaviour)
-   Mobile   → tap to toggle expand / collapse
+   Click/tap always toggles the detail panel (works on both mobile & desktop).
+   On desktop, mouse-hover also opens it (via CSS :hover on the card).
+   No device-detection needed — this approach is universally reliable.
    ─────────────────────────────────────────────────────────────────────────── */
 const ExperienceRow = memo(function ExperienceRow({ job, i }) {
-  const [isTouch, setIsTouch] = useState(false);
-  const [hovered, setHovered] = useState(false);   // desktop hover
-  const [expanded, setExpanded] = useState(false); // mobile tap toggle
+  const [expanded, setExpanded] = useState(false);
 
-  // Detect touch device once on mount
-  useEffect(() => {
-    setIsTouch(window.matchMedia("(pointer: coarse)").matches);
+  // Click/tap always toggles — no touch-detection, no guard conditions
+  const handleClick = useCallback(() => {
+    setExpanded((prev) => !prev);
   }, []);
 
-  // The detail panel is visible when hovered (desktop) OR expanded (mobile)
-  const isOpen = isTouch ? expanded : hovered;
-
-  const handleClick = useCallback(() => {
-    if (isTouch) setExpanded((prev) => !prev);
-  }, [isTouch]);
+  // Framer Motion hover only fires on real pointer devices (not touch)
+  // so hovered stays false on mobile — expanded drives everything there
+  const [hovered, setHovered] = useState(false);
+  const isOpen = hovered || expanded;
 
   return (
     <motion.div
-      className={`exp-row ${isOpen ? "exp-row--hovered" : ""} ${isTouch ? "exp-row--touch" : ""}`}
-      onHoverStart={() => { if (!isTouch) setHovered(true); }}
-      onHoverEnd={() => { if (!isTouch) setHovered(false); }}
+      className={`exp-row ${isOpen ? "exp-row--hovered" : ""} exp-row--clickable`}
+      onHoverStart={() => setHovered(true)}
+      onHoverEnd={() => setHovered(false)}
       onClick={handleClick}
       initial={{ opacity: 0, y: 28 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -313,9 +310,12 @@ const ExperienceRow = memo(function ExperienceRow({ job, i }) {
           <span className="exp-row-company">
             {job.company}<span className="exp-row-dot"> · </span>{job.type}
           </span>
+          {/* shown only on mobile, below company name */}
+          <span className="exp-row-date exp-row-date--mobile">{job.periodFull}</span>
         </div>
         <div className="exp-row-right">
-          <span className="exp-row-date">{job.periodFull}</span>
+          {/* hidden on mobile, shown on desktop */}
+          <span className="exp-row-date exp-row-date--desktop">{job.periodFull}</span>
           <motion.span
             className="exp-row-chevron"
             animate={{ rotate: isOpen ? 180 : 0 }}
@@ -761,8 +761,8 @@ const CSS = `
     border-radius: 18px; overflow: hidden; cursor: default;
     transition: border-color 0.3s ease, background 0.3s ease;
   }
-  /* Touch devices get a pointer cursor to hint tappability */
-  .exp-row--touch { cursor: pointer; }
+  /* Always pointer so tapping feels intentional on mobile */
+  .exp-row--clickable { cursor: pointer; }
   .exp-row--hovered { background: rgba(255,255,255,0.055); border-color: rgba(255,255,255,0.15); }
 
   .exp-row-main { display: flex; align-items: center; gap: 18px; padding: 20px 24px; }
@@ -794,6 +794,8 @@ const CSS = `
 
   .exp-row-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; margin-left: auto; }
   .exp-row-date { font-size: 13px; color: rgba(255,255,255,0.28); font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: 0.01em; }
+  .exp-row-date--mobile { display: none; }   /* hidden on desktop */
+  .exp-row-date--desktop { display: inline; } /* visible on desktop */
   .exp-row-chevron {
     width: 28px; height: 28px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
@@ -882,7 +884,8 @@ const CSS = `
     .exp-list-wrapper { padding: 0 20px 72px; }
     .exp-list         { gap: 10px; }
     .exp-row-main     { padding: 16px 18px; gap: 12px; }
-    .exp-row-date     { display: none; }
+    .exp-row-date--mobile { display: block; }   /* visible below company on mobile */
+    .exp-row-date--desktop { display: none; }    /* hidden on mobile */
     .exp-logo-wrap    { width: 44px; height: 44px; border-radius: 11px; }
     .exp-row-role     { font-size: 15px; }
     .exp-row-detail   { padding: 0 18px 18px calc(18px + 44px + 12px); }
