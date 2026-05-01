@@ -84,14 +84,6 @@ export const ParallaxSection = memo(function ParallaxSection({
   );
 });
 
-/* ─── ParallaxImage ──────────────────────────────────────────────────────────
-   Image renders at its ACTUAL / NATURAL size (width: 100%, height: auto).
-   The parallax spring is applied directly to the <img> element as a CSS
-   transform — no position:absolute, no fixed heights, no collapsed containers.
-
-   overflow:hidden on the outer div clips the small up/down travel.
-   The animation (spring, useScroll, useTransform) is completely unchanged.
-   ─────────────────────────────────────────────────────────────────────────── */
 export const ParallaxImage = memo(function ParallaxImage({
   scroller,
   src,
@@ -109,7 +101,6 @@ export const ParallaxImage = memo(function ParallaxImage({
   const smoothY = useSpring(rawY, { stiffness: 70, damping: 18, mass: 0.6 });
 
   return (
-    /* overflow:hidden clips the parallax travel; image itself defines the height */
     <div
       ref={ref}
       className={className}
@@ -122,7 +113,6 @@ export const ParallaxImage = memo(function ParallaxImage({
           y: smoothY,
           display: "block",
           width: "100%",
-          /* height:auto → image shows at its intrinsic/natural proportions */
           height: "auto",
           willChange: "transform",
         }}
@@ -196,10 +186,6 @@ const MAAbout = memo(function MAAbout({ scroller }) {
           </p>
         </RevealText>
 
-        {/*
-          .ma-img-card: just overflow:hidden + border-radius.
-          No fixed height, no aspect-ratio — the image itself defines the size.
-        */}
         <RevealText delay={0.1}>
           <div className="ma-img-card">
             <ParallaxImage scroller={scroller} src="/About pic.png" alt="Arjun Aadhith" />
@@ -288,13 +274,33 @@ const CompanyLogo = memo(function CompanyLogo({ src, fallback, logoBg }) {
   );
 });
 
+/* ─── ExperienceRow ───────────────────────────────────────────────────────────
+   Desktop  → hover to expand (original behaviour)
+   Mobile   → tap to toggle expand / collapse
+   ─────────────────────────────────────────────────────────────────────────── */
 const ExperienceRow = memo(function ExperienceRow({ job, i }) {
-  const [hovered, setHovered] = useState(false);
+  const [isTouch, setIsTouch] = useState(false);
+  const [hovered, setHovered] = useState(false);   // desktop hover
+  const [expanded, setExpanded] = useState(false); // mobile tap toggle
+
+  // Detect touch device once on mount
+  useEffect(() => {
+    setIsTouch(window.matchMedia("(pointer: coarse)").matches);
+  }, []);
+
+  // The detail panel is visible when hovered (desktop) OR expanded (mobile)
+  const isOpen = isTouch ? expanded : hovered;
+
+  const handleClick = useCallback(() => {
+    if (isTouch) setExpanded((prev) => !prev);
+  }, [isTouch]);
+
   return (
     <motion.div
-      className={`exp-row ${hovered ? "exp-row--hovered" : ""}`}
-      onHoverStart={() => setHovered(true)}
-      onHoverEnd={() => setHovered(false)}
+      className={`exp-row ${isOpen ? "exp-row--hovered" : ""} ${isTouch ? "exp-row--touch" : ""}`}
+      onHoverStart={() => { if (!isTouch) setHovered(true); }}
+      onHoverEnd={() => { if (!isTouch) setHovered(false); }}
+      onClick={handleClick}
       initial={{ opacity: 0, y: 28 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: false, margin: "-6% 0px -6% 0px" }}
@@ -312,7 +318,7 @@ const ExperienceRow = memo(function ExperienceRow({ job, i }) {
           <span className="exp-row-date">{job.periodFull}</span>
           <motion.span
             className="exp-row-chevron"
-            animate={{ rotate: hovered ? 180 : 0 }}
+            animate={{ rotate: isOpen ? 180 : 0 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -323,7 +329,7 @@ const ExperienceRow = memo(function ExperienceRow({ job, i }) {
       </div>
 
       <AnimatePresence>
-        {hovered && (
+        {isOpen && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -353,15 +359,10 @@ const MAExperience = memo(function MAExperience({ scroller }) {
       </div>
 
       <div className="exp-list-wrapper">
+        {/* ── Hint text removed ── */}
         <div className="exp-list">
           {JOBS.map((job, i) => <ExperienceRow key={job.index} job={job} i={i} />)}
         </div>
-        <RevealText delay={0.2}>
-          <p className="exp-hover-hint">
-            <span className="exp-hint-dot" />
-            Hover each card to reveal the full story
-          </p>
-        </RevealText>
       </div>
 
       <ParallaxSection scroller={scroller} bgColor="#080808" height="130px" overlay={0} className="ma-exp-strip">
@@ -703,18 +704,11 @@ const CSS = `
     font-size: clamp(17px, 2vw, 22px); line-height: 1.82;
     color: rgba(255,255,255,0.58); margin: 0; font-weight: 400; letter-spacing: -0.01em;
   }
-
-  /*
-    Image card — NO fixed height, NO aspect-ratio.
-    The <img height:auto> inside defines the card's height naturally.
-    overflow:hidden clips the small parallax travel at top/bottom.
-  */
   .ma-img-card {
     width: 100%;
     border-radius: 20px;
     overflow: hidden;
   }
-
   .ma-about-band { border-top: 1px solid rgba(255,255,255,0.05); }
   .ma-band-quote {
     font-size: clamp(18px, 2.8vw, 30px); font-weight: 600;
@@ -735,8 +729,6 @@ const CSS = `
     position: relative;
     overflow: hidden;
   }
-
-  /* Cursive subtitle — pure vw so it scales without ever hitting a hard minimum */
   .exp-header-script {
     font-family: 'Great Vibes', cursive;
     font-size: clamp(18px, 4.5vw, 58px);
@@ -746,21 +738,6 @@ const CSS = `
     line-height: 1.25;
     letter-spacing: 0.02em;
   }
-
-  /*
-    EXPERIENCE heading — desktop comfortable, mobile never overflows.
-
-    Key insight: "EXPERIENCE" is 10 characters. At any viewport W:
-      rendered px  ≈  font-size × 0.62 × 10  (rough average for this typeface + tracking)
-      required px  =  font-size × 6.2
-
-    With letter-spacing: -0.04em the multiplier is closer to 5.8.
-    So: safe font-size  =  (W - padding) / 5.8
-
-    At 375px phone with 32px total padding:  (375-32)/5.8 = 59px  → use 11vw ≈ 41px ✓
-    At 768px tablet:                         11vw ≈ 84px ✓
-    At 1200px desktop:                       11vw ≈ 132px → cap at 120px ✓
-  */
   .exp-header-big {
     font-size: clamp(32px, 11vw, 120px);
     font-weight: 900;
@@ -775,7 +752,7 @@ const CSS = `
 
   /* List */
   .exp-list-wrapper { max-width: 1100px; margin: 0 auto; padding: 0 48px 100px; }
-  .exp-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 36px; }
+  .exp-list { display: flex; flex-direction: column; gap: 12px; }
 
   /* Row card */
   .exp-row {
@@ -784,6 +761,8 @@ const CSS = `
     border-radius: 18px; overflow: hidden; cursor: default;
     transition: border-color 0.3s ease, background 0.3s ease;
   }
+  /* Touch devices get a pointer cursor to hint tappability */
+  .exp-row--touch { cursor: pointer; }
   .exp-row--hovered { background: rgba(255,255,255,0.055); border-color: rgba(255,255,255,0.15); }
 
   .exp-row-main { display: flex; align-items: center; gap: 18px; padding: 20px 24px; }
@@ -833,10 +812,6 @@ const CSS = `
     background: rgba(255,255,255,0.055); border: 1px solid rgba(255,255,255,0.09);
     border-radius: 6px; padding: 4px 10px; letter-spacing: 0.08em; text-transform: uppercase;
   }
-
-  .exp-hover-hint { display: flex; align-items: center; gap: 10px; font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.18); margin: 0; }
-  .exp-hint-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.32); animation: exp-pulse 2.4s ease-in-out infinite; flex-shrink: 0; }
-  @keyframes exp-pulse { 0%, 100% { opacity: 0.2; transform: scale(1); } 50% { opacity: 1; transform: scale(1.6); } }
 
   .ma-exp-strip { border-top: 1px solid rgba(255,255,255,0.04); }
   .ma-strip-text { font-size: clamp(13px, 1.6vw, 17px); color: rgba(255,255,255,0.22); font-style: italic; margin: 0; letter-spacing: 0.02em; display: block; border-left: 1px solid rgba(255,255,255,0.12); padding-left: 20px; }
@@ -931,7 +906,6 @@ const CSS = `
   @media (max-width: 480px) {
     .ma-exp-header     { padding: 52px 16px 40px; }
     .exp-header-script { font-size: clamp(16px, 5vw, 26px); }
-    /* 11vw @ 480px = 52.8px — "EXPERIENCE" fits comfortably in ~448px available */
     .exp-header-big    { letter-spacing: -0.048em; }
 
     .exp-list-wrapper  { padding: 0 16px 60px; }
@@ -947,11 +921,10 @@ const CSS = `
     .ma-footer-big     { font-size: clamp(40px, 13vw, 64px); }
   }
 
-  /* Very small ≤ 360px (Galaxy S series, budget phones) */
+  /* Very small ≤ 360px */
   @media (max-width: 360px) {
     .ma-exp-header     { padding: 44px 12px 36px; }
     .exp-header-script { font-size: clamp(14px, 4.5vw, 20px); }
-    /* 11vw @ 360px = 39.6px — fits in 336px available ✓ */
     .exp-list-wrapper  { padding: 0 12px 48px; }
     .exp-row-main      { padding: 12px 12px; gap: 8px; }
     .exp-row-detail    { padding: 0 12px 14px calc(12px + 40px + 8px); }
