@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import CaseStudyPage        from "./Casestudypage.jsx";
 import SwayamCaseStudyPage  from "./SwayamCaseStudyPage.jsx";
+import StucorCaseStudyPage from "./StucorCaseStudyPage.jsx";
 
 /* ─── Lerp helper ───────────────────────────────────────────────────── */
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -87,7 +88,8 @@ const styles = `
     will-change: transform, opacity;
     cursor: none;
   }
-  .cs-card-item.is-back { opacity: 0.72; cursor: pointer; }
+  .cs-card-item.is-back  { opacity: 0.72; cursor: pointer; }
+  .cs-card-item.is-far   { opacity: 0;    pointer-events: none; }
   .cs-card-item.is-front { opacity: 1; }
 
   /* Bezel */
@@ -238,14 +240,32 @@ const getOffset = () => {
   return "13vw";
 };
 
+/*
+ * 3-card layout per active index.
+ * "far" = off-stage, opacity 0, pointer-events none.
+ *
+ *   activeIdx=0 → card0: center, card1: right,       card2: far-right (hidden)
+ *   activeIdx=1 → card0: left,   card1: center,       card2: right
+ *   activeIdx=2 → card0: far-left (hidden), card1: left, card2: center
+ */
 const buildStates = (offset) => [
+  // activeIdx = 0
   [
-    { x: "0vw",        scale: 1,    z: 2 },
-    { x: offset,       scale: 0.90, z: 1 },
+    { x: "0vw",                  scale: 1,    z: 3, role: "front" },
+    { x: offset,                 scale: 0.90, z: 2, role: "back"  },
+    { x: `calc(${offset} * 2)`, scale: 0.82, z: 1, role: "far"   },
   ],
+  // activeIdx = 1
   [
-    { x: `-${offset}`, scale: 0.90, z: 1 },
-    { x: "0vw",        scale: 1,    z: 2 },
+    { x: `-${offset}`,           scale: 0.90, z: 2, role: "back"  },
+    { x: "0vw",                  scale: 1,    z: 3, role: "front" },
+    { x: offset,                 scale: 0.90, z: 2, role: "back"  },
+  ],
+  // activeIdx = 2
+  [
+    { x: `calc(-${offset} * 2)`, scale: 0.82, z: 1, role: "far"   },
+    { x: `-${offset}`,           scale: 0.90, z: 2, role: "back"  },
+    { x: "0vw",                  scale: 1,    z: 3, role: "front" },
   ],
 ];
 
@@ -254,52 +274,52 @@ const SWIPE_THRESHOLD       = 48;
 const DRAG_CANCEL_THRESHOLD = 6;
 const AUTO_ADVANCE_MS       = 5000;
 
+// ─── Replace the third src with your actual image path ───────────────
 const CARDS = [
-  { src: "/case study/TNSTC Case Study.png", alt: "TNSTC Bus Booking Redesign" },
-  { src: "/case study/Swayam Case Study.png", alt: "Swayam Case Study" },
+  { src: "/case study/TNSTC Case Study.png",  alt: "TNSTC Bus Booking Redesign" },
+  { src: "/case study/Swayam Case Study.png", alt: "Swayam Case Study"          },
+  { src: "/case study/Stucor Case Study.png",  alt: "Stucor Case Study"           },
 ];
 
 export default function CaseStudySection() {
-  const headerRef  = useRef(null);
-  const stageRef   = useRef(null);
-  const cardRefs   = [useRef(null), useRef(null)];
+  const headerRef = useRef(null);
+  const stageRef  = useRef(null);
 
-  /* ── Circular cursor refs ── */
-  const cursorRefs = [useRef(null), useRef(null)];
+  // ── 3 refs for every per-card concern ────────────────────────────────
+  const cardRefs        = [useRef(null), useRef(null), useRef(null)];
+  const cursorRefs      = [useRef(null), useRef(null), useRef(null)];
+  const rafIds          = [useRef(null), useRef(null), useRef(null)];
+  const currents        = [useRef({ x: 0, y: 0 }), useRef({ x: 0, y: 0 }), useRef({ x: 0, y: 0 })];
+  const targets         = [useRef({ x: 0, y: 0 }), useRef({ x: 0, y: 0 }), useRef({ x: 0, y: 0 })];
+  const isHovers        = [useRef(false), useRef(false), useRef(false)];
+  const segmentFillRefs = [useRef(null),  useRef(null),  useRef(null)];
 
-  /* RAF lerp state per card */
-  const rafIds   = [useRef(null), useRef(null)];
-  const currents = [useRef({ x: 0, y: 0 }), useRef({ x: 0, y: 0 })];
-  const targets  = [useRef({ x: 0, y: 0 }), useRef({ x: 0, y: 0 })];
-  const isHovers = [useRef(false), useRef(false)];
-
-  const touchStart  = useRef(null);
-  const mouseStart  = useRef(null);
-  const isDragging  = useRef(false);
-  const isAnimating = useRef(false);
-  const autoTimer   = useRef(null);
-
-  /* ── Segmented progress refs (one per card) ── */
-  const segmentFillRefs = [useRef(null), useRef(null)];
-
-  /* ── Track whether the section is visible on screen ── */
+  const touchStart       = useRef(null);
+  const mouseStart       = useRef(null);
+  const isDragging       = useRef(false);
+  const isAnimating      = useRef(false);
+  const autoTimer        = useRef(null);
   const sectionInViewRef = useRef(false);
 
   const [activeIdx,  setActiveIdx]  = useState(0);
   const [tnstcOpen,  setTnstcOpen]  = useState(false);
   const [swayamOpen, setSwayamOpen] = useState(false);
+  const [stucorOpen, setStucorOpen] = useState(false);
+
+  
 
   /* ── Apply card transforms ── */
   const applyTransforms = useCallback((idx, animate) => {
     const states = buildStates(getOffset());
-    states[idx].forEach(({ x, scale, z }, i) => {
+    states[idx].forEach(({ x, scale, z, role }, i) => {
       const el = cardRefs[i].current;
       if (!el) return;
       el.style.transition = animate ? SPRING_TRANSITION : "none";
       el.style.transform  = `translateX(${x}) scale(${scale})`;
       el.style.zIndex     = z;
-      el.classList.toggle("is-front", i === idx);
-      el.classList.toggle("is-back",  i !== idx);
+      el.classList.toggle("is-front", role === "front");
+      el.classList.toggle("is-back",  role === "back");
+      el.classList.toggle("is-far",   role === "far");
     });
   }, []);
 
@@ -315,13 +335,12 @@ export default function CaseStudySection() {
   const goTo = useCallback((idx) => {
     if (isAnimating.current || idx === activeIdx) return;
     const oldCursor = cursorRefs[activeIdx].current;
-    if (oldCursor) { oldCursor.style.opacity = "0"; }
+    if (oldCursor) oldCursor.style.opacity = "0";
     isHovers[activeIdx].current = false;
     if (rafIds[activeIdx].current) {
       cancelAnimationFrame(rafIds[activeIdx].current);
       rafIds[activeIdx].current = null;
     }
-
     isAnimating.current = true;
     setActiveIdx(idx);
     applyTransforms(idx, true);
@@ -334,8 +353,10 @@ export default function CaseStudySection() {
     if (clickedIdx !== activeIdx) {
       goTo(clickedIdx);
     } else {
+      // Card 2 is image-only — clicking it does nothing (add a modal later if needed)
       if (clickedIdx === 0) setTnstcOpen(true);
       if (clickedIdx === 1) setSwayamOpen(true);
+      if (clickedIdx === 2) setStucorOpen(true);
     }
   };
 
@@ -346,9 +367,8 @@ export default function CaseStudySection() {
     const dx = e.changedTouches[0].clientX - touchStart.current;
     touchStart.current = null;
     if (Math.abs(dx) < SWIPE_THRESHOLD) return;
-    if (dx < 0 && activeIdx === 0) goTo(1);
-    if (dx > 0 && activeIdx === 1) goTo(0);
-    /* goTo triggers activeIdx change → the continuous-loop effect restarts the timer */
+    if (dx < 0) goTo((activeIdx + 1) % CARDS.length);
+    if (dx > 0) goTo((activeIdx - 1 + CARDS.length) % CARDS.length);
   };
 
   /* ── Mouse drag swipe ── */
@@ -382,8 +402,8 @@ export default function CaseStudySection() {
       if (stageRef.current) stageRef.current.classList.remove("is-dragging");
       if (!wasDrag || isAnimating.current) return;
       if (Math.abs(dx) < SWIPE_THRESHOLD) return;
-      if (dx < 0 && activeIdx === 0) goTo(1);
-      if (dx > 0 && activeIdx === 1) goTo(0);
+      if (dx < 0) goTo((activeIdx + 1) % CARDS.length);
+      if (dx > 0) goTo((activeIdx - 1 + CARDS.length) % CARDS.length);
     };
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup",   onMouseUp);
@@ -406,95 +426,60 @@ export default function CaseStudySection() {
   /* ── Mobile helpers ── */
   const isMobileView = () => window.innerWidth <= 768;
 
-  /* ── Animate the fill for the active segment ── */
+  /* ── Animate fill for the active segment ── */
   const startProgress = useCallback((idx) => {
     if (!isMobileView()) return;
-
-    /* Reset all segments first */
     segmentFillRefs.forEach((r) => {
-      if (r.current) {
-        r.current.style.transition = "none";
-        r.current.style.width = "0%";
-      }
+      if (r.current) { r.current.style.transition = "none"; r.current.style.width = "0%"; }
     });
-
-    /* Kick off fill animation on the active one */
     const fill = segmentFillRefs[idx].current;
     if (!fill) return;
-
-    /* Force a reflow so the transition fires from 0% */
     void fill.offsetWidth;
     fill.style.transition = `width ${AUTO_ADVANCE_MS}ms linear`;
     fill.style.width = "100%";
   }, []);
 
-  /* ─────────────────────────────────────────────────────────────────
-   *  EFFECT 1 — IntersectionObserver (runs once on mount)
-   *  Only job: flip sectionInViewRef and start/stop the cycle.
-   * ───────────────────────────────────────────────────────────────── */
+  /* ── EFFECT 1 — IntersectionObserver (mount only) ── */
   useEffect(() => {
     const section = document.querySelector(".cs-section");
     if (!section) return;
-
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           sectionInViewRef.current = true;
-          /* Trigger the continuous loop for whatever card is active now */
           startProgress(activeIdx);
           if (autoTimer.current) clearTimeout(autoTimer.current);
           autoTimer.current = setTimeout(() => {
-            const next = (activeIdx + 1) % CARDS.length;
-            goTo(next);
+            goTo((activeIdx + 1) % CARDS.length);
           }, AUTO_ADVANCE_MS);
         } else {
           sectionInViewRef.current = false;
-          /* Pause everything while off-screen */
           if (autoTimer.current) clearTimeout(autoTimer.current);
           segmentFillRefs.forEach((r) => {
-            if (r.current) {
-              r.current.style.transition = "none";
-              r.current.style.width = "0%";
-            }
+            if (r.current) { r.current.style.transition = "none"; r.current.style.width = "0%"; }
           });
         }
       },
       { threshold: 0.3 }
     );
     io.observe(section);
-    return () => {
-      io.disconnect();
-      if (autoTimer.current) clearTimeout(autoTimer.current);
-    };
+    return () => { io.disconnect(); if (autoTimer.current) clearTimeout(autoTimer.current); };
   /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, []); /* intentionally empty — observer set up once */
+  }, []);
 
-  /* ─────────────────────────────────────────────────────────────────
-   *  EFFECT 2 — Continuous loop (re-runs every time activeIdx changes)
-   *  If the section is in view, restart progress + schedule next advance.
-   * ───────────────────────────────────────────────────────────────── */
+  /* ── EFFECT 2 — Continuous loop (re-runs on activeIdx change) ── */
   useEffect(() => {
     if (!isMobileView()) return;
     if (!sectionInViewRef.current) return;
-
-    /* Clear any stale timer from the previous card */
     if (autoTimer.current) clearTimeout(autoTimer.current);
-
-    /* Animate the bar for the newly active card */
     startProgress(activeIdx);
-
-    /* Schedule the next card change */
     autoTimer.current = setTimeout(() => {
-      const next = (activeIdx + 1) % CARDS.length;
-      goTo(next);
+      goTo((activeIdx + 1) % CARDS.length);
     }, AUTO_ADVANCE_MS);
-
-    return () => {
-      if (autoTimer.current) clearTimeout(autoTimer.current);
-    };
+    return () => { if (autoTimer.current) clearTimeout(autoTimer.current); };
   }, [activeIdx, startProgress, goTo]);
 
-  /* Cleanup all RAFs on unmount */
+  /* Cleanup RAFs on unmount */
   useEffect(() => () => {
     rafIds.forEach(r => { if (r.current) cancelAnimationFrame(r.current); });
   }, []);
@@ -557,6 +542,10 @@ export default function CaseStudySection() {
         isOpen={swayamOpen}
         onClose={() => setSwayamOpen(false)}
       />
+      <StucorCaseStudyPage
+  isOpen={stucorOpen}
+  onClose={() => setStucorOpen(false)}
+/>
 
       <section className="cs-section">
 
@@ -620,7 +609,7 @@ export default function CaseStudySection() {
           })}
         </div>
 
-        {/* ── Mobile-only segmented progress bar ── */}
+        {/* ── Mobile-only segmented progress bar (3 segments) ── */}
         <div className="cs-progress">
           {CARDS.map((_, idx) => (
             <div key={idx} className="cs-progress-segment">
