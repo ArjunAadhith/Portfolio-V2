@@ -461,6 +461,73 @@ export default function About() {
         .btn-pill:hover { color: #ffffff; border-color: #111111; }
         .btn-icon-svg { display: block; flex-shrink: 0; }
 
+        /* ═══════════════════════════════════════════
+           ✨ SHINING BORDER — Read More button
+           Uses @property for smooth conic-gradient
+           rotation. Falls back gracefully on older
+           browsers (static border, no crash).
+        ═══════════════════════════════════════════ */
+        @property --shine-angle {
+          syntax: '<angle>';
+          initial-value: 0deg;
+          inherits: false;
+        }
+
+        /* Outer wrapper that holds the animated border */
+        .btn-shine-wrap {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 100px;
+          padding: 1.5px;                         /* border thickness */
+          background: conic-gradient(
+            from var(--shine-angle),
+            #C4C4C4  0%,
+            #888888 18%,
+            #ffffff 32%,
+            #111111 42%,
+            #ffffff 52%,
+            #888888 66%,
+            #C4C4C4 100%
+          );
+          animation: shine-spin 2.8s linear infinite;
+          /* Soft outer glow that pulses with the spin */
+          box-shadow: 0 0 0 0 rgba(0,0,0,0);
+          flex-shrink: 0;
+        }
+
+        @keyframes shine-spin {
+          to { --shine-angle: 360deg; }
+        }
+
+        /* 
+          The actual pill button sits inside the wrapper.
+          We remove its own border so the wrapper's gradient
+          acts as the border. Background matches the section
+          so it looks "cut out".
+        */
+        .btn-shine-wrap .btn-pill {
+          border: none;
+          background: #E8E8E8;
+          /* Tiny inset so the gradient ring is visible all around */
+          margin: 0;
+        }
+
+        /* Keep hover fill working — override background on hover */
+        .btn-shine-wrap .btn-pill::before {
+          background: #111111;
+        }
+        .btn-shine-wrap .btn-pill:hover {
+          color: #ffffff;
+          border-color: transparent;
+        }
+
+        /* Pause shine when user hovers (button fill takes over attention) */
+        .btn-shine-wrap:hover {
+          animation-play-state: paused;
+        }
+
         .about-right {
           flex: 0 0 auto;
           width: 50%;
@@ -561,28 +628,20 @@ export default function About() {
 
         /* ═══════════════════════════════════════════
            MOBILE: ≤ 767px
-           KEY FIX: use min-height with a fixed fallback
-           instead of 100dvh which causes layout jumps
-           when the browser chrome shows/hides.
-           svh = smallest stable viewport (no jump).
         ═══════════════════════════════════════════ */
         @media (max-width: 767px) {
           .about-section {
             align-items: flex-start;
-            /* No min-height here — let content define height */
           }
           .about-inner {
             flex-direction: column-reverse;
             padding: 64px 6% 60px;
             gap: 36px;
-            /* ✅ FIX: Remove 100dvh — use auto height so the section
-               doesn't resize when mobile browser chrome appears/hides */
             min-height: auto;
             height: auto;
             align-items: flex-start;
             justify-content: flex-start;
             width: 100%;
-            /* Add comfortable vertical padding instead of stretching to fill */
             padding-top: 72px;
             padding-bottom: 72px;
           }
@@ -712,6 +771,11 @@ export default function About() {
             font-size: 14px;
           }
 
+          /* Keep shine wrapper aligned on mobile */
+          .btn-shine-wrap {
+            flex-shrink: 0;
+          }
+
           /* Hide cursor on mobile */
           .ab-cursor { display: none; }
         }
@@ -722,7 +786,6 @@ export default function About() {
         @media (max-width: 480px) {
           .about-inner {
             padding: 56px 5.5% 52px;
-            /* ✅ FIX: no dvh — stays stable */
             min-height: auto;
             height: auto;
           }
@@ -788,7 +851,6 @@ export default function About() {
             flex-direction: row;
             padding: 28px 5%;
             gap: 28px;
-            /* ✅ FIX: no dvh */
             min-height: auto;
             height: auto;
             align-items: center;
@@ -871,11 +933,23 @@ export default function About() {
               </div>
             </div>
 
+            {/* ── Buttons row ── */}
             <div className={`about-btns reveal-inner d4 ${visible ? "visible" : ""}`}>
-              <button className="btn-pill" onClick={() => setMoreOpen(true)}>
-                <span className="btn-pill-inner">Read More</span>
-              </button>
 
+              {/*
+                ✨ SHINING "Read More" button
+                The .btn-shine-wrap div draws a rotating conic-gradient ring.
+                The .btn-pill inside has its own border removed so the ring
+                acts as the border. Hover pauses the spin while the fill
+                animation takes over.
+              */}
+              <div className="btn-shine-wrap">
+                <button className="btn-pill" onClick={() => setMoreOpen(true)}>
+                  <span className="btn-pill-inner">Read More</span>
+                </button>
+              </div>
+
+              {/* Resume button — unchanged */}
               <a href="/resume/Arjun Aadhith's resume.pdf" download="Arjun Aadhith's resume.pdf" className="btn-pill">
                 <span className="btn-pill-inner">
                   Resume
