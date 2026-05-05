@@ -13,20 +13,20 @@ const CHROME_STRONG = `linear-gradient(
 )`;
 
 // ─── Timing ──────────────────────────────────────────────────────────────────
-const PANEL_COUNT   = 9;
-const LINE_COUNT    = 11;
-const WIPE_DURATION = 1600;
+const WIPE_DURATION = 1100;   // scatter feels punchier shorter
 const LETTER_DUR    = 320;
 const LETTER_STAG   = 25;
 const EXIT_DUR      = 180;
 const PRELOAD_MS    = 220;
 
+// ─── Scatter config ───────────────────────────────────────────────────────────
+const S_COLS    = 14;         // 14×9 = 126 cells
+const S_ROWS    = 9;
+const S_STAGGER = 0.32;       // fraction of progress used for stagger wave
+
 // ─── Easing ──────────────────────────────────────────────────────────────────
 const easeInOutCubic = t =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-const easeOutExpo = t =>
-  t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const delay      = ms => new Promise(r => setTimeout(r, ms));
@@ -63,9 +63,9 @@ export default function CinematicIntro({ children, onComplete }) {
     (async () => {
       await delay(PRELOAD_MS);
 
-      await runWord("s1", 4,  400);
-      await runWord("s2", 1,  340);
-      await runWord("s3", 10, 520);
+      await runWord("s1", 4,  400);   // Make
+      await runWord("s2", 1,  340);   // A
+      await runWord("s3", 10, 520);   // Difference
 
       setScreen("lines");
       await runWipe();
@@ -138,19 +138,39 @@ export default function CinematicIntro({ children, onComplete }) {
               justifyContent: "center",
             }}>
               {screen === "s1" && (
-                <AnimWord text="Make"       phase={phase} size="clamp(130px, 21vw, 290px)" gradient={CHROME}        spacing="-0.03em" />
+                <AnimWord
+                  text="Make"
+                  phase={phase}
+                  size="clamp(130px, 21vw, 290px)"
+                  gradient={CHROME}
+                  spacing="-0.03em"
+                />
               )}
               {screen === "s2" && (
-                <AnimWord text="A"          phase={phase} size="clamp(170px, 30vw, 380px)" gradient={CHROME}        spacing="0"       bigScale />
+                <AnimWord
+                  text="A"
+                  phase={phase}
+                  size="clamp(170px, 30vw, 380px)"
+                  gradient={CHROME}
+                  spacing="0"
+                  bigScale
+                />
               )}
               {screen === "s3" && (
-                <AnimWord text="Difference" phase={phase} size="clamp(68px, 11vw, 220px)"  gradient={CHROME_STRONG} spacing="-0.04em" strong />
+                <AnimWord
+                  text="Difference"
+                  phase={phase}
+                  size="clamp(68px, 11vw, 220px)"
+                  gradient={CHROME_STRONG}
+                  spacing="-0.04em"
+                  strong
+                />
               )}
             </div>
           )}
 
           {screen === "lines" && (
-            <PanelReveal progress={lineRef.current} />
+            <ScatterReveal progress={lineRef.current} />
           )}
         </div>
       )}
@@ -158,7 +178,7 @@ export default function CinematicIntro({ children, onComplete }) {
   );
 }
 
-// ─── AnimWord ────────────────────────────────────────────────────────────────
+// ─── AnimWord ─────────────────────────────────────────────────────────────────
 function AnimWord({ text, phase, size, gradient, spacing, strong, bigScale }) {
   const isIn  = phase === "reveal" || phase === "hold";
   const isOut = phase === "exit";
@@ -199,12 +219,15 @@ function AnimWord({ text, phase, size, gradient, spacing, strong, bigScale }) {
         }
 
         return (
-          <div key={i} style={{
-            overflow:      "hidden",
-            paddingTop:    "0.06em",
-            paddingBottom: "0.13em",
-            marginRight:   !isLast ? spacing : "0",
-          }}>
+          <div
+            key={i}
+            style={{
+              overflow:      "hidden",
+              paddingTop:    "0.06em",
+              paddingBottom: "0.13em",
+              marginRight:   !isLast ? spacing : "0",
+            }}
+          >
             <span style={{
               ...chromeText(gradient, size, "0", strong),
               display:    "block",
@@ -240,97 +263,141 @@ function chromeText(gradient, size, spacing, strong) {
   };
 }
 
-// ─── PanelReveal ─────────────────────────────────────────────────────────────
-// REPLACES WipeLines. N vertical black slabs drop away downward in a staggered
-// cascade (left → right). Each slab has a glowing top edge that streaks
-// downward like a blade of light just before the panel exits.
-// A secondary "speed line" races ahead of the main slab for extra depth.
-function PanelReveal({ progress }) {
-  // How far into the timeline the stagger window occupies (0‒1)
-  const STAG_FRAC  = 0.42;
-  // Extra "speed line" that races ~18% ahead of its parent panel
-  const SPEED_LEAD = 0.18;
+// ─── ScatterReveal ────────────────────────────────────────────────────────────
+// The black screen is divided into a 14×9 grid of tiles.
+// On trigger: tiles explode outward from the center — center tiles first,
+// edge tiles last — each rotating and fading as they fly.
+// A radial flash and crack-lines fire at the moment of impact.
+function ScatterReveal({ progress }) {
+  // Pre-compute per-cell constants once — stable across re-renders
+  const cellsRef = useRef(null);
+  if (!cellsRef.current) {
+    const maxDist = Math.sqrt(0.25 + 0.25); // corner distance from center ≈ 0.707
+    cellsRef.current = Array.from({ length: S_COLS * S_ROWS }).map((_, idx) => {
+      const col = idx % S_COLS;
+      const row = Math.floor(idx / S_COLS);
+      // Normalized cell center: 0–1
+      const cx = (col + 0.5) / S_COLS;
+      const cy = (row + 0.5) / S_ROWS;
+      // Direction vector from screen center to this cell
+      const dx = cx - 0.5;
+      const dy = cy - 0.5;
+      const dist  = Math.sqrt(dx * dx + dy * dy);
+      const normDist = dist / maxDist;       // 0 = center, 1 = corners
+      const len   = Math.max(dist, 0.001);
+      const nx    = dx / len;                // unit direction x
+      const ny    = dy / len;                // unit direction y
+      // Cells closer to center start moving first → explosion from inside out
+      const staggerOffset = normDist * S_STAGGER;
+      // Each cell gets a unique random rotation for organic feel
+      const rotate = (Math.random() - 0.5) * 38;
+      return { col, row, nx, ny, staggerOffset, rotate };
+    });
+  }
+
+  const cellW = 100 / S_COLS;
+  const cellH = 100 / S_ROWS;
+
+  // ── Impact flash: radial white burst, peaks at p=0.07, gone by p=0.24 ──
+  const flashOp = progress < 0.07
+    ? progress / 0.07
+    : progress < 0.24
+      ? 1 - (progress - 0.07) / 0.17
+      : 0;
+
+  // ── Crack lines: appear instantly, fade as tiles scatter ──────────────────
+  const crackOp = progress < 0.04
+    ? progress / 0.04
+    : progress < 0.28
+      ? 1 - (progress - 0.04) / 0.24
+      : 0;
+
+  // Six cracks radiating from the center (SVG viewport-space coords 0–100)
+  const CRACKS = [
+    [50, 50, 94, 6],    // top-right
+    [50, 50, 10, 14],   // top-left
+    [50, 50, 78, 92],   // bottom-right
+    [50, 50, 6, 74],    // bottom-left
+    [50, 50, 98, 50],   // right
+    [50, 50, 28, 98],   // bottom-left-low
+  ];
 
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
-      {Array.from({ length: PANEL_COUNT }).map((_, i) => {
-        const panelW    = 100 / PANEL_COUNT;
-        const offset    = (i / (PANEL_COUNT - 1)) * STAG_FRAC;
-        const localP    = Math.max(0, Math.min(1, (progress - offset) / (1 - STAG_FRAC)));
-        const eased     = easeOutExpo(localP);
 
-        // Panel drops from translateY(0) → translateY(105vh)
-        const panelY    = eased * 105;
+      {/* ── Tiles ────────────────────────────────────────────────────────── */}
+      {cellsRef.current.map((cell, idx) => {
+        const { col, row, nx, ny, staggerOffset, rotate } = cell;
+        // Local progress for this tile, 0→1
+        const lp    = Math.max(0, Math.min(1, (progress - staggerOffset) / (1 - S_STAGGER)));
+        // easeInCubic — tiles start slow then rocket off
+        const eased = lp * lp * lp;
 
-        // Speed line races ahead — clamped so it disappears before panel does
-        const speedLocalP = Math.max(0, Math.min(1, (progress - offset) / (1 - STAG_FRAC - SPEED_LEAD)));
-        const speedEased  = easeOutExpo(speedLocalP);
-        const speedY      = speedEased * 105;
-
-        // Glow on the leading (top) edge of the panel — brightest in the middle panels
-        const midness   = 1 - Math.abs(i - (PANEL_COUNT - 1) / 2) / ((PANEL_COUNT - 1) / 2);
-        const glowAlpha = 0.55 + midness * 0.35;
-        const glowSpread = 6 + midness * 10;
-
-        // Panel is "active" (visible on screen) between these Y values
-        const panelVisible  = panelY < 106;
-        const speedVisible  = speedY < 106 && speedY > panelY + 0.5;
+        const tx  = nx * eased * 155;           // vw — flies off screen
+        const ty  = ny * eased * 155;           // vh
+        const op  = Math.max(0, 1 - eased * 2.4);  // fade out quickly
+        const rot = rotate * eased;
 
         return (
-          <div key={i} style={{ position: "absolute", top: 0, bottom: 0, left: `${i * panelW}%`, width: `${panelW}%` }}>
-
-            {/* ── Speed line: thin bright strip racing ahead of the panel ── */}
-            {speedVisible && (
-              <div style={{
-                position:   "absolute",
-                left:       0,
-                right:      0,
-                top:        0,
-                height:     "3px",
-                transform:  `translateY(${speedY}vh)`,
-                background: `rgba(255,255,255,${glowAlpha * 0.6})`,
-                boxShadow:  `0 0 ${glowSpread * 0.6}px ${glowSpread * 0.3}px rgba(255,255,255,0.25)`,
-                willChange: "transform",
-              }} />
-            )}
-
-            {/* ── Main panel ── */}
-            {panelVisible && (
-              <div style={{
-                position:   "absolute",
-                left:       0,
-                right:      0,
-                top:        0,
-                bottom:     "-5vh",         // extend slightly past viewport bottom
-                transform:  `translateY(${panelY}vh)`,
-                background: "#000",
-                willChange: "transform",
-              }}>
-                {/* Glowing top edge of the panel — the "blade" */}
-                <div style={{
-                  position:   "absolute",
-                  top:        0,
-                  left:       0,
-                  right:      0,
-                  height:     "2px",
-                  background: `rgba(255,255,255,${glowAlpha})`,
-                  boxShadow:  `0 0 ${glowSpread}px ${glowSpread / 2}px rgba(255,255,255,${glowAlpha * 0.45})`,
-                }} />
-
-                {/* Subtle gradient just below the leading edge — motion blur feel */}
-                <div style={{
-                  position:   "absolute",
-                  top:        "2px",
-                  left:       0,
-                  right:      0,
-                  height:     "32px",
-                  background: `linear-gradient(to bottom, rgba(255,255,255,${glowAlpha * 0.12}), transparent)`,
-                }} />
-              </div>
-            )}
-          </div>
+          <div
+            key={idx}
+            style={{
+              position:   "absolute",
+              left:       `${col * cellW}vw`,
+              top:        `${row * cellH}vh`,
+              width:      `calc(${cellW}vw + 1px)`,   // +1px kills subpixel gaps
+              height:     `calc(${cellH}vh + 1px)`,
+              background: "#000",
+              transform:  `translate(${tx}vw, ${ty}vh) rotate(${rot}deg)`,
+              opacity:    op,
+              willChange: "transform, opacity",
+            }}
+          />
         );
       })}
+
+      {/* ── Crack lines ──────────────────────────────────────────────────── */}
+      {crackOp > 0.005 && (
+        <svg
+          style={{
+            position:         "absolute",
+            inset:            0,
+            width:            "100%",
+            height:           "100%",
+            opacity:          crackOp,
+            zIndex:           5,
+            pointerEvents:    "none",
+          }}
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+        >
+          {CRACKS.map(([x1, y1, x2, y2], i) => (
+            <line
+              key={i}
+              x1={x1} y1={y1} x2={x2} y2={y2}
+              stroke="rgba(255,255,255,0.65)"
+              strokeWidth={i === 0 ? "0.45" : "0.22"}
+              strokeLinecap="round"
+            />
+          ))}
+          {/* Epicenter dot */}
+          <circle cx="50" cy="50" r="0.6" fill="rgba(255,255,255,0.9)" />
+        </svg>
+      )}
+
+      {/* ── Radial flash ─────────────────────────────────────────────────── */}
+      {flashOp > 0.005 && (
+        <div
+          style={{
+            position:   "absolute",
+            inset:      0,
+            zIndex:     10,
+            background: "radial-gradient(circle at 50% 50%, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.35) 35%, transparent 68%)",
+            opacity:    flashOp,
+            pointerEvents: "none",
+          }}
+        />
+      )}
     </div>
   );
 }
