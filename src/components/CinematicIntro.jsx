@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 
 // ─── Chrome Gradients ────────────────────────────────────────────────────────
 const CHROME = `linear-gradient(
@@ -13,15 +13,22 @@ const CHROME_STRONG = `linear-gradient(
 )`;
 
 // ─── Timing ──────────────────────────────────────────────────────────────────
-const SHATTER_DURATION = 1700;   // total canvas animation
-const LETTER_DUR       = 320;
-const LETTER_STAG      = 25;
-const EXIT_DUR         = 180;
-const PRELOAD_MS       = 220;
+const WIPE_DURATION = 1700;
+const LETTER_DUR    = 320;
+const LETTER_STAG   = 25;
+const EXIT_DUR      = 180;
+const PRELOAD_MS    = 220;
 
-// ─── Shatter mesh ────────────────────────────────────────────────────────────
-const SHARD_COLS = 9;
-const SHARD_ROWS = 14;
+// ─── Scatter grid ────────────────────────────────────────────────────────────
+const COLS = 11;
+const ROWS = 9;
+
+// ─── Easing ──────────────────────────────────────────────────────────────────
+const easeInOutCubic = t =>
+  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const easeOutExpo = t =>
+  t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+const easeInQuint = t => t * t * t * t * t;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const delay      = ms => new Promise(r => setTimeout(r, ms));
@@ -32,68 +39,23 @@ const waitFrames = (n = 6) =>
     requestAnimationFrame(f);
   });
 
-// ─── Build shard geometry ────────────────────────────────────────────────────
-function buildShards(W, H) {
-  // Grid of points with organic jitter — edges stay pinned
-  const pts = [];
-  for (let r = 0; r <= SHARD_ROWS; r++) {
-    for (let c = 0; c <= SHARD_COLS; c++) {
-      const edge = r === 0 || r === SHARD_ROWS || c === 0 || c === SHARD_COLS;
-      const jx   = edge ? 0 : (Math.random() - 0.5) * (W / SHARD_COLS) * 0.62;
-      const jy   = edge ? 0 : (Math.random() - 0.5) * (H / SHARD_ROWS) * 0.62;
-      pts.push([
-        (c / SHARD_COLS) * W + jx,
-        (r / SHARD_ROWS) * H + jy,
-      ]);
-    }
-  }
-
-  const cx0     = W / 2;
-  const cy0     = H / 2;
-  const maxDist = Math.hypot(cx0, cy0);
-  const shards  = [];
-
-  for (let r = 0; r < SHARD_ROWS; r++) {
-    for (let c = 0; c < SHARD_COLS; c++) {
-      const tl = r * (SHARD_COLS + 1) + c;
-      for (const [a, b, cc] of [
-        [pts[tl],     pts[tl + 1],              pts[tl + SHARD_COLS + 1]],
-        [pts[tl + 1], pts[tl + SHARD_COLS + 2], pts[tl + SHARD_COLS + 1]],
-      ]) {
-        const centX  = (a[0] + b[0] + cc[0]) / 3;
-        const centY  = (a[1] + b[1] + cc[1]) / 3;
-        const dx     = centX - cx0;
-        const dy     = centY - cy0;
-        // Radial distance → determines when this shard starts (center goes first)
-        const dist   = Math.hypot(dx, dy) / maxDist;
-        const angle  = Math.atan2(dy, dx);
-        const delay_ = dist * 0.48 + (Math.random() - 0.5) * 0.06;
-
-        shards.push({
-          pts:    [a, b, cc],
-          centX,  centY,
-          angle,
-          delay:  Math.max(0, Math.min(0.72, delay_)),
-          rotDir: Math.random() > 0.5 ? 1 : -1,
-          rotAmt: 0.25 + Math.random() * 0.55,
-          // Slight colour tint — some shards are cooler/warmer (very subtle)
-          tint:   Math.random() > 0.85 ? "rgba(20,20,35,1)" : "#000",
-        });
-      }
-    }
-  }
-  return shards;
-}
+// Deterministic pseudo-random from a seed integer
+const prng = seed => {
+  let s = seed ^ 0xdeadbeef;
+  s = Math.imul(s ^ (s >>> 16), 0x45d9f3b);
+  s = Math.imul(s ^ (s >>> 16), 0x45d9f3b);
+  return ((s ^ (s >>> 16)) >>> 0) / 0xffffffff;
+};
 
 // ─── Root ────────────────────────────────────────────────────────────────────
 export default function CinematicIntro({ children, onComplete }) {
   const [screen, setScreen] = useState("s1");
   const [phase,  setPhase]  = useState("hidden");
 
-  const progressRef  = useRef(0);
-  const [, repaint]  = useState(0);
-  const rafRef       = useRef(null);
-  const hasRun       = useRef(false);
+  const wipeRef     = useRef(0);
+  const [, repaint] = useState(0);
+  const rafRef      = useRef(null);
+  const hasRun      = useRef(false);
 
   useEffect(() => {
     if (hasRun.current) return;
@@ -111,13 +73,12 @@ export default function CinematicIntro({ children, onComplete }) {
     (async () => {
       await delay(PRELOAD_MS);
 
-      await runWord("s1", 4,  400);   // Make
-      await runWord("s2", 1,  340);   // A
-      await runWord("s3", 10, 520);   // Difference
+      await runWord("s1", 4,  400);
+      await runWord("s2", 1,  340);
+      await runWord("s3", 10, 520);
 
-      await delay(80);                // breath before shatter
       setScreen("lines");
-      await runShatter();
+      await runWipe();
 
       sessionStorage.setItem("_introPlayed", "1");
       setScreen("done");
@@ -143,12 +104,12 @@ export default function CinematicIntro({ children, onComplete }) {
     await delay(EXIT_DUR + 60);
   }
 
-  function runShatter() {
+  function runWipe() {
     return new Promise(resolve => {
       const start = performance.now();
       const frame = now => {
-        const t = Math.min((now - start) / SHATTER_DURATION, 1);
-        progressRef.current = t;
+        const t = Math.min((now - start) / WIPE_DURATION, 1);
+        wipeRef.current = t;
         repaint(t);
         t < 1 ? (rafRef.current = requestAnimationFrame(frame)) : resolve();
       };
@@ -160,11 +121,12 @@ export default function CinematicIntro({ children, onComplete }) {
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
+
       <div style={{
         position:      "relative",
         zIndex:        0,
-        pointerEvents: isDone ? "auto"  : "none",
-        userSelect:    isDone ? "auto"  : "none",
+        pointerEvents: isDone ? "auto"   : "none",
+        userSelect:    isDone ? "auto"   : "none",
       }}>
         {children}
       </div>
@@ -187,22 +149,24 @@ export default function CinematicIntro({ children, onComplete }) {
             }}>
               {screen === "s1" && (
                 <AnimWord text="Make" phase={phase}
-                  size="clamp(130px, 21vw, 290px)" gradient={CHROME} spacing="-0.03em" />
+                  size="clamp(130px, 21vw, 290px)"
+                  gradient={CHROME} spacing="-0.03em" />
               )}
               {screen === "s2" && (
                 <AnimWord text="A" phase={phase}
-                  size="clamp(170px, 30vw, 380px)" gradient={CHROME} spacing="0" bigScale />
+                  size="clamp(170px, 30vw, 380px)"
+                  gradient={CHROME} spacing="0" bigScale />
               )}
               {screen === "s3" && (
                 <AnimWord text="Difference" phase={phase}
-                  size="clamp(68px, 11vw, 220px)" gradient={CHROME_STRONG}
-                  spacing="-0.04em" strong />
+                  size="clamp(68px, 11vw, 220px)"
+                  gradient={CHROME_STRONG} spacing="-0.04em" strong />
               )}
             </div>
           )}
 
           {screen === "lines" && (
-            <ShatterReveal progress={progressRef.current} />
+            <ShockwaveReveal progress={wipeRef.current} />
           )}
         </div>
       )}
@@ -210,18 +174,17 @@ export default function CinematicIntro({ children, onComplete }) {
   );
 }
 
-// ─── AnimWord (unchanged) ─────────────────────────────────────────────────────
+// ─── AnimWord ────────────────────────────────────────────────────────────────
 function AnimWord({ text, phase, size, gradient, spacing, strong, bigScale }) {
   const isIn  = phase === "reveal" || phase === "hold";
-  const isOut = phase === "exit";
 
   if (bigScale) {
     return (
       <div style={{
-        opacity:   phase === "hidden" ? 0 : isIn ? 1 : 0,
-        transform: phase === "hidden" ? "scale(1.5)" : isIn ? "scale(1)" : "scale(0.8)",
+        opacity:    phase === "hidden" ? 0 : isIn ? 1 : 0,
+        transform:  phase === "hidden" ? "scale(1.5)" : isIn ? "scale(1)" : "scale(0.8)",
         transition: phase === "reveal"
-          ? `opacity 280ms ease, transform ${LETTER_DUR}ms cubic-bezier(0.16, 1, 0.3, 1)`
+          ? `opacity 280ms ease, transform ${LETTER_DUR}ms cubic-bezier(0.16,1,0.3,1)`
           : phase === "exit"
             ? `opacity ${EXIT_DUR * 0.8}ms ease, transform ${EXIT_DUR}ms cubic-bezier(0.4,0,1,1)`
             : "none",
@@ -241,19 +204,24 @@ function AnimWord({ text, phase, size, gradient, spacing, strong, bigScale }) {
         let transition = "none";
         if (isIn) {
           transform  = "translateY(0%)";
-          transition = `transform ${LETTER_DUR}ms cubic-bezier(0.16, 1, 0.3, 1) ${revDelay}ms`;
-        } else if (isOut) {
+          transition = `transform ${LETTER_DUR}ms cubic-bezier(0.16,1,0.3,1) ${revDelay}ms`;
+        } else if (phase === "exit") {
           transform  = "translateY(-112%)";
-          transition = `transform ${EXIT_DUR}ms cubic-bezier(0.55, 0, 1, 0.45)`;
+          transition = `transform ${EXIT_DUR}ms cubic-bezier(0.55,0,1,0.45)`;
         }
         return (
           <div key={i} style={{
-            overflow: "hidden", paddingTop: "0.06em", paddingBottom: "0.13em",
-            marginRight: !isLast ? spacing : "0",
+            overflow:      "hidden",
+            paddingTop:    "0.06em",
+            paddingBottom: "0.13em",
+            marginRight:   !isLast ? spacing : "0",
           }}>
             <span style={{
               ...chromeText(gradient, size, "0", strong),
-              display: "block", transform, transition, willChange: "transform",
+              display:    "block",
+              transform,
+              transition,
+              willChange: "transform",
             }}>
               {ch === " " ? "\u00A0" : ch}
             </span>
@@ -283,105 +251,118 @@ function chromeText(gradient, size, spacing, strong) {
   };
 }
 
-// ─── ShatterReveal ────────────────────────────────────────────────────────────
-// Canvas-based: ~252 irregular black triangles explode outward from center,
-// each rotating and fading as it flies. Glowing edges simulate glass catching
-// light. Center shards launch first — radial wave propagates outward.
-function ShatterReveal({ progress }) {
-  const canvasRef = useRef(null);
-  const shardsRef = useRef(null);
-  const sizeRef   = useRef({ W: 1, H: 1 });
+// ─── ShockwaveReveal ─────────────────────────────────────────────────────────
+//
+// Phase 1 (progress 0 → 0.18): Full black screen contracts slightly — a held
+//   breath before the explosion.
+//
+// Phase 2 (progress 0.18 → 1.0): An invisible shockwave expands outward from
+//   center. Each tile it crosses launches along its angle-from-center, spinning
+//   and fading as it clears. Center tiles go first; corner tiles last.
+//   Result: a starburst scatter that reveals the content beneath.
+//
+function ShockwaveReveal({ progress }) {
+  // Pre-compute tile data once — deterministic, never changes
+  const tiles = useMemo(() => {
+    const list = [];
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const seed = r * COLS + c;
 
-  // Initialise canvas + build shard geometry once (and on resize)
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+        // Normalised position relative to center (-0.5 … +0.5)
+        const nx = (c + 0.5) / COLS - 0.5;
+        const ny = (r + 0.5) / ROWS - 0.5;
 
-    const init = () => {
-      const W = window.innerWidth;
-      const H = window.innerHeight;
-      canvas.width  = W;
-      canvas.height = H;
-      sizeRef.current  = { W, H };
-      shardsRef.current = buildShards(W, H);
-    };
+        // Distance from center (0 = center, 1 = corner)
+        const dist = Math.sqrt(nx * nx + ny * ny) / Math.sqrt(0.5 * 0.5 + 0.5 * 0.5);
 
-    init();
-    window.addEventListener("resize", init);
-    return () => window.removeEventListener("resize", init);
+        // Primary scatter angle: directly away from center
+        const baseAngle = Math.atan2(ny, nx);
+
+        // Add a small deterministic twist so it doesn't look perfectly radial
+        const twist = (prng(seed) - 0.5) * 0.6; // ±0.3 rad (~17°)
+        const angle = baseAngle + twist;
+
+        // Travel distance: further tiles need a bigger kick to clear the viewport
+        const travel = 110 + prng(seed + 7) * 55; // 110–165 vw/vh units
+
+        // Rotation: tiles spin as they fly; direction alternates by seed
+        const spinDir = prng(seed + 13) > 0.5 ? 1 : -1;
+        const spinAmt = 30 + prng(seed + 19) * 80; // 30°–110°
+
+        list.push({ r, c, dist, angle, travel, spinDir, spinAmt });
+      }
+    }
+    return list;
   }, []);
 
-  // Draw every frame
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !shardsRef.current) return;
-    const ctx       = canvas.getContext("2d");
-    const { W, H }  = sizeRef.current;
-    const maxFly    = Math.max(W, H) * 1.05;
+  // Phase split
+  const PULSE_END   = 0.18;  // contraction breath
+  const SCATTER_END = 1.0;
 
-    ctx.clearRect(0, 0, W, H);
+  // Global scale pulse: 1 → 0.96 → starts scatter
+  const pulseT    = Math.min(progress / PULSE_END, 1);
+  const pulseEase = easeInOutCubic(pulseT);
+  // Scale goes 1 → 0.96 during pulse, then back toward 1 as tiles scatter
+  const scatterT  = Math.max(0, (progress - PULSE_END) / (SCATTER_END - PULSE_END));
+  const globalScale = pulseT < 1
+    ? 1 - pulseEase * 0.04               // contracting
+    : 0.96 + easeOutExpo(scatterT) * 0.04; // expanding back
 
-    // ── Impact flash: white bloom at the very start ─────────────────────────
-    if (progress < 0.09) {
-      const f = (0.09 - progress) / 0.09;
-      ctx.fillStyle = `rgba(255,255,255,${f * 0.18})`;
-      ctx.fillRect(0, 0, W, H);
-    }
+  // How far the shockwave has traveled (0 = center, 1 = corner)
+  // Wave front reaches corners at progress ~0.75, giving tiles time to exit
+  const WAVE_SPEED  = 1 / 0.58; // wave completes at progress 0.76
+  const waveFront   = Math.min(easeOutExpo(scatterT) * WAVE_SPEED, 1.5);
 
-    // ── Draw each shard ──────────────────────────────────────────────────────
-    for (const s of shardsRef.current) {
-      const window_ = 1 - s.delay;
-      const lp      = window_ <= 0
-        ? 1
-        : Math.max(0, Math.min(1, (progress - s.delay) / window_));
-
-      if (lp >= 1) continue; // fully gone — skip
-
-      // Cubic ease-in: shards accelerate as they exit (feels explosive)
-      const eased  = lp * lp * lp;
-      const flyX   = Math.cos(s.angle) * eased * maxFly;
-      const flyY   = Math.sin(s.angle) * eased * maxFly;
-      const rot    = s.rotDir * s.rotAmt * eased;
-      // Quadratic fade — stays opaque longer, then drops fast
-      const alpha  = Math.pow(1 - lp, 1.8);
-
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.translate(s.centX + flyX, s.centY + flyY);
-      ctx.rotate(rot);
-      ctx.translate(-s.centX, -s.centY);
-
-      ctx.beginPath();
-      ctx.moveTo(s.pts[0][0], s.pts[0][1]);
-      ctx.lineTo(s.pts[1][0], s.pts[1][1]);
-      ctx.lineTo(s.pts[2][0], s.pts[2][1]);
-      ctx.closePath();
-
-      ctx.fillStyle = s.tint;
-      ctx.fill();
-
-      // Glowing edge — peaks in the middle of the flight arc
-      if (lp > 0.04 && lp < 0.88) {
-        const edgeA = Math.sin(lp * Math.PI) * 0.28;
-        ctx.strokeStyle = `rgba(255,255,255,${edgeA})`;
-        ctx.lineWidth   = 0.75;
-        ctx.stroke();
-      }
-
-      ctx.restore();
-    }
-  }, [progress]);
+  const tileW = 100 / COLS;
+  const tileH = 100 / ROWS;
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        position: "absolute",
-        inset:    0,
-        width:    "100%",
-        height:   "100%",
-        display:  "block",
-      }}
-    />
+    <div style={{
+      position:   "absolute",
+      inset:      0,
+      transform:  `scale(${globalScale})`,
+      willChange: "transform",
+    }}>
+      {tiles.map(({ r, c, dist, angle, travel, spinDir, spinAmt }) => {
+        // How far past this tile the wave front is (negative = not reached yet)
+        const waveExcess = waveFront - dist;
+
+        // Local progress for this tile: 0 before wave, 1 when fully exited
+        // Give each tile a short window (0.18 of wave travel) to launch in
+        const LAUNCH_WINDOW = 0.22;
+        const lp = waveExcess < 0
+          ? 0
+          : Math.min(waveExcess / LAUNCH_WINDOW, 1);
+
+        // Tile starts moving with a sharp ease: slow start, then rocket away
+        const eased = easeInQuint(lp);
+
+        const tx  = Math.cos(angle) * travel * eased;
+        const ty  = Math.sin(angle) * travel * eased;
+        const rot = spinDir * spinAmt * eased;
+
+        // Fade: tile is fully opaque until 55% of its journey, then fades to 0
+        const opacity = lp < 0.55 ? 1 : 1 - (lp - 0.55) / 0.45;
+
+        return (
+          <div
+            key={`${r}-${c}`}
+            style={{
+              position:   "absolute",
+              left:       `${c * tileW}%`,
+              top:        `${r * tileH}%`,
+              // Slightly oversized to close any sub-pixel seams
+              width:      `calc(${tileW}% + 1px)`,
+              height:     `calc(${tileH}% + 1px)`,
+              background: "#000",
+              opacity,
+              transform:  `translate(${tx}vw, ${ty}vh) rotate(${rot}deg)`,
+              willChange: "transform, opacity",
+            }}
+          />
+        );
+      })}
+    </div>
   );
 }
