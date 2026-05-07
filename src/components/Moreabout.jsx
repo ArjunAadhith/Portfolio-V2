@@ -222,7 +222,7 @@ const MAAbout = memo(function MAAbout({ scroller }) {
    ══════════════════════════════════════════════════════════════════════════ */
 const JOBS = [
   {
-    logo:"/emc.jpg",
+    logo:"https://yt3.googleusercontent.com/TRxQ1w3ovSWYSGEly2tQKIeMjdKp73U7F87w3jVfqH9n1LUXf8rdk7w-c4OJFMStP-BBYBlk8Qg=s900-c-k-c0x00ffffff-no-rj",
     logoBg: "#fff", fallback: "EMC",
     role: "UI/UX Designer", company: "Error Makes Clever",
     periodFull: "March - April 2026", type: "Internship", index: "01",
