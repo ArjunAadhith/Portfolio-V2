@@ -222,7 +222,7 @@ const MAAbout = memo(function MAAbout({ scroller }) {
    ══════════════════════════════════════════════════════════════════════════ */
 const JOBS = [
   {
-    logo:"https://yt3.googleusercontent.com/TRxQ1w3ovSWYSGEly2tQKIeMjdKp73U7F87w3jVfqH9n1LUXf8rdk7w-c4OJFMStP-BBYBlk8Qg=s900-c-k-c0x00ffffff-no-rj",
+    logo:"/emc.jpg",
     logoBg: "#fff", fallback: "EMC",
     role: "UI/UX Designer", company: "Error Makes Clever",
     periodFull: "March - April 2026", type: "Internship", index: "01",
@@ -234,7 +234,7 @@ const JOBS = [
     logoBg: "#fff", fallback: "ZO",
     role: "UI/UX & Visual Designer", company: "ZOHO Corporation",
     periodFull: "Jul - Dec 2025", type: "Internship", index: "02",
-    tags: ["Figma", "UI/UX", "Design Systems", "Visual Design"],
+    tags: ["Figma","Nila", "UI/UX", "Design Systems", "Visual Design"],
     desc: "Designed intuitive user interfaces and cohesive visual experiences for Zoho's enterprise product suite. Translated complex workflows into elegant, user-centered interfaces in close collaboration with product and engineering teams.",
   },
   {
@@ -256,7 +256,7 @@ const JOBS = [
   {
     logo: "https://nsic.co.in/images/newNS.png",
     logoBg: "#fff", fallback: "NS",
-    role: "Frontend Web Development", company: "NSIC — Govt. of India",
+    role: "Frontend Web Development", company: "National Small Industries Corporation (NSIC)",
     periodFull: "Feb - Mar 2024", type: "Internship", index: "05",
     tags: ["HTML", "CSS", "JavaScript", "Responsive Design"],
     desc: "Engineered responsive, accessible web interfaces for national digital initiatives. Delivered cross-browser compatible, performance-optimised code adhering to government-grade accessibility standards.",
