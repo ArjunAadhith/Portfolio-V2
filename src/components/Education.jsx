@@ -13,7 +13,7 @@ export default function AcademicJourney() {
           <div className="aj-meta">
             <p>Karpaga Vinayaga College, Chennai</p>
             <p>Nov 2022 - May 2026</p>
-            <p>CGPA: 8.2</p>
+            <p>CGPA: 7.84</p>
           </div>
         </div>
 
