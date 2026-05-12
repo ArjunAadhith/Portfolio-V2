@@ -11,6 +11,7 @@ const ICONS = [
   { id:'github', src:'/f-icons/Git.png',       link:'https://github.com/ArjunAadhith',   xPct:0.632, w:160,  h:160  },
   { id:'arrow',  src:'/f-icons/Arrow.png',     link:null,                   xPct:0.716, w:100,  h:100  },
   { id:'arrow2', src:'/f-icons/Cursor.png',    link:null,                   xPct:0.760, w:80,   h:80   },
+  { id:'Be',     src:'/f-icons/Be.png',        link:'https://www.behance.net/arjunaadhith', xPct:0.490, w:160, h:160 },
   { id:'dragme', src:'/f-icons/Drag me.png',   link:null,                   xPct:0.874, w:156,  h:60   },
 ];
 
