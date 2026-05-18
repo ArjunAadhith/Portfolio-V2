@@ -54,24 +54,14 @@ export default function Hero() {
         }
         @keyframes dotPing {
           0%   { box-shadow: 0 0 0 0   rgba(255,255,255,0.7); }
-          65%  { box-shadow: 0 0 0 6px rgba(255,255,255,0); }
+          65%  { box-shadow: 0 0 0 5px rgba(255,255,255,0); }
           100% { box-shadow: 0 0 0 0   rgba(255,255,255,0); }
-        }
-        @keyframes glint {
-          0%   { left: -60%; opacity: 0; }
-          12%  { opacity: 1; }
-          88%  { opacity: 1; }
-          100% { left: 160%; opacity: 0; }
         }
         @keyframes labelIn {
           from { opacity: 0; transform: translateY(4px); }
           to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* ── Hero root ───────────────────────────────────────
-           NO z-index, NO isolation, NO opacity, NO filter.
-           Any of these would create a stacking context that
-           traps mix-blend-mode and stops it reaching the bg. */
         .hero-root {
           position: relative;
           width: 100%;
@@ -81,26 +71,17 @@ export default function Hero() {
           background: #000;
         }
 
-        /* ── Background ──────────────────────────────────────
-           Position: absolute, NO z-index.
-           DOM order places it first = renders behind everything.
-           Brightness raised so the difference inversion is
-           clearly visible over the headline text area.        */
         .hero-bg {
           position: absolute;
           inset: -10%;
-          background-image:
-            url("/bg.jpg");
+          background-image: url("/bg1.png");
           background-size: cover;
           background-position: center center;
           background-repeat: no-repeat;
           animation: kenBurns 28s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
-          /* Higher brightness = more contrast for the difference blend */
           filter: saturate(1.3) brightness(0.9) contrast(1.1);
         }
 
-        /* ── Film grain ──────────────────────────────────────
-           NO z-index — DOM order (after .hero-bg) puts it on top. */
         .noise {
           position: absolute;
           inset: 0;
@@ -110,11 +91,6 @@ export default function Hero() {
           background-size: 160px 160px;
         }
 
-        /* ── Content container ───────────────────────────────
-           position: absolute WITHOUT z-index = no stacking
-           context is created. DOM order (after .noise) keeps
-           it painted on top. The headline's mix-blend-mode
-           can now reach straight through to the background.  */
         .hero-content {
           position: absolute;
           bottom: 0;
@@ -125,11 +101,6 @@ export default function Hero() {
           padding-bottom: 120px;
         }
 
-        /* ── Badge ───────────────────────────────────────────
-           backdrop-filter lives on the <button> only.
-           It creates a stacking context for the button itself
-           but NOT for .hero-content, so the headline blend
-           below is unaffected.                               */
         .hero-badge-wrap {
           margin-bottom: 46px;
           animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 150ms both;
@@ -138,39 +109,27 @@ export default function Hero() {
           display: inline-flex;
           align-items: center;
           gap: 9px;
-          padding: 11px 26px 11px 18px;
-          background: rgba(255,255,255,0.06);
-          border: 1px solid rgba(255,255,255,0.22);
+          padding: 10px 22px 10px 16px;
+          background: transparent;
+          border: 1px solid rgba(54, 54, 54, 0.88);
           border-radius: 100px;
           cursor: pointer;
-          min-height: 44px;
-          backdrop-filter: blur(18px) saturate(1.4);
-          -webkit-backdrop-filter: blur(18px) saturate(1.4);
-          overflow: hidden;
+          min-height: 40px;
           position: relative;
-          transition: background 0.3s, border-color 0.3s, transform 0.18s;
-          -webkit-tap-highlight-color: transparent;
+          transition: border-color 0.2s ease, opacity 0.2s ease;
           outline: none;
-        }
-        .avail-btn::after {
-          content: "";
-          position: absolute; top: 0; left: -60%;
-          width: 35%; height: 100%;
-          background: linear-gradient(110deg,
-            transparent 20%, rgba(255,255,255,0.2) 50%, transparent 80%);
-          animation: glint 5.5s ease 2.2s infinite;
+          -webkit-tap-highlight-color: transparent;
         }
         .avail-btn:hover {
-          background: rgba(255,255,255,0.11);
-          border-color: rgba(255,255,255,0.42);
-          transform: translateY(-1px);
+          border-color: rgb(97, 97, 97);
+          opacity: 0.82;
         }
-        .avail-btn:active { transform: scale(0.96); }
+        .avail-btn:active { opacity: 0.55; }
         .avail-dot {
-          width: 7px; height: 7px;
-          border-radius: 50%; background: #fff;
+          width: 6px; height: 6px;
+          border-radius: 50%;
+          background: #2b2b2b;
           flex-shrink: 0;
-          box-shadow: 0 0 6px rgba(255,255,255,0.8);
           animation: dotPing 2s ease 1.2s infinite;
         }
         .avail-label {
@@ -178,24 +137,12 @@ export default function Hero() {
             "Helvetica Neue", sans-serif;
           font-size: 11px; font-weight: 500;
           letter-spacing: 0.15em; text-transform: uppercase;
-          color: rgb(255, 255, 255);
+          color: #272727;
           -webkit-font-smoothing: antialiased;
           animation: labelIn 0.28s ease both;
         }
 
-        /* ── Headline — mix-blend-mode: difference ───────────
-           This div has NO opacity / transform / filter / z-index
-           so it creates no stacking context of its own.
-           mix-blend-mode: difference makes the browser invert
-           the composited background pixels behind white text:
-             dark bg  → white text  (|#fff - #000| = #fff)
-             mid bg   → inverted colour
-             bright bg → dark text  (|#fff - #fff| = #000)
-           The result shifts as the Ken Burns animation moves,
-           giving the headline a living chrome / adaptive look. */
-        .headline-blend {
-          mix-blend-mode: difference;
-        }
+        .headline-blend { mix-blend-mode: difference; }
 
         .hero-headline {
           font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont,
@@ -215,10 +162,8 @@ export default function Hero() {
           margin-top: 0.05em;
           animation: wipeIn 1.1s cubic-bezier(0.77,0,0.18,1) 580ms both;
         }
-        /* Pure white — difference blend does the rest */
         .hl-inner { display: block; color: #ffffff; }
 
-        /* ── Tagline ─────────────────────────────────────── */
         .hero-tagline-wrap {
           display: flex;
           align-items: center;
@@ -228,7 +173,7 @@ export default function Hero() {
         }
         .hero-divider {
           width: 36px; height: 1.5px;
-          background: rgb(255, 255, 255);
+          background: rgb(144, 144, 144);
           transform-origin: left; flex-shrink: 0;
           animation: lineGrow 0.7s cubic-bezier(0.16,1,0.3,1) 900ms both;
         }
@@ -237,13 +182,11 @@ export default function Hero() {
             "Helvetica Neue", sans-serif;
           font-size: 12px; font-weight: 400;
           letter-spacing: 0.08em; text-transform: uppercase;
-          color: rgb(255, 255, 255);
+          color: rgb(81, 81, 81);
           -webkit-font-smoothing: antialiased;
           animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 950ms both;
         }
 
-        /* ── Scroll indicator ────────────────────────────────
-           NO z-index — DOM order (last child) keeps it on top. */
         .scroll-wrap {
           position: absolute;
           bottom: 44px; left: 50%;
@@ -255,14 +198,14 @@ export default function Hero() {
         .mouse {
           position: relative;
           width: 18px; height: 28px;
-          border: 1.5px solid rgb(255, 255, 255);
+          border: 1.5px solid rgb(81, 81, 81);
           border-radius: 9px;
         }
         .mouse-dot {
           position: absolute;
           top: 5px; left: 50%;
           width: 2px; height: 5px;
-          background: rgb(255, 255, 255);
+          background: rgb(81, 81, 81);
           border-radius: 2px;
           animation: scrollBob 1.7s ease-in-out infinite;
         }
@@ -271,10 +214,9 @@ export default function Hero() {
             "Helvetica Neue", sans-serif;
           font-size: 9px; font-weight: 500;
           letter-spacing: 0.2em; text-transform: uppercase;
-          color: rgb(255, 255, 255);
+          color: rgb(81, 81, 81);
         }
 
-        /* ── Responsive ──────────────────────────────────── */
         @media (min-width: 1440px) {
           .hero-content {
             max-width: 1920px;
@@ -371,7 +313,7 @@ export default function Hero() {
 
       <div className="hero-root" ref={heroRef}>
 
-        {/* 1 — Background (first in DOM = bottom of paint order) */}
+        {/* 1 — Background */}
         <div
           className="hero-bg"
           style={{ transform: `translate(${bgX}%, ${bgY}%)` }}
@@ -380,7 +322,7 @@ export default function Hero() {
         {/* 2 — Film grain */}
         <div className="noise" />
 
-        {/* 3 — Content (no z-index = no stacking context = blend works) */}
+        {/* 3 — Content */}
         <div className="hero-content">
 
           <div className="hero-badge-wrap">
@@ -396,7 +338,6 @@ export default function Hero() {
             </button>
           </div>
 
-          {/* mix-blend-mode: difference — white text inverts bg pixels */}
           <div className="headline-blend">
             <h1 className="hero-headline">
               <span className="hl-line hl-line-1">
@@ -415,7 +356,7 @@ export default function Hero() {
 
         </div>
 
-        {/* 4 — Scroll indicator (last in DOM = top of paint order) */}
+        {/* 4 — Scroll indicator */}
         <div className="scroll-wrap">
           <div className="mouse">
             <div className="mouse-dot" />
