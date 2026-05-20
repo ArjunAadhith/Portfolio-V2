@@ -104,7 +104,6 @@ const ALL_PROJECTS = [
     label: "App Development",
     link: "https://play.google.com/store/apps/details?id=com.nikocomet.duplicatefinderpro",
   },
-
 ];
 
 const CATEGORY_ORDER = ["Graphic Design", "Logos", "3D Model", "Game", "Wallpapers", "Others"];
@@ -169,7 +168,6 @@ const SCHome = memo(function SCHome({ onScrollDown, scroller }) {
           {/* Top meta row */}
           <motion.div variants={itm} className="sc-hero-meta-row">
             <span className="sc-home-tag">Selected Works</span>
-            <span className="sc-hero-index">2026 / AA</span>
           </motion.div>
 
           {/* Giant 3-tier heading */}
@@ -179,12 +177,8 @@ const SCHome = memo(function SCHome({ onScrollDown, scroller }) {
             <span className="sc-name-line sc-name-sub-italic">Creative Showcase</span>
           </motion.h1>
 
-          {/* Bottom row: disciplines + CTA */}
+          {/* Bottom row: disciplines + CTA (centered) */}
           <motion.div variants={itm} className="sc-hero-bottom-row">
-            <p className="sc-home-sub">
-              Graphic Design&nbsp;&nbsp;·&nbsp;&nbsp;Logos&nbsp;&nbsp;·&nbsp;&nbsp;
-              Game Art&nbsp;&nbsp;·&nbsp;&nbsp;Wallpapers&nbsp;&nbsp;·&nbsp;&nbsp;Development
-            </p>
             <button className="sc-home-cta" onClick={onScrollDown}>
               <span>Explore Projects</span>
               <span className="sc-cta-icon">
@@ -229,9 +223,7 @@ const ProjectCard = memo(function ProjectCard({ project, index }) {
       whileHover={hasLink ? { y: -3 } : {}}
     >
       <div className="sc-card-media">
-        {/* Skeleton shimmer shown until image loads */}
         {!imgLoaded && <div className="sc-card-skeleton" aria-hidden="true" />}
-
         <motion.img
           src={project.src}
           alt={project.title}
@@ -394,9 +386,7 @@ const SCFooter = memo(function SCFooter({ onClose }) {
         </div>
       </div>
 
-      <div className="sc-footer-bottom">
-        <span className="sc-footer-built">Designed &amp; Built by Arjun</span>
-      </div>
+      <div className="sc-footer-bottom" />
     </footer>
   );
 });
@@ -506,7 +496,7 @@ const CSS = `
   }
 
   /* ══════════════════════════════════════
-     HERO — Desktop (unchanged)
+     HERO — Desktop
      ══════════════════════════════════════ */
   .sc-home {
     position: relative;
@@ -603,14 +593,6 @@ const CSS = `
     align-items: center;
     justify-content: space-between;
     gap: 24px;
-  }
-  .sc-home-sub {
-    font-size: 12px;
-    color: #bbbbbb;
-    letter-spacing: 0.02em;
-    margin: 0;
-    font-weight: 400;
-    line-height: 1.5;
   }
 
   .sc-home-cta {
@@ -733,7 +715,6 @@ const CSS = `
     position: relative;
   }
 
-  /* ── Lazy load: skeleton shimmer ── */
   .sc-card-skeleton {
     position: absolute;
     inset: 0;
@@ -752,7 +733,6 @@ const CSS = `
     100% { background-position: -200% 0; }
   }
 
-  /* ── Lazy load: image fade-in on load ── */
   .sc-card-img {
     width: 100%;
     height: 100%;
@@ -1048,7 +1028,6 @@ const CSS = `
     .sc-footer-card { padding: 44px 48px; }
   }
 
-  /* ── MOBILE: pin content to the mid-rule line ── */
   @media (max-width: 768px) {
     .sc-home {
       align-items: flex-start;
@@ -1064,10 +1043,8 @@ const CSS = `
     .sc-name-filled       { font-size: clamp(48px, 13.5vw, 96px); }
     .sc-name-sub-italic   { font-size: clamp(16px, 5vw, 32px); }
 
-    .sc-hero-bottom-row   { flex-direction: column; align-items: flex-start; gap: 16px; }
-
-    .sc-hero-meta-row     { margin-bottom: 14px; }
     .sc-home-name         { margin-bottom: 20px; }
+    .sc-hero-meta-row     { margin-bottom: 14px; }
 
     .sc-filter-bar        { padding: 12px 20px; }
     .sc-grid-outer        { padding: 24px 20px 0; }
@@ -1079,10 +1056,8 @@ const CSS = `
     .sc-footer-headline   { font-size: clamp(36px, 10vw, 64px); }
     .sc-footer-card-watermark { font-size: clamp(100px, 28vw, 180px); }
     .sc-footer-card-bottom { flex-direction: column; align-items: flex-start; gap: 16px; }
-    .sc-footer-built      { display: none; }
   }
 
-  /* Extra small phones (iPhone SE, Galaxy A-series, etc.) */
   @media (max-width: 390px) {
     .sc-home {
       padding-top: calc(52% + 80px);

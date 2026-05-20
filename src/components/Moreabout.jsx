@@ -142,9 +142,6 @@ const MAHome = memo(function MAHome({ onScrollDown, scroller }) {
             <span className="d-block">Arjun</span>
             <span className="d-block">Aadhith</span>
           </motion.h1>
-          <motion.p variants={itm} className="ma-home-sub">
-            UI/UX · Graphic · Product · Visual Design · Development
-          </motion.p>
           <motion.button variants={itm} className="ma-home-scroll" onClick={onScrollDown}>
             <span>Scroll</span>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -274,21 +271,13 @@ const CompanyLogo = memo(function CompanyLogo({ src, fallback, logoBg }) {
   );
 });
 
-/* ─── ExperienceRow ───────────────────────────────────────────────────────────
-   Click/tap always toggles the detail panel (works on both mobile & desktop).
-   On desktop, mouse-hover also opens it (via CSS :hover on the card).
-   No device-detection needed — this approach is universally reliable.
-   ─────────────────────────────────────────────────────────────────────────── */
 const ExperienceRow = memo(function ExperienceRow({ job, i }) {
   const [expanded, setExpanded] = useState(false);
 
-  // Click/tap always toggles — no touch-detection, no guard conditions
   const handleClick = useCallback(() => {
     setExpanded((prev) => !prev);
   }, []);
 
-  // Framer Motion hover only fires on real pointer devices (not touch)
-  // so hovered stays false on mobile — expanded drives everything there
   const [hovered, setHovered] = useState(false);
   const isOpen = hovered || expanded;
 
@@ -310,11 +299,9 @@ const ExperienceRow = memo(function ExperienceRow({ job, i }) {
           <span className="exp-row-company">
             {job.company}<span className="exp-row-dot"> · </span>{job.type}
           </span>
-          {/* shown only on mobile, below company name */}
           <span className="exp-row-date exp-row-date--mobile">{job.periodFull}</span>
         </div>
         <div className="exp-row-right">
-          {/* hidden on mobile, shown on desktop */}
           <span className="exp-row-date exp-row-date--desktop">{job.periodFull}</span>
           <motion.span
             className="exp-row-chevron"
@@ -359,7 +346,6 @@ const MAExperience = memo(function MAExperience({ scroller }) {
       </div>
 
       <div className="exp-list-wrapper">
-        {/* ── Hint text removed ── */}
         <div className="exp-list">
           {JOBS.map((job, i) => <ExperienceRow key={job.index} job={job} i={i} />)}
         </div>
@@ -540,7 +526,6 @@ const MAFooter = memo(function MAFooter({ onGetInTouch }) {
       </div>
       <div className="ma-footer-bottom">
         <span className="ma-footer-copy">© 2026 Arjun Aadhith</span>
-        <span className="ma-footer-made">Designed &amp; Built by Arjun</span>
       </div>
     </footer>
   );
@@ -665,11 +650,10 @@ const CSS = `
   }
   .ma-home-name {
     font-size: clamp(68px, 11vw, 160px); font-weight: 800;
-    line-height: 0.93; letter-spacing: -0.05em; margin: 0 0 40px; color: #fff;
+    line-height: 0.93; letter-spacing: -0.05em; margin: 0 0 64px; color: #fff;
     font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont, sans-serif;
   }
   .d-block { display: block; }
-  .ma-home-sub { font-size: 15px; color: rgba(255,255,255,0.4); letter-spacing: 0.02em; margin: 0 0 64px; font-weight: 400; }
   .ma-home-scroll {
     display: inline-flex; align-items: center; gap: 8px; font-size: 13px;
     color: rgba(255,255,255,0.35); cursor: pointer; font-weight: 500;
@@ -761,7 +745,6 @@ const CSS = `
     border-radius: 18px; overflow: hidden; cursor: default;
     transition: border-color 0.3s ease, background 0.3s ease;
   }
-  /* Always pointer so tapping feels intentional on mobile */
   .exp-row--clickable { cursor: pointer; }
   .exp-row--hovered { background: rgba(255,255,255,0.055); border-color: rgba(255,255,255,0.15); }
 
@@ -794,8 +777,8 @@ const CSS = `
 
   .exp-row-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; margin-left: auto; }
   .exp-row-date { font-size: 13px; color: rgba(255,255,255,0.28); font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: 0.01em; }
-  .exp-row-date--mobile { display: none; }   /* hidden on desktop */
-  .exp-row-date--desktop { display: inline; } /* visible on desktop */
+  .exp-row-date--mobile { display: none; }
+  .exp-row-date--desktop { display: inline; }
   .exp-row-chevron {
     width: 28px; height: 28px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
@@ -861,7 +844,6 @@ const CSS = `
   .ma-footer-cta-btn:hover .ma-footer-cta-arrow { transform: translateX(3px); }
   .ma-footer-bottom { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; padding: 28px 0 40px; border-top: 1px solid rgba(255,255,255,0.07); }
   .ma-footer-copy { font-size: 13px; color: rgba(255,255,255,0.2); font-weight: 400; letter-spacing: 0.01em; }
-  .ma-footer-made { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.12); }
 
   /* ══════════════════════════════════════════════════════════════════════
      RESPONSIVE
@@ -884,8 +866,8 @@ const CSS = `
     .exp-list-wrapper { padding: 0 20px 72px; }
     .exp-list         { gap: 10px; }
     .exp-row-main     { padding: 16px 18px; gap: 12px; }
-    .exp-row-date--mobile { display: block; }   /* visible below company on mobile */
-    .exp-row-date--desktop { display: none; }    /* hidden on mobile */
+    .exp-row-date--mobile { display: block; }
+    .exp-row-date--desktop { display: none; }
     .exp-logo-wrap    { width: 44px; height: 44px; border-radius: 11px; }
     .exp-row-role     { font-size: 15px; }
     .exp-row-detail   { padding: 0 18px 18px calc(18px + 44px + 12px); }
@@ -901,7 +883,6 @@ const CSS = `
     .ma-footer-big    { font-size: clamp(48px, 12vw, 80px); margin-bottom: 48px; }
     .ma-footer-watermark { font-size: clamp(140px, 40vw, 260px); }
     .ma-footer-bottom { padding: 24px 0 32px; }
-    .ma-footer-made   { display: none; }
     .ma-strip-text    { font-size: 13px; }
   }
 
