@@ -222,7 +222,7 @@ const JOBS = [
     logo:"https://yt3.googleusercontent.com/TRxQ1w3ovSWYSGEly2tQKIeMjdKp73U7F87w3jVfqH9n1LUXf8rdk7w-c4OJFMStP-BBYBlk8Qg=s900-c-k-c0x00ffffff-no-rj",
     logoBg: "#fff", fallback: "EMC",
     role: "UI/UX Designer", company: "Error Makes Clever",
-    periodFull: "March - May 2026", type: "Internship", index: "01",
+    periodFull: "March - April 2026", type: "Internship", index: "01",
     tags: ["Figma", "UI/UX", "Web Design","User Behavior Analysis", "Usability Testing"],
     desc: "Designed intuitive and visually engaging user interfaces for web platforms, focusing on enhancing usability and user experience. Revamped existing websites by transforming complex user flows into seamless, user-centered designs, supported by user behavior analysis and UX research.",
   },
