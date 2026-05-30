@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 
 // ─── Scroll helpers ───────────────────────────────────────────────
@@ -28,6 +28,54 @@ function getScrollY() {
 }
 
 const SCROLL_THRESHOLD = 10;
+
+// ─── AnimatedLogoName ─────────────────────────────────────────────
+// Letters ripple like a water wave on hover — each letter bobs up
+// and down with a sinusoidal stagger, creating a fluid wave effect.
+// Clicking scrolls smoothly to the top (home).
+function AnimatedLogoName({ onHomeClick }) {
+  const line1 = "Arjun";
+  const line2 = "Aadhith";
+  const [hovered, setHovered] = useState(false);
+
+  // Wave parameters: letters in line2 continue the wave phase from line1
+  const totalLine1 = line1.length;
+  const WAVE_STEP = 0.07; // seconds between each letter's wave peak
+
+  const renderLetters = (word, lineIndex) =>
+    word.split("").map((char, i) => {
+      // Global index across both lines so the wave flows continuously
+      const globalIndex = lineIndex === 0 ? i : totalLine1 + i;
+      const delay = (globalIndex * WAVE_STEP).toFixed(3);
+      return (
+        <span
+          key={i}
+          className={`logo-letter${hovered ? " logo-letter-wave" : ""}`}
+          style={{ "--delay": `${delay}s` }}
+        >
+          {char}
+        </span>
+      );
+    });
+
+  return (
+    <button
+      className="logo-name-btn"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => {
+        smoothScrollTo(0);
+        onHomeClick?.("#home");
+        window.dispatchEvent(new CustomEvent("portfolio:closeAbout"));
+      }}
+      aria-label="Go to home"
+    >
+      <span className="logo-name-line">{renderLetters(line1, 0)}</span>
+      <span className="logo-name-line">{renderLetters(line2, 1)}</span>
+      <span className="shine-beam" />
+    </button>
+  );
+}
 
 // ─── NavIcon ──────────────────────────────────────────────────────
 function NavIcon({ src, alt, label, href = "#", onNavClick, active }) {
@@ -255,6 +303,10 @@ export default function Navbar() {
     return () => io.disconnect();
   }, []);
 
+  const handleHomeClick = useCallback((href) => {
+    setActiveHref(href);
+  }, []);
+
   const navContent = (
     <>
       <style>{CSS}</style>
@@ -263,17 +315,11 @@ export default function Navbar() {
         className={`navbar-wrapper${aboveAbout ? " nav-above-about" : ""}`}
         style={{ transform: "translateY(-22px)", opacity: 0, filter: "blur(7px)" }}
       >
-        {/* Nav pill — always visible at all breakpoints */}
+        {/* Nav pill */}
         <div className="nav-pill">
           <div className="logo-section">
             <img className="logo-img" src="/Nav logo icon.png" alt="Arjun Aadhith" />
-            <div className="logo-text">
-              <span className="logo-name-shine">
-                <span className="logo-name-text">Arjun</span>
-                <span className="logo-name-text">Aadhith</span>
-                <span className="shine-beam" />
-              </span>
-            </div>
+            <AnimatedLogoName onHomeClick={handleHomeClick} />
           </div>
           <div className="nav-spacer" />
           <div className="nav-icons">
@@ -283,11 +329,6 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/*
-         * Resume pill — desktop & tablet only.
-         * Hidden via CSS on ≤639px. No JS conditional needed;
-         * keeping it in the DOM avoids layout recalculation on resize.
-         */}
         <button className="resume-pill" onClick={() => setModalOpen(true)}>
           <span className="resume-pill-text">Resume</span>
         </button>
@@ -316,6 +357,78 @@ const CSS = `
   .icon-leave {
     animation: leaveOut 0.20s cubic-bezier(0.55,0,0.45,1) 0ms    forwards,
                leaveIn  0.30s cubic-bezier(0.16,1,0.3,1)  0.20s  forwards;
+  }
+
+  /* ── Liquid wave animation ───────────────────────────────────── */
+  /*
+   * Each letter rides a sine wave: crests up with a blue-teal glow,
+   * dips below baseline, then settles. Staggered --delay makes the
+   * crest travel left→right like a ripple across water.
+   */
+  @keyframes letterWave {
+    0%   { transform: translateY(0px)  scaleY(1);    color: inherit; }
+    18%  { transform: translateY(-7px) scaleY(1.08); color: #3BBFCF; }
+    38%  { transform: translateY(0px)  scaleY(1);    color: inherit; }
+    52%  { transform: translateY(3px)  scaleY(0.94); color: #5DD4E0; }
+    68%  { transform: translateY(0px)  scaleY(1);    color: inherit; }
+    82%  { transform: translateY(-2px) scaleY(1.03); color: inherit; }
+    100% { transform: translateY(0px)  scaleY(1);    color: inherit; }
+  }
+
+  .logo-letter-wave {
+    animation: letterWave 0.72s cubic-bezier(0.33, 1, 0.68, 1) var(--delay, 0s) both;
+  }
+
+  /* ─── Logo name button ────────────────────────────────────────── */
+  .logo-name-btn {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+    overflow: hidden;
+    border-radius: 4px;
+    background: none;
+    border: none;
+    padding: 2px 4px;
+    margin: 0;
+    cursor: pointer;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+    /* subtle press feedback */
+    transition: transform 0.15s cubic-bezier(0.22,1,0.36,1);
+  }
+  .logo-name-btn:active { transform: scale(0.94); }
+
+  .logo-name-line {
+    display: flex;
+    align-items: baseline;
+  }
+
+  .logo-letter {
+    display: inline-block;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #111111;
+    letter-spacing: 0.08em;
+    font-family: -apple-system,"SF Pro Text",BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing: antialiased;
+    position: relative;
+    z-index: 1;
+    will-change: transform, color;
+  }
+
+  /* Shine beam stays on the parent button */
+  .logo-name-btn .shine-beam {
+    position: absolute; top: -20%; left: -80%; width: 45%; height: 140%;
+    background: linear-gradient(
+      105deg, transparent 20%, rgba(255,255,255,0) 30%,
+      rgba(255,255,255,0.75) 50%, rgba(255,255,255,0) 70%, transparent 80%
+    );
+    transform: skewX(-15deg); pointer-events: none; z-index: 2; transition: none;
+  }
+  .logo-name-btn:hover .shine-beam {
+    left: 120%;
+    transition: left 0.55s cubic-bezier(0.4,0,0.2,1);
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -354,28 +467,9 @@ const CSS = `
     flex-shrink: 0;
   }
 
-  /* ─── Logo ───────────────────────────────────────────────────── */
-  .logo-section { display:flex; align-items:center; gap:8px; flex-shrink:0; cursor:default; }
+  /* ─── Logo section ───────────────────────────────────────────── */
+  .logo-section { display:flex; align-items:center; gap:8px; flex-shrink:0; }
   .logo-img { width:30px; height:30px; object-fit:contain; border-radius:4px; display:block; }
-  .logo-name-shine {
-    position:relative; display:flex; flex-direction:column;
-    line-height:1.3; overflow:hidden; border-radius:2px;
-  }
-  .logo-name-text {
-    display:block; font-size:13.5px; font-weight:500; color:#111111;
-    letter-spacing:0.08em;
-    font-family:-apple-system,"SF Pro Text",BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
-    -webkit-font-smoothing:antialiased; position:relative; z-index:1;
-  }
-  .shine-beam {
-    position:absolute; top:-20%; left:-80%; width:45%; height:140%;
-    background:linear-gradient(
-      105deg, transparent 20%, rgba(255,255,255,0) 30%,
-      rgba(255,255,255,0.75) 50%, rgba(255,255,255,0) 70%, transparent 80%
-    );
-    transform:skewX(-15deg); pointer-events:none; z-index:2; transition:none;
-  }
-  .logo-section:hover .shine-beam { left:120%; transition:left 0.55s cubic-bezier(0.4,0,0.2,1); }
 
   .nav-spacer { flex:1; }
   .nav-icons  { display:flex; align-items:center; gap:0; }
@@ -401,7 +495,6 @@ const CSS = `
     filter:invert(10%) sepia(0%) saturate(0%) brightness(100%) contrast(100%);
     transition:filter 0.2s ease;
   }
-  /* Active state: icon goes fully black */
   .nav-icon-active .nav-icon-img { filter:brightness(0%); }
 
   /* Tooltip */
@@ -445,8 +538,6 @@ const CSS = `
 
   /* ═══════════════════════════════════════════════════════════════
      TABLET  640px – 1023px
-     • Pill goes fluid (flex:1) so it always fills remaining space
-     • Resume button scales down slightly but stays visible
   ═══════════════════════════════════════════════════════════════ */
   @media (min-width: 640px) and (max-width: 1023px) {
     .navbar-wrapper {
@@ -466,18 +557,13 @@ const CSS = `
       font-size: 14px;
     }
     .logo-img { width:28px; height:28px; }
-    .logo-name-text { font-size:12.5px; }
+    .logo-letter { font-size:12.5px; }
     .nav-icon-wrap { width:40px; height:36px; }
   }
 
 
   /* ═══════════════════════════════════════════════════════════════
      MOBILE  ≤639px
-     • Wrapper padding tightened for screen edges
-     • Nav pill spans full safe width — no fixed pixel width
-     • Resume pill hidden via display:none (no JS needed)
-     • Tooltips suppressed (no hover on touch)
-     • Touch targets kept at ≥44px
   ═══════════════════════════════════════════════════════════════ */
   @media (max-width: 639px) {
     .navbar-wrapper {
@@ -492,24 +578,18 @@ const CSS = `
       border-radius: 16px;
     }
     .logo-img { width:28px; height:28px; }
-    .logo-name-text { font-size:12px; }
+    .logo-letter { font-size:12px; }
     .nav-icon-wrap { width:44px; height:44px; }
-    /* Resume completely removed from mobile layout */
     .resume-pill { display:none !important; }
-    /* Tooltips serve no purpose on touch screens */
     .nav-label { display:none; }
   }
 
   /* ── Very small phones  ≤374px ───────────────────────────────── */
   @media (max-width: 374px) {
-    /*
-     * top padding stays locked at 40px — only horizontal padding
-     * and component sizing compress for very narrow screens.
-     */
     .navbar-wrapper { padding: 40px 24px 8px; }
     .nav-pill { height:50px; padding:0 6px 0 10px; }
     .logo-img { width:26px; height:26px; }
-    .logo-name-text { font-size:11px; letter-spacing:0.05em; }
+    .logo-letter { font-size:11px; letter-spacing:0.05em; }
     .nav-icon-wrap { width:40px; height:40px; }
   }
 
