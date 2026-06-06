@@ -16,18 +16,9 @@ const CARD_W        = 644;
 const GAP           = 28;
 const SIDE_PADDING  = 80;
 const SMOOTHNESS    = 0.010;
-const MARQUEE_SPEED = 0.6;
 
 /* ─── Lerp helper ───────────────────────────────────────────────────── */
 const lerp = (a, b, t) => a + (b - a) * t;
-
-const MQ_ITEMS = [
-  "UI Design", "UX Research", "Figma Prototypes",
-  "Visual Design", "Interaction Design", "User Flows",
-  "Wireframing", "Usability Testing", "Design Systems",
-  "Mobile Apps", "Web Interfaces", "User-Centered Design",
-  "User Personas", "Information Architecture"
-];
 
 function useBreakpoint() {
   const [bp, setBp] = useState(() =>
@@ -84,10 +75,6 @@ export default function Showcase() {
   const rafRef     = useRef(null);
   const [sectionH, setSectionH] = useState("300vh");
 
-  const mqTrackRef  = useRef(null);
-  const mqOffsetRef = useRef(0);
-  const mqRafRef    = useRef(null);
-
   const getMax = useCallback(() => {
     const vw     = window.innerWidth;
     const totalW = CARDS.length * CARD_W + (CARDS.length - 1) * GAP + SIDE_PADDING * 2;
@@ -127,21 +114,6 @@ export default function Showcase() {
     rafRef.current = requestAnimationFrame(tick);
     return () => { cancelAnimationFrame(rafRef.current); lastTsRef.current = null; };
   }, [getMax, useNative]);
-
-  // ── Marquee ──
-  useEffect(() => {
-    const track = mqTrackRef.current;
-    if (!track) return;
-    const loop = () => {
-      mqOffsetRef.current += MARQUEE_SPEED;
-      const halfW = track.scrollWidth / 2;
-      if (mqOffsetRef.current >= halfW) mqOffsetRef.current -= halfW;
-      track.style.transform = `translate3d(-${mqOffsetRef.current.toFixed(3)}px, 0, 0)`;
-      mqRafRef.current = requestAnimationFrame(loop);
-    };
-    mqRafRef.current = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(mqRafRef.current);
-  }, []);
 
   const styles = `
     @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;500;600;700&family=Playfair+Display:ital,wght@1,400&display=swap');
@@ -183,34 +155,6 @@ export default function Showcase() {
     .sc-x::before, .sc-x::after { content:''; position:absolute; background:#e4e4e4; }
     .sc-x::before { width:1px; height:100%; left:50%; }
     .sc-x::after  { width:100%; height:1px; top:50%; }
-
-    /* ── Marquee ── */
-    #sc-marquee-wrap {
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      overflow: hidden;
-      border-bottom: 1px solid #f0f0f0;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      z-index: 2;
-    }
-    #sc-marquee-track {
-      display: flex;
-      white-space: nowrap;
-      will-change: transform;
-    }
-    .sc-mq-item {
-      font-family: 'Syne', sans-serif;
-      font-size: 9px; font-weight: 600;
-      letter-spacing: 0.26em; text-transform: uppercase;
-      color: #d0d0d0; padding: 0 28px; flex-shrink: 0;
-    }
-    .sc-mq-sep {
-      font-family: 'Syne', sans-serif;
-      font-size: 9px; color: #e2e2e2;
-      flex-shrink: 0; padding: 0 4px;
-    }
 
     /* ── Heading ── */
     #sc-heading-block {
@@ -295,7 +239,6 @@ export default function Showcase() {
       flex-shrink: 0;
       position: relative;
       text-decoration: none;
-      /* cursor: none on desktop so the custom circle shows */
       cursor: none;
       box-shadow: none;
       filter: none;
@@ -365,7 +308,7 @@ export default function Showcase() {
     .sc-img.sc-img-visible { opacity: 1; }
     .sc-card-link:hover .sc-img { transform: none; }
 
-    /* ── Circular Cursor (ported from Projects) ── */
+    /* ── Circular Cursor ── */
     .sc-cursor {
       position: absolute;
       width: 96px;
@@ -450,7 +393,6 @@ export default function Showcase() {
       }
       .sc-img             { border-radius: 20px; }
       .sc-img-placeholder { border-radius: 20px; }
-      /* Hide circular cursor on tablet/mobile */
       .sc-cursor { display: none; }
     }
 
@@ -464,8 +406,6 @@ export default function Showcase() {
         justify-content: flex-start;
         padding-top: 48px;
       }
-      #sc-marquee-wrap { height: 28px; }
-      .sc-mq-item { font-size: 7.5px; letter-spacing: 0.20em; padding: 0 18px; }
       #sc-heading-block { padding: 0 20px; margin-bottom: 24px; }
       #sc-title-row { flex-wrap: wrap; align-items: flex-end; gap: 0; row-gap: 2px; }
       .sc-t-solid, .sc-t-ghost { font-size: clamp(52px, 17vw, 76px); line-height: 0.90; }
@@ -496,7 +436,6 @@ export default function Showcase() {
       }
       .sc-img             { border-radius: 16px; }
       .sc-img-placeholder { border-radius: 16px; }
-      /* Hide circular cursor on mobile */
       .sc-cursor { display: none; }
       #sc-bg .sc-x { display: none; }
     }
@@ -534,12 +473,6 @@ export default function Showcase() {
     }
   `;
 
-  const mqSingle = MQ_ITEMS.flatMap((item, i) => [
-    <span key={`a-${i}`} className="sc-mq-item">{item}</span>,
-    <span key={`s-${i}`} className="sc-mq-sep">·</span>,
-  ]);
-  const mqItems = [...mqSingle, ...mqSingle];
-
   return (
     <>
       <style>{styles}</style>
@@ -552,12 +485,6 @@ export default function Showcase() {
             <div className="sc-x" style={{ top:"68%", left:"42%" }} />
             <div className="sc-x" style={{ top:"36%", left:"85%" }} />
             <div className="sc-x" style={{ bottom:"20%", right:"148px" }} />
-          </div>
-
-          <div id="sc-marquee-wrap" aria-hidden="true">
-            <div id="sc-marquee-track" ref={mqTrackRef}>
-              {mqItems}
-            </div>
           </div>
 
           <div id="sc-heading-block">
@@ -591,7 +518,6 @@ function Card({ card, useCircleCursor }) {
   const cardRef    = useRef(null);
   const cursorRef  = useRef(null);
 
-  /* RAF lerp state — stored in refs, never triggers re-renders */
   const rafId   = useRef(null);
   const current = useRef({ x: 0, y: 0 });
   const target  = useRef({ x: 0, y: 0 });
@@ -599,7 +525,6 @@ function Card({ card, useCircleCursor }) {
 
   const { imgRef, src: lazySrc, loaded, setLoaded } = useLazyImage(card.image);
 
-  /* ── RAF loop: lerp current → target every frame ── */
   const tick = useCallback(() => {
     const el = cursorRef.current;
     if (!el) return;
@@ -626,7 +551,6 @@ function Card({ card, useCircleCursor }) {
 
   useEffect(() => () => stopRAF(), [stopRAF]);
 
-  /* ── Mouse events ── */
   const onMouseEnter = useCallback((e) => {
     if (!useCircleCursor || !cardRef.current) return;
     const r = cardRef.current.getBoundingClientRect();
@@ -669,7 +593,6 @@ function Card({ card, useCircleCursor }) {
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
     >
-      {/* ── Circular cursor (same as Projects) ── */}
       <div
         ref={cursorRef}
         className="sc-cursor"

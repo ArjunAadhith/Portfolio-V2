@@ -240,14 +240,6 @@ const getOffset = () => {
   return "13vw";
 };
 
-/*
- * 3-card layout per active index.
- * "far" = off-stage, opacity 0, pointer-events none.
- *
- *   activeIdx=0 → card0: center, card1: right,       card2: far-right (hidden)
- *   activeIdx=1 → card0: left,   card1: center,       card2: right
- *   activeIdx=2 → card0: far-left (hidden), card1: left, card2: center
- */
 const buildStates = (offset) => [
   // activeIdx = 0
   [
@@ -552,7 +544,7 @@ export default function CaseStudySection() {
         <div className="cs-header" ref={headerRef}>
           <p className="cs-label">Featured Work</p>
           <h2 className="cs-title">
-            Designed with <span className="cs-title-stroke">Intention.</span>
+            Intentional <span className="cs-title-stroke">UX Case Studies</span>
           </h2>
         </div>
 
