@@ -23,7 +23,7 @@ const styles = `
 
   .cs-section {
     background: var(--white);
-    padding: 32px 0 100px;
+    padding: 100px 0 100px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -208,7 +208,7 @@ const styles = `
   }
 
   @media (max-width: 768px) {
-    .cs-section   { padding: 20px 0 72px; }
+    .cs-section   { padding: 72px 0 72px; }
     .cs-header    { padding: 0 24px; margin-bottom: 24px; }
     .cs-title     { font-size: clamp(28px, 6vw, 44px); }
     .cs-card-item { width: 78vw; cursor: pointer; }
@@ -220,7 +220,7 @@ const styles = `
   }
 
   @media (max-width: 480px) {
-    .cs-section   { padding: 16px 0 60px; }
+    .cs-section   { padding: 52px 0 60px; }
     .cs-header    { padding: 0 18px; margin-bottom: 18px; }
     .cs-title     { font-size: clamp(26px, 7.5vw, 34px); }
     .cs-card-item { width: 82vw; cursor: pointer; }
@@ -241,19 +241,16 @@ const getOffset = () => {
 };
 
 const buildStates = (offset) => [
-  // activeIdx = 0
   [
     { x: "0vw",                  scale: 1,    z: 3, role: "front" },
     { x: offset,                 scale: 0.90, z: 2, role: "back"  },
     { x: `calc(${offset} * 2)`, scale: 0.82, z: 1, role: "far"   },
   ],
-  // activeIdx = 1
   [
     { x: `-${offset}`,           scale: 0.90, z: 2, role: "back"  },
     { x: "0vw",                  scale: 1,    z: 3, role: "front" },
     { x: offset,                 scale: 0.90, z: 2, role: "back"  },
   ],
-  // activeIdx = 2
   [
     { x: `calc(-${offset} * 2)`, scale: 0.82, z: 1, role: "far"   },
     { x: `-${offset}`,           scale: 0.90, z: 2, role: "back"  },
@@ -266,7 +263,6 @@ const SWIPE_THRESHOLD       = 48;
 const DRAG_CANCEL_THRESHOLD = 6;
 const AUTO_ADVANCE_MS       = 5000;
 
-// ─── Replace the third src with your actual image path ───────────────
 const CARDS = [
   { src: "/case study/TNSTC Case Study.png",  alt: "TNSTC Bus Booking Redesign" },
   { src: "/case study/Swayam Case Study.png", alt: "Swayam Case Study"          },
@@ -277,7 +273,6 @@ export default function CaseStudySection() {
   const headerRef = useRef(null);
   const stageRef  = useRef(null);
 
-  // ── 3 refs for every per-card concern ────────────────────────────────
   const cardRefs        = [useRef(null), useRef(null), useRef(null)];
   const cursorRefs      = [useRef(null), useRef(null), useRef(null)];
   const rafIds          = [useRef(null), useRef(null), useRef(null)];
@@ -298,9 +293,6 @@ export default function CaseStudySection() {
   const [swayamOpen, setSwayamOpen] = useState(false);
   const [stucorOpen, setStucorOpen] = useState(false);
 
-  
-
-  /* ── Apply card transforms ── */
   const applyTransforms = useCallback((idx, animate) => {
     const states = buildStates(getOffset());
     states[idx].forEach(({ x, scale, z, role }, i) => {
@@ -323,7 +315,6 @@ export default function CaseStudySection() {
     return () => window.removeEventListener("resize", onResize);
   }, [activeIdx, applyTransforms]);
 
-  /* ── Switch card ── */
   const goTo = useCallback((idx) => {
     if (isAnimating.current || idx === activeIdx) return;
     const oldCursor = cursorRefs[activeIdx].current;
@@ -339,20 +330,17 @@ export default function CaseStudySection() {
     setTimeout(() => { isAnimating.current = false; }, 700);
   }, [activeIdx, applyTransforms]);
 
-  /* ── Click ── */
   const handleCardClick = (clickedIdx) => {
     if (isAnimating.current || isDragging.current) return;
     if (clickedIdx !== activeIdx) {
       goTo(clickedIdx);
     } else {
-      // Card 2 is image-only — clicking it does nothing (add a modal later if needed)
       if (clickedIdx === 0) setTnstcOpen(true);
       if (clickedIdx === 1) setSwayamOpen(true);
       if (clickedIdx === 2) setStucorOpen(true);
     }
   };
 
-  /* ── Touch swipe ── */
   const onTouchStart = (e) => { touchStart.current = e.touches[0].clientX; };
   const onTouchEnd   = (e) => {
     if (touchStart.current === null || isAnimating.current) return;
@@ -363,7 +351,6 @@ export default function CaseStudySection() {
     if (dx > 0) goTo((activeIdx - 1 + CARDS.length) % CARDS.length);
   };
 
-  /* ── Mouse drag swipe ── */
   const onMouseDown = (e) => {
     if (e.button !== 0) return;
     mouseStart.current = e.clientX;
@@ -405,7 +392,6 @@ export default function CaseStudySection() {
     };
   }, [activeIdx, goTo]);
 
-  /* ── Scroll reveal ── */
   useEffect(() => {
     const io = new IntersectionObserver(
       (es) => es.forEach((e) => e.isIntersecting && e.target.classList.add("visible")),
@@ -415,10 +401,8 @@ export default function CaseStudySection() {
     return () => io.disconnect();
   }, []);
 
-  /* ── Mobile helpers ── */
   const isMobileView = () => window.innerWidth <= 768;
 
-  /* ── Animate fill for the active segment ── */
   const startProgress = useCallback((idx) => {
     if (!isMobileView()) return;
     segmentFillRefs.forEach((r) => {
@@ -431,7 +415,6 @@ export default function CaseStudySection() {
     fill.style.width = "100%";
   }, []);
 
-  /* ── EFFECT 1 — IntersectionObserver (mount only) ── */
   useEffect(() => {
     const section = document.querySelector(".cs-section");
     if (!section) return;
@@ -459,7 +442,6 @@ export default function CaseStudySection() {
   /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, []);
 
-  /* ── EFFECT 2 — Continuous loop (re-runs on activeIdx change) ── */
   useEffect(() => {
     if (!isMobileView()) return;
     if (!sectionInViewRef.current) return;
@@ -471,12 +453,10 @@ export default function CaseStudySection() {
     return () => { if (autoTimer.current) clearTimeout(autoTimer.current); };
   }, [activeIdx, startProgress, goTo]);
 
-  /* Cleanup RAFs on unmount */
   useEffect(() => () => {
     rafIds.forEach(r => { if (r.current) cancelAnimationFrame(r.current); });
   }, []);
 
-  /* ── Circular cursor handlers ── */
   const makeCursorHandlers = useCallback((idx) => {
     const tick = () => {
       const el = cursorRefs[idx].current;
@@ -535,9 +515,9 @@ export default function CaseStudySection() {
         onClose={() => setSwayamOpen(false)}
       />
       <StucorCaseStudyPage
-  isOpen={stucorOpen}
-  onClose={() => setStucorOpen(false)}
-/>
+        isOpen={stucorOpen}
+        onClose={() => setStucorOpen(false)}
+      />
 
       <section className="cs-section">
 
@@ -601,7 +581,6 @@ export default function CaseStudySection() {
           })}
         </div>
 
-        {/* ── Mobile-only segmented progress bar (3 segments) ── */}
         <div className="cs-progress">
           {CARDS.map((_, idx) => (
             <div key={idx} className="cs-progress-segment">

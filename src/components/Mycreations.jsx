@@ -365,7 +365,7 @@ export default function Showcase() {
         height: auto !important;
         overflow: visible !important;
         justify-content: flex-start;
-        padding-top: 56px;
+        padding-top: 32px;
       }
       #sc-heading-block { padding: 0 40px; margin-bottom: 32px; }
       .sc-t-solid, .sc-t-ghost { font-size: clamp(56px, 9vw, 88px); }
@@ -404,7 +404,7 @@ export default function Showcase() {
         height: auto !important;
         overflow: visible !important;
         justify-content: flex-start;
-        padding-top: 48px;
+        padding-top: 24px;
       }
       #sc-heading-block { padding: 0 20px; margin-bottom: 24px; }
       #sc-title-row { flex-wrap: wrap; align-items: flex-end; gap: 0; row-gap: 2px; }
