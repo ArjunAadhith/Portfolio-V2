@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import CaseStudyPage        from "./Casestudypage.jsx";
-import SwayamCaseStudyPage  from "./SwayamCaseStudyPage.jsx";
+import CaseStudyPage       from "./Casestudypage.jsx";
+import SwayamCaseStudyPage from "./SwayamCaseStudyPage.jsx";
 import StucorCaseStudyPage from "./StucorCaseStudyPage.jsx";
+import BuildoCaseStudyPage from "./BuildoCaseStudyPage.jsx";
 
 /* ─── Lerp helper ───────────────────────────────────────────────────── */
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -29,7 +30,6 @@ const styles = `
     flex-direction: column;
   }
 
-  /* ── Header ── */
   .cs-header {
     display: flex;
     flex-direction: column;
@@ -68,7 +68,6 @@ const styles = `
     font-style: normal;
   }
 
-  /* ── Stage ── */
   .cs-stage {
     position: relative;
     display: flex;
@@ -81,7 +80,6 @@ const styles = `
   }
   .cs-stage.is-dragging { cursor: grabbing; }
 
-  /* ── Card items ── */
   .cs-card-item {
     position: absolute;
     width: min(68vw, 820px);
@@ -92,7 +90,6 @@ const styles = `
   .cs-card-item.is-far   { opacity: 0;    pointer-events: none; }
   .cs-card-item.is-front { opacity: 1; }
 
-  /* Bezel */
   .cs-bezel {
     border-radius: 40px;
     box-shadow:
@@ -134,7 +131,6 @@ const styles = `
     pointer-events: none;
   }
 
-  /* ── Circular Cursor ── */
   .cs-cursor {
     position: absolute;
     width: 96px;
@@ -168,7 +164,6 @@ const styles = `
     pointer-events: none;
   }
 
-  /* ── Mobile segmented progress bar ── */
   .cs-progress { display: none; }
 
   @media (max-width: 768px) {
@@ -180,7 +175,6 @@ const styles = `
       margin-top: 20px;
       flex-shrink: 0;
     }
-
     .cs-progress-segment {
       width: 36px;
       height: 2.5px;
@@ -189,7 +183,6 @@ const styles = `
       overflow: hidden;
       position: relative;
     }
-
     .cs-progress-fill {
       position: absolute;
       left: 0; top: 0;
@@ -200,7 +193,6 @@ const styles = `
     }
   }
 
-  /* ── Responsive ── */
   @media (max-width: 1024px) {
     .cs-header    { padding: 0 48px; }
     .cs-card-item { width: min(76vw, 680px); }
@@ -240,23 +232,23 @@ const getOffset = () => {
   return "13vw";
 };
 
-const buildStates = (offset) => [
-  [
-    { x: "0vw",                  scale: 1,    z: 3, role: "front" },
-    { x: offset,                 scale: 0.90, z: 2, role: "back"  },
-    { x: `calc(${offset} * 2)`, scale: 0.82, z: 1, role: "far"   },
-  ],
-  [
-    { x: `-${offset}`,           scale: 0.90, z: 2, role: "back"  },
-    { x: "0vw",                  scale: 1,    z: 3, role: "front" },
-    { x: offset,                 scale: 0.90, z: 2, role: "back"  },
-  ],
-  [
-    { x: `calc(-${offset} * 2)`, scale: 0.82, z: 1, role: "far"   },
-    { x: `-${offset}`,           scale: 0.90, z: 2, role: "back"  },
-    { x: "0vw",                  scale: 1,    z: 3, role: "front" },
-  ],
-];
+const buildStates = (offset, count) => {
+  return Array.from({ length: count }, (_, activeIdx) =>
+    Array.from({ length: count }, (_, cardIdx) => {
+      const diff    = cardIdx - activeIdx;
+      const absDiff = Math.abs(diff);
+      if (absDiff === 0) {
+        return { x: "0vw", scale: 1, z: count + 1, role: "front" };
+      }
+      if (absDiff === 1) {
+        const sign = diff > 0 ? 1 : -1;
+        return { x: `calc(${offset} * ${sign})`, scale: 0.90, z: count, role: "back" };
+      }
+      const sign = diff > 0 ? 1 : -1;
+      return { x: `calc(${offset} * ${sign * absDiff})`, scale: 0.82, z: count - absDiff, role: "far" };
+    })
+  );
+};
 
 const SPRING_TRANSITION     = "transform 0.7s cubic-bezier(0.34, 1.12, 0.64, 1), opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
 const SWIPE_THRESHOLD       = 48;
@@ -264,22 +256,46 @@ const DRAG_CANCEL_THRESHOLD = 6;
 const AUTO_ADVANCE_MS       = 5000;
 
 const CARDS = [
-  { src: "/case study/TNSTC Case Study.png",  alt: "TNSTC Bus Booking Redesign" },
-  { src: "/case study/Swayam Case Study.png", alt: "Swayam Case Study"          },
-  { src: "/case study/Stucor Case Study.png",  alt: "Stucor Case Study"           },
+  { src: "/case study/Buildo Case Study.png",  alt: "Buildo Case Study"          },
+  { src: "/case study/TNSTC Case Study.png",   alt: "TNSTC Bus Booking Redesign" },
+  { src: "/case study/Swayam Case Study.png",  alt: "Swayam Case Study"          },
+  { src: "/case study/Stucor Case Study.png",  alt: "Stucor Case Study"          },
 ];
+
+const N = CARDS.length; // 4
 
 export default function CaseStudySection() {
   const headerRef = useRef(null);
   const stageRef  = useRef(null);
 
-  const cardRefs        = [useRef(null), useRef(null), useRef(null)];
-  const cursorRefs      = [useRef(null), useRef(null), useRef(null)];
-  const rafIds          = [useRef(null), useRef(null), useRef(null)];
-  const currents        = [useRef({ x: 0, y: 0 }), useRef({ x: 0, y: 0 }), useRef({ x: 0, y: 0 })];
-  const targets         = [useRef({ x: 0, y: 0 }), useRef({ x: 0, y: 0 }), useRef({ x: 0, y: 0 })];
-  const isHovers        = [useRef(false), useRef(false), useRef(false)];
-  const segmentFillRefs = [useRef(null),  useRef(null),  useRef(null)];
+  // ── Fixed-count refs (hooks called unconditionally at top level) ──
+  const cardRef0 = useRef(null); const cardRef1 = useRef(null);
+  const cardRef2 = useRef(null); const cardRef3 = useRef(null);
+  const cardRefs = [cardRef0, cardRef1, cardRef2, cardRef3];
+
+  const cursorRef0 = useRef(null); const cursorRef1 = useRef(null);
+  const cursorRef2 = useRef(null); const cursorRef3 = useRef(null);
+  const cursorRefs = [cursorRef0, cursorRef1, cursorRef2, cursorRef3];
+
+  const rafId0 = useRef(null); const rafId1 = useRef(null);
+  const rafId2 = useRef(null); const rafId3 = useRef(null);
+  const rafIds = [rafId0, rafId1, rafId2, rafId3];
+
+  const current0 = useRef({ x: 0, y: 0 }); const current1 = useRef({ x: 0, y: 0 });
+  const current2 = useRef({ x: 0, y: 0 }); const current3 = useRef({ x: 0, y: 0 });
+  const currents = [current0, current1, current2, current3];
+
+  const target0 = useRef({ x: 0, y: 0 }); const target1 = useRef({ x: 0, y: 0 });
+  const target2 = useRef({ x: 0, y: 0 }); const target3 = useRef({ x: 0, y: 0 });
+  const targets = [target0, target1, target2, target3];
+
+  const isHover0 = useRef(false); const isHover1 = useRef(false);
+  const isHover2 = useRef(false); const isHover3 = useRef(false);
+  const isHovers = [isHover0, isHover1, isHover2, isHover3];
+
+  const segFill0 = useRef(null); const segFill1 = useRef(null);
+  const segFill2 = useRef(null); const segFill3 = useRef(null);
+  const segmentFillRefs = [segFill0, segFill1, segFill2, segFill3];
 
   const touchStart       = useRef(null);
   const mouseStart       = useRef(null);
@@ -288,13 +304,14 @@ export default function CaseStudySection() {
   const autoTimer        = useRef(null);
   const sectionInViewRef = useRef(false);
 
-  const [activeIdx,  setActiveIdx]  = useState(0);
-  const [tnstcOpen,  setTnstcOpen]  = useState(false);
-  const [swayamOpen, setSwayamOpen] = useState(false);
-  const [stucorOpen, setStucorOpen] = useState(false);
+  const [activeIdx,   setActiveIdx]   = useState(0);
+  const [buildoOpen,  setBuildoOpen]  = useState(false);
+  const [tnstcOpen,   setTnstcOpen]   = useState(false);
+  const [swayamOpen,  setSwayamOpen]  = useState(false);
+  const [stucorOpen,  setStucorOpen]  = useState(false);
 
   const applyTransforms = useCallback((idx, animate) => {
-    const states = buildStates(getOffset());
+    const states = buildStates(getOffset(), N);
     states[idx].forEach(({ x, scale, z, role }, i) => {
       const el = cardRefs[i].current;
       if (!el) return;
@@ -335,9 +352,10 @@ export default function CaseStudySection() {
     if (clickedIdx !== activeIdx) {
       goTo(clickedIdx);
     } else {
-      if (clickedIdx === 0) setTnstcOpen(true);
-      if (clickedIdx === 1) setSwayamOpen(true);
-      if (clickedIdx === 2) setStucorOpen(true);
+      if (clickedIdx === 0) setBuildoOpen(true);
+      if (clickedIdx === 1) setTnstcOpen(true);
+      if (clickedIdx === 2) setSwayamOpen(true);
+      if (clickedIdx === 3) setStucorOpen(true);
     }
   };
 
@@ -347,8 +365,8 @@ export default function CaseStudySection() {
     const dx = e.changedTouches[0].clientX - touchStart.current;
     touchStart.current = null;
     if (Math.abs(dx) < SWIPE_THRESHOLD) return;
-    if (dx < 0) goTo((activeIdx + 1) % CARDS.length);
-    if (dx > 0) goTo((activeIdx - 1 + CARDS.length) % CARDS.length);
+    if (dx < 0) goTo((activeIdx + 1) % N);
+    if (dx > 0) goTo((activeIdx - 1 + N) % N);
   };
 
   const onMouseDown = (e) => {
@@ -381,8 +399,8 @@ export default function CaseStudySection() {
       if (stageRef.current) stageRef.current.classList.remove("is-dragging");
       if (!wasDrag || isAnimating.current) return;
       if (Math.abs(dx) < SWIPE_THRESHOLD) return;
-      if (dx < 0) goTo((activeIdx + 1) % CARDS.length);
-      if (dx > 0) goTo((activeIdx - 1 + CARDS.length) % CARDS.length);
+      if (dx < 0) goTo((activeIdx + 1) % N);
+      if (dx > 0) goTo((activeIdx - 1 + N) % N);
     };
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup",   onMouseUp);
@@ -425,7 +443,7 @@ export default function CaseStudySection() {
           startProgress(activeIdx);
           if (autoTimer.current) clearTimeout(autoTimer.current);
           autoTimer.current = setTimeout(() => {
-            goTo((activeIdx + 1) % CARDS.length);
+            goTo((activeIdx + 1) % N);
           }, AUTO_ADVANCE_MS);
         } else {
           sectionInViewRef.current = false;
@@ -439,7 +457,7 @@ export default function CaseStudySection() {
     );
     io.observe(section);
     return () => { io.disconnect(); if (autoTimer.current) clearTimeout(autoTimer.current); };
-  /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -448,7 +466,7 @@ export default function CaseStudySection() {
     if (autoTimer.current) clearTimeout(autoTimer.current);
     startProgress(activeIdx);
     autoTimer.current = setTimeout(() => {
-      goTo((activeIdx + 1) % CARDS.length);
+      goTo((activeIdx + 1) % N);
     }, AUTO_ADVANCE_MS);
     return () => { if (autoTimer.current) clearTimeout(autoTimer.current); };
   }, [activeIdx, startProgress, goTo]);
@@ -506,6 +524,10 @@ export default function CaseStudySection() {
     <>
       <style>{styles}</style>
 
+      <BuildoCaseStudyPage
+        isOpen={buildoOpen}
+        onClose={() => setBuildoOpen(false)}
+      />
       <CaseStudyPage
         isOpen={tnstcOpen}
         onClose={() => setTnstcOpen(false)}
@@ -520,7 +542,6 @@ export default function CaseStudySection() {
       />
 
       <section className="cs-section">
-
         <div className="cs-header" ref={headerRef}>
           <p className="cs-label">Featured Work</p>
           <h2 className="cs-title">
@@ -549,19 +570,12 @@ export default function CaseStudySection() {
                 onMouseMove={isFront  ? onMove  : undefined}
               >
                 {isFront && (
-                  <div
-                    ref={cursorRefs[idx]}
-                    className="cs-cursor"
-                    aria-hidden="true"
-                  >
+                  <div ref={cursorRefs[idx]} className="cs-cursor" aria-hidden="true">
                     <span className="cs-cursor-label">
                       VIEW
                       <svg
-                        width="11"
-                        height="11"
-                        viewBox="0 0 11 11"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
+                        width="11" height="11" viewBox="0 0 11 11"
+                        fill="none" xmlns="http://www.w3.org/2000/svg"
                         style={{ display: "inline-block", marginLeft: "5px", verticalAlign: "middle", marginTop: "-1px" }}
                       >
                         <line x1="1" y1="10" x2="10" y2="1" stroke="#000" strokeWidth="1.6" strokeLinecap="round"/>
@@ -570,7 +584,6 @@ export default function CaseStudySection() {
                     </span>
                   </div>
                 )}
-
                 <div className="cs-bezel">
                   <div className="cs-card">
                     <img src={card.src} alt={card.alt} draggable={false} />
@@ -588,7 +601,6 @@ export default function CaseStudySection() {
             </div>
           ))}
         </div>
-
       </section>
     </>
   );
