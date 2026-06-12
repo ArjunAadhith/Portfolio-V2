@@ -463,9 +463,6 @@ export default function About() {
 
         /* ═══════════════════════════════════════════
            ✨ SHINING BORDER — Read More button
-           Uses @property for smooth conic-gradient
-           rotation. Falls back gracefully on older
-           browsers (static border, no crash).
         ═══════════════════════════════════════════ */
         @property --shine-angle {
           syntax: '<angle>';
@@ -480,7 +477,7 @@ export default function About() {
           align-items: center;
           justify-content: center;
           border-radius: 100px;
-          padding: 1.5px;                         /* border thickness */
+          padding: 1.5px;
           background: conic-gradient(
             from var(--shine-angle),
             #C4C4C4  0%,
@@ -492,8 +489,6 @@ export default function About() {
             #C4C4C4 100%
           );
           animation: shine-spin 2.8s linear infinite;
-          /* Soft outer glow that pulses with the spin */
-          box-shadow: 0 0 0 0 rgba(0,0,0,0);
           flex-shrink: 0;
         }
 
@@ -501,29 +496,43 @@ export default function About() {
           to { --shine-angle: 360deg; }
         }
 
-        /* 
-          The actual pill button sits inside the wrapper.
-          We remove its own border so the wrapper's gradient
-          acts as the border. Background matches the section
-          so it looks "cut out".
+        /*
+          ── READ MORE BUTTON OVERRIDES ──────────────────────
+          Default: solid black fill (via ::before at translateY(0)),
+                   white text on top.
+          Hover:   black fill slides DOWN out (translateY(102%)),
+                   revealing transparent bg + gradient ring.
+                   Text switches to dark. Spin pauses.
         */
         .btn-shine-wrap .btn-pill {
           border: none;
-          background: #E8E8E8;
-          /* Tiny inset so the gradient ring is visible all around */
+          background: #E8E8E8;   /* section bg — looks transparent beneath the fill */
+          color: #ffffff;        /* white text visible over the black ::before */
           margin: 0;
+          transition: color 0.46s cubic-bezier(0.16,1,0.3,1),
+                      border-color 0.46s cubic-bezier(0.16,1,0.3,1);
         }
 
-        /* Keep hover fill working — override background on hover */
+        /* Black fill starts fully covering the button (translateY 0) */
         .btn-shine-wrap .btn-pill::before {
+          display: block;
           background: #111111;
+          transform: translateY(0);           /* fully visible by default */
+          transition: transform 0.46s cubic-bezier(0.16,1,0.3,1);
         }
+
+        /* Hover: slide the black fill DOWN and out */
+        .btn-shine-wrap .btn-pill:hover::before {
+          transform: translateY(102%);
+        }
+
+        /* Hover: switch text to dark once fill is gone */
         .btn-shine-wrap .btn-pill:hover {
-          color: #ffffff;
+          color: #1A1A1A;
           border-color: transparent;
         }
 
-        /* Pause shine when user hovers (button fill takes over attention) */
+        /* Pause spin on hover */
         .btn-shine-wrap:hover {
           animation-play-state: paused;
         }
@@ -537,7 +546,7 @@ export default function About() {
           margin-right: -8%;
         }
 
-        /* ─── Image outer: relative + cursor:none so custom cursor shows ── */
+        /* ─── Image outer ── */
         .about-img-outer {
           position: relative;
           display: inline-block;
@@ -776,6 +785,11 @@ export default function About() {
             flex-shrink: 0;
           }
 
+          /* On mobile: keep ::before covering (default black fill) */
+          .btn-shine-wrap .btn-pill::before {
+            transform: translateY(0);
+          }
+
           /* Hide cursor on mobile */
           .ab-cursor { display: none; }
         }
@@ -938,10 +952,8 @@ export default function About() {
 
               {/*
                 ✨ SHINING "Read More" button
-                The .btn-shine-wrap div draws a rotating conic-gradient ring.
-                The .btn-pill inside has its own border removed so the ring
-                acts as the border. Hover pauses the spin while the fill
-                animation takes over.
+                Default: solid black fill + white text
+                Hover:   transparent bg + gradient ring only + spin paused
               */}
               <div className="btn-shine-wrap">
                 <button className="btn-pill" onClick={() => setMoreOpen(true)}>
@@ -970,7 +982,7 @@ export default function About() {
               onMouseMove={onMove}
               onMouseLeave={onLeave}
             >
-              {/* ── Premium cursor circle (same system as Projects) ── */}
+              {/* ── Premium cursor circle ── */}
               <div
                 ref={cursorRef}
                 className="ab-cursor"

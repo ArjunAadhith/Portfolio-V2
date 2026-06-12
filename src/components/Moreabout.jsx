@@ -486,7 +486,6 @@ const MABeyondContent = memo(function MABeyondContent() {
    SECTION 6 — FOOTER
    ══════════════════════════════════════════════════════════════════════════ */
 const MAFooter = memo(function MAFooter({ onGetInTouch }) {
-  const [hovered, setHovered] = useState(false);
   return (
     <footer className="ma-footer">
       <div className="ma-footer-topline" aria-hidden="true" />
@@ -508,10 +507,17 @@ const MAFooter = memo(function MAFooter({ onGetInTouch }) {
           </h2>
         </RevealText>
         <RevealText delay={0.14}>
+          {/*
+            ── GET IN TOUCH BUTTON ─────────────────────────────────────────
+            Same behavior as Read More:
+            Default : white fill covering the button (::before at translateY(0)),
+                      dark text on top.
+            Hover   : white fill slides DOWN out (translateY(102%)),
+                      revealing transparent bg + border.
+                      Text stays dark. Arrow shifts right.
+          */}
           <button
-            className={`ma-footer-cta-btn ${hovered ? "is-hovered" : ""}`}
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
+            className="ma-footer-cta-btn"
             onClick={onGetInTouch}
             aria-label="Get in touch"
           >
@@ -836,12 +842,92 @@ const CSS = `
   .ma-footer-big { font-size: clamp(60px, 10.5vw, 148px); font-weight: 900; letter-spacing: -0.05em; line-height: 0.94; margin: 0 0 64px; font-family: -apple-system,"SF Pro Display",BlinkMacSystemFont,sans-serif; display: flex; flex-direction: column; gap: 0; }
   .ma-footer-big-line { display: block; color: #ffffff; }
   .ma-footer-big-italic { color: rgba(255,255,255,0.28); font-style: italic; font-weight: 700; }
-  .ma-footer-cta-btn { display: inline-flex; align-items: center; gap: 0; height: 60px; padding: 0 8px 0 32px; background: #fff; color: #111; border: none; border-radius: 100px; font-size: 15px; font-weight: 700; font-family: inherit; letter-spacing: -0.01em; cursor: pointer; transition: background 0.22s, transform 0.18s; overflow: hidden; }
-  .ma-footer-cta-btn:hover  { background: #f0f0f0; transform: translateY(-2px); }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     GET IN TOUCH BUTTON — slide-down-out fill on hover
+     Default : white fill fully covering (::before at translateY(0)),
+               dark text visible on top.
+     Hover   : white fill slides DOWN out (translateY(102%)),
+               transparent bg revealed, border appears,
+               text stays dark, arrow shifts right.
+  ══════════════════════════════════════════════════════════════════════ */
+  .ma-footer-cta-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    height: 60px;
+    padding: 0 8px 0 32px;
+    background: transparent;          /* base is transparent — fill handled by ::before */
+    color: #111;
+    border: 1.5px solid rgba(255,255,255,0.25);
+    border-radius: 100px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    overflow: hidden;
+    transition:
+      border-color 0.46s cubic-bezier(0.16,1,0.3,1),
+      color        0.46s cubic-bezier(0.16,1,0.3,1);
+  }
+
+  /* White fill — starts fully covering the button */
+  .ma-footer-cta-btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: #ffffff;
+    border-radius: inherit;
+    transform: translateY(0);          /* fully visible by default */
+    transition: transform 0.46s cubic-bezier(0.16,1,0.3,1);
+    z-index: 0;
+  }
+
+  /* Hover: slide the white fill DOWN and out */
+  .ma-footer-cta-btn:hover::before {
+    transform: translateY(102%);
+  }
+
+  /* Hover: show proper border, switch text to white (now on dark bg) */
+  .ma-footer-cta-btn:hover {
+    border-color: rgba(255,255,255,0.55);
+    color: #ffffff;
+  }
+
   .ma-footer-cta-btn:active { transform: scale(0.97); }
-  .ma-footer-cta-label { flex-shrink: 0; margin-right: 16px; }
-  .ma-footer-cta-arrow { width: 44px; height: 44px; border-radius: 50%; background: #111; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: transform 0.22s; }
-  .ma-footer-cta-btn:hover .ma-footer-cta-arrow { transform: translateX(3px); }
+
+  /* Label and arrow sit above the ::before fill */
+  .ma-footer-cta-label {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+    margin-right: 16px;
+  }
+
+  .ma-footer-cta-arrow {
+    position: relative;
+    z-index: 1;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #111;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.3s cubic-bezier(0.16,1,0.3,1),
+                background 0.46s cubic-bezier(0.16,1,0.3,1);
+  }
+
+  /* On hover: arrow circle inverts to match the now-transparent button */
+  .ma-footer-cta-btn:hover .ma-footer-cta-arrow {
+    transform: translateX(3px);
+    background: rgba(255,255,255,0.12);
+  }
+
   .ma-footer-bottom { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; padding: 28px 0 40px; border-top: 1px solid rgba(255,255,255,0.07); }
   .ma-footer-copy { font-size: 13px; color: rgba(255,255,255,0.2); font-weight: 400; letter-spacing: 0.01em; }
 
@@ -884,6 +970,9 @@ const CSS = `
     .ma-footer-watermark { font-size: clamp(140px, 40vw, 260px); }
     .ma-footer-bottom { padding: 24px 0 32px; }
     .ma-strip-text    { font-size: 13px; }
+
+    .ma-footer-cta-btn { height: 54px; font-size: 14px; padding: 0 6px 0 26px; }
+    .ma-footer-cta-arrow { width: 40px; height: 40px; }
   }
 
   /* Small mobile ≤ 480px */
@@ -903,6 +992,8 @@ const CSS = `
 
     .ma-beyond-stroke  { -webkit-text-stroke-width: 1.5px; }
     .ma-footer-big     { font-size: clamp(40px, 13vw, 64px); }
+    .ma-footer-cta-btn { height: 50px; font-size: 13px; padding: 0 6px 0 22px; }
+    .ma-footer-cta-arrow { width: 36px; height: 36px; }
   }
 
   /* Very small ≤ 360px */
