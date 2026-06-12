@@ -9,7 +9,7 @@ const lerp = (a, b, t) => a + (b - a) * t;
 
 const styles = `
   :root {
-    --white: #ffffff;
+    --white: #f8f8f8;
     --ink: #0a0a0a;
     --ink-muted: #6b6b6b;
     --grey: #8a8a9a;

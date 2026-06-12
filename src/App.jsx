@@ -71,8 +71,8 @@ export default function App() {
 
           <div id="projects">
             <Projects />
-            <CaseStudySection />
             <Mycreations />
+            <CaseStudySection />
             <Multidisciplinary />
             <Illustrations />
           </div>
