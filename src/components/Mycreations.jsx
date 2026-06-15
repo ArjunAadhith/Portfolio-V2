@@ -17,7 +17,6 @@ const GAP           = 28;
 const SIDE_PADDING  = 80;
 const SMOOTHNESS    = 0.010;
 
-/* ─── Lerp helper ───────────────────────────────────────────────────── */
 const lerp = (a, b, t) => a + (b - a) * t;
 
 function useBreakpoint() {
@@ -89,7 +88,6 @@ export default function Showcase() {
     return () => window.removeEventListener("resize", update);
   }, [getMax, useNative]);
 
-  // ── Desktop sticky scroll — GPU-composited, lag-free ──
   useEffect(() => {
     if (useNative) return;
     const tick = (timestamp) => {
@@ -342,13 +340,13 @@ export default function Showcase() {
       pointer-events: none;
     }
 
-    /* ════ ULTRA-WIDE ≥ 1920px ═══════════════════════════════════════ */
+    /* ════ ULTRA-WIDE >= 1920px ═══════════════════════════════════════ */
     @media (min-width: 1920px) {
       #sc-heading-block { padding: 0 120px; }
       #sc-track         { padding: 0 120px; }
     }
 
-    /* ════ SMALL DESKTOP 1024–1279px ══════════════════════════════════ */
+    /* ════ SMALL DESKTOP 1024-1279px ══════════════════════════════════ */
     @media (min-width: 1024px) and (max-width: 1279px) {
       #sc-heading-block { padding: 0 48px; margin-bottom: 36px; }
       #sc-track         { padding: 0 48px; gap: 20px; }
@@ -357,7 +355,7 @@ export default function Showcase() {
       .sc-img-placeholder { border-radius: 22px; }
     }
 
-    /* ════ TABLET 768–1023px ═══════════════════════════════════════════ */
+    /* ════ TABLET 768-1023px ═══════════════════════════════════════════ */
     @media (min-width: 768px) and (max-width: 1023px) {
       #sc-section { padding-bottom: 60px; }
       #sc-sticky {
@@ -365,7 +363,7 @@ export default function Showcase() {
         height: auto !important;
         overflow: visible !important;
         justify-content: flex-start;
-        padding-top: 32px;
+        padding-top: 56px;
       }
       #sc-heading-block { padding: 0 40px; margin-bottom: 32px; }
       .sc-t-solid, .sc-t-ghost { font-size: clamp(56px, 9vw, 88px); }
@@ -398,13 +396,13 @@ export default function Showcase() {
 
     /* ════ MOBILE < 768px ══════════════════════════════════════════════ */
     @media (max-width: 767px) {
-      #sc-section { padding-bottom: 48px; }
+      #sc-section { padding-bottom: 32px; }
       #sc-sticky {
         position: relative !important;
         height: auto !important;
         overflow: visible !important;
         justify-content: flex-start;
-        padding-top: 24px;
+        padding-top: 32px;
       }
       #sc-heading-block { padding: 0 20px; margin-bottom: 24px; }
       #sc-title-row { flex-wrap: wrap; align-items: flex-end; gap: 0; row-gap: 2px; }
@@ -442,6 +440,9 @@ export default function Showcase() {
 
     /* ════ EXTRA-SMALL < 480px ════════════════════════════════════════ */
     @media (max-width: 479px) {
+      #sc-sticky {
+        padding-top: 60px;
+      }
       #sc-heading-block { padding: 0 16px; }
       #sc-track         { padding: 0 16px 16px; gap: 12px; }
       .sc-card-link     { width: 84vw; max-width: 300px; border-radius: 14px; }
@@ -459,7 +460,7 @@ export default function Showcase() {
       }
     }
 
-    /* ════ Scroll snap — mobile/tablet ════════════════════════════════ */
+    /* ════ Scroll snap - mobile/tablet ════════════════════════════════ */
     @media (max-width: 1023px) {
       #sc-overflow-clip { scroll-snap-type: x mandatory; }
       .sc-card-link     { scroll-snap-align: start; }
