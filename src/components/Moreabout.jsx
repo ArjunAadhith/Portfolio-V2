@@ -219,6 +219,14 @@ const MAAbout = memo(function MAAbout({ scroller }) {
    ══════════════════════════════════════════════════════════════════════════ */
 const JOBS = [
   {
+    logo:"https://pps.services.adobe.com/api/profile/AEB6666E5C7A04030A495C4F@AdobeID/image/0b38e040-4c81-45ca-a645-ef6b287f6f8c/276",
+    logoBg: "#fff", fallback: "Aspira Design",
+    role: "Creative Designer", company: "Aspira Design",
+    periodFull: "June - Present 2026", type: "Internship", index: "01",
+    tags: ["UI/UX", "Social Media Design", "Poster Design","Visual Design", "Usability Testing","Web Design"],
+    desc: "Designed creative posters, memes and web interfaces with a focus on UI/UX. Performed UX research and wireframing to improve usability and create impactful digital experiences.",
+  },
+  {
     logo:"https://yt3.googleusercontent.com/TRxQ1w3ovSWYSGEly2tQKIeMjdKp73U7F87w3jVfqH9n1LUXf8rdk7w-c4OJFMStP-BBYBlk8Qg=s900-c-k-c0x00ffffff-no-rj",
     logoBg: "#fff", fallback: "EMC",
     role: "UI/UX Designer", company: "Error Makes Clever",
