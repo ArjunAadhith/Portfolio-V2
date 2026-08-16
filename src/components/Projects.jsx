@@ -145,10 +145,6 @@ export default function Projects() {
         /* ─── Cursor Circle ─────────────────────────────── */
         .pj-cursor {
           position: absolute;
-          /* 
-            Positioned relative to card; translate3d centers the 96px circle
-            on the actual mouse coordinate. GPU composited layer.
-          */
           width: 96px;
           height: 96px;
           margin-left: -48px;
@@ -159,25 +155,18 @@ export default function Projects() {
           display: flex;
           align-items: center;
           justify-content: center;
-
-          /* mix-blend-mode: difference makes it dynamically invert any background */
           mix-blend-mode: difference;
           background: #ffffff;
-
-          /* scale + opacity driven by JS classes */
           opacity: 0;
           transform: translate3d(0px, 0px, 0) scale(0.4);
           transition:
             opacity  0.28s cubic-bezier(0.22, 1, 0.36, 1),
             transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-
-          /* Force GPU layer */
           will-change: transform, opacity;
         }
 
         .pj-cursor.pj-cursor--visible {
           opacity: 1;
-          /* Only scale driven here; translate3d set inline by RAF */
           transform: translate3d(var(--cx, 0px), var(--cy, 0px), 0) scale(1);
         }
 
@@ -246,12 +235,18 @@ export default function Projects() {
           height: 100vh;
         }
 
+        /*
+          FIX: increased card height (620px -> 700px) so desktop has more
+          room, and switched .pj-img below to object-fit: contain so the
+          screenshot is never cropped — the full image always shows, with
+          the card's black background filling any leftover space.
+        */
         .pj-card {
           position: absolute;
           width: 1078px;
-          height: 620px;
+          height: min(700px, calc(100vh - 60px));
           left: 50%;
-          top: 60px;
+          top: 20px;
           border-radius: 50px;
           background: #000;
           overflow: hidden;
@@ -272,7 +267,8 @@ export default function Projects() {
           display: block;
           width: 100%;
           height: 100%;
-          object-fit: cover;
+          object-fit: contain;   /* was: cover — this was cropping the screenshot */
+          object-position: center;
           pointer-events: none;
           user-select: none;
           -webkit-user-drag: none;
@@ -281,7 +277,7 @@ export default function Projects() {
         /* ════ TABLET LANDSCAPE 1024–1199 ════ */
         @media (min-width: 1024px) and (max-width: 1199px) {
           .pj-card {
-            width: calc(100vw - 48px); height: 560px;
+            width: calc(100vw - 48px); height: min(560px, calc(100vh - 90px));
             left: 24px; transform: translateY(100%); top: 70px;
           }
           .pj-card.entered { transform: translateY(0); }
@@ -389,13 +385,11 @@ function StickyCard({ card, index, onMobileTap }) {
   const cursorRef   = useRef(null);
   const [entered, setEntered] = useState(index === 0);
 
-  /* RAF lerp state — stored in refs, never triggers re-renders */
   const rafId    = useRef(null);
-  const current  = useRef({ x: 0, y: 0 });   // smoothed position
-  const target   = useRef({ x: 0, y: 0 });   // raw mouse position
+  const current  = useRef({ x: 0, y: 0 });
+  const target   = useRef({ x: 0, y: 0 });
   const isHover  = useRef(false);
 
-  /* ── Intersection observer (card reveal) ── */
   useEffect(() => {
     if (index === 0) return;
     const obs = new IntersectionObserver(
@@ -406,12 +400,10 @@ function StickyCard({ card, index, onMobileTap }) {
     return () => obs.disconnect();
   }, [index]);
 
-  /* ── RAF loop: lerp current → target every frame ── */
   const tick = useCallback(() => {
     const el = cursorRef.current;
     if (!el) return;
 
-    /* Easing factor: 0.10 = very smooth/dreamy, 0.18 = snappy-smooth */
     const EASE = 0.13;
     current.current.x = lerp(current.current.x, target.current.x, EASE);
     current.current.y = lerp(current.current.y, target.current.y, EASE);
@@ -419,16 +411,11 @@ function StickyCard({ card, index, onMobileTap }) {
     const cx = current.current.x;
     const cy = current.current.y;
 
-    /*
-      We set CSS custom properties so the transition on .pj-cursor handles
-      the scale animation, while RAF handles translate3d for zero-jitter.
-    */
     el.style.transform = `translate3d(${cx}px, ${cy}px, 0) scale(${isHover.current ? 1 : 0.4})`;
 
     rafId.current = requestAnimationFrame(tick);
   }, []);
 
-  /* Start / stop RAF based on hover */
   const startRAF = useCallback(() => {
     if (!rafId.current) rafId.current = requestAnimationFrame(tick);
   }, [tick]);
@@ -437,14 +424,11 @@ function StickyCard({ card, index, onMobileTap }) {
     if (rafId.current) { cancelAnimationFrame(rafId.current); rafId.current = null; }
   }, []);
 
-  /* Cleanup on unmount */
   useEffect(() => () => stopRAF(), [stopRAF]);
 
-  /* ── Mouse events ── */
   const onEnter = useCallback((e) => {
     if (!cardRef.current) return;
     const r = cardRef.current.getBoundingClientRect();
-    /* Snap current to mouse instantly on enter to avoid a "slide from corner" */
     current.current = { x: e.clientX - r.left, y: e.clientY - r.top };
     target.current  = { x: e.clientX - r.left, y: e.clientY - r.top };
 
@@ -473,7 +457,6 @@ function StickyCard({ card, index, onMobileTap }) {
     stopRAF();
   }, [stopRAF]);
 
-  /* ── Click ── */
   const handleClick = useCallback(() => {
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
     if (isMobile && index < 3) { onMobileTap(); }
@@ -490,7 +473,6 @@ function StickyCard({ card, index, onMobileTap }) {
         onMouseLeave={onLeave}
         onClick={handleClick}
       >
-        {/* ── Premium cursor circle ── */}
         <div
           ref={cursorRef}
           className="pj-cursor"
