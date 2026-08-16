@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import KfcCaseStudyPage    from "./KfcCaseStudyPage.jsx";
 import CaseStudyPage       from "./Casestudypage.jsx";
 import SwayamCaseStudyPage from "./SwayamCaseStudyPage.jsx";
 import StucorCaseStudyPage from "./StucorCaseStudyPage.jsx";
 import BuildoCaseStudyPage from "./BuildoCaseStudyPage.jsx";
-import KfcCaseStudyPage    from "./KfcCaseStudyPage.jsx";
 
 /* ─── Lerp helper ───────────────────────────────────────────────────── */
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -362,11 +362,11 @@ export default function CaseStudySection() {
     if (clickedIdx !== activeIdx) {
       goTo(clickedIdx);
     } else {
-      if (clickedIdx === 0) setBuildoOpen(true);
-      if (clickedIdx === 1) setTnstcOpen(true);
-      if (clickedIdx === 2) setSwayamOpen(true);
-      if (clickedIdx === 3) setStucorOpen(true);
-      if (clickedIdx === 4) setKfcOpen(true);
+      if (clickedIdx === 0) setKfcOpen(true);
+      if (clickedIdx === 1) setBuildoOpen(true);
+      if (clickedIdx === 2) setTnstcOpen(true);
+      if (clickedIdx === 3) setSwayamOpen(true);
+      if (clickedIdx === 4) setStucorOpen(true);
     }
   };
 
@@ -535,6 +535,10 @@ export default function CaseStudySection() {
     <>
       <style>{styles}</style>
 
+      <KfcCaseStudyPage
+        isOpen={kfcOpen}
+        onClose={() => setKfcOpen(false)}
+      />
       <BuildoCaseStudyPage
         isOpen={buildoOpen}
         onClose={() => setBuildoOpen(false)}
@@ -550,10 +554,6 @@ export default function CaseStudySection() {
       <StucorCaseStudyPage
         isOpen={stucorOpen}
         onClose={() => setStucorOpen(false)}
-      />
-      <KfcCaseStudyPage
-        isOpen={kfcOpen}
-        onClose={() => setKfcOpen(false)}
       />
 
       <section className="cs-section">
