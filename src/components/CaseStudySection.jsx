@@ -3,6 +3,7 @@ import CaseStudyPage       from "./Casestudypage.jsx";
 import SwayamCaseStudyPage from "./SwayamCaseStudyPage.jsx";
 import StucorCaseStudyPage from "./StucorCaseStudyPage.jsx";
 import BuildoCaseStudyPage from "./BuildoCaseStudyPage.jsx";
+import KfcCaseStudyPage    from "./KfcCaseStudyPage.jsx";
 
 /* ─── Lerp helper ───────────────────────────────────────────────────── */
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -260,9 +261,10 @@ const CARDS = [
   { src: "/case study/TNSTC Case Study.png",   alt: "TNSTC Bus Booking Redesign" },
   { src: "/case study/Swayam Case Study.png",  alt: "Swayam Case Study"          },
   { src: "/case study/Stucor Case Study.png",  alt: "Stucor Case Study"          },
+  { src: "/case study/KFC Case Study.png",     alt: "KFC Case Study"             },
 ];
 
-const N = CARDS.length; // 4
+const N = CARDS.length; // 5
 
 export default function CaseStudySection() {
   const headerRef = useRef(null);
@@ -271,31 +273,38 @@ export default function CaseStudySection() {
   // ── Fixed-count refs (hooks called unconditionally at top level) ──
   const cardRef0 = useRef(null); const cardRef1 = useRef(null);
   const cardRef2 = useRef(null); const cardRef3 = useRef(null);
-  const cardRefs = [cardRef0, cardRef1, cardRef2, cardRef3];
+  const cardRef4 = useRef(null);
+  const cardRefs = [cardRef0, cardRef1, cardRef2, cardRef3, cardRef4];
 
   const cursorRef0 = useRef(null); const cursorRef1 = useRef(null);
   const cursorRef2 = useRef(null); const cursorRef3 = useRef(null);
-  const cursorRefs = [cursorRef0, cursorRef1, cursorRef2, cursorRef3];
+  const cursorRef4 = useRef(null);
+  const cursorRefs = [cursorRef0, cursorRef1, cursorRef2, cursorRef3, cursorRef4];
 
   const rafId0 = useRef(null); const rafId1 = useRef(null);
   const rafId2 = useRef(null); const rafId3 = useRef(null);
-  const rafIds = [rafId0, rafId1, rafId2, rafId3];
+  const rafId4 = useRef(null);
+  const rafIds = [rafId0, rafId1, rafId2, rafId3, rafId4];
 
   const current0 = useRef({ x: 0, y: 0 }); const current1 = useRef({ x: 0, y: 0 });
   const current2 = useRef({ x: 0, y: 0 }); const current3 = useRef({ x: 0, y: 0 });
-  const currents = [current0, current1, current2, current3];
+  const current4 = useRef({ x: 0, y: 0 });
+  const currents = [current0, current1, current2, current3, current4];
 
   const target0 = useRef({ x: 0, y: 0 }); const target1 = useRef({ x: 0, y: 0 });
   const target2 = useRef({ x: 0, y: 0 }); const target3 = useRef({ x: 0, y: 0 });
-  const targets = [target0, target1, target2, target3];
+  const target4 = useRef({ x: 0, y: 0 });
+  const targets = [target0, target1, target2, target3, target4];
 
   const isHover0 = useRef(false); const isHover1 = useRef(false);
   const isHover2 = useRef(false); const isHover3 = useRef(false);
-  const isHovers = [isHover0, isHover1, isHover2, isHover3];
+  const isHover4 = useRef(false);
+  const isHovers = [isHover0, isHover1, isHover2, isHover3, isHover4];
 
   const segFill0 = useRef(null); const segFill1 = useRef(null);
   const segFill2 = useRef(null); const segFill3 = useRef(null);
-  const segmentFillRefs = [segFill0, segFill1, segFill2, segFill3];
+  const segFill4 = useRef(null);
+  const segmentFillRefs = [segFill0, segFill1, segFill2, segFill3, segFill4];
 
   const touchStart       = useRef(null);
   const mouseStart       = useRef(null);
@@ -309,6 +318,7 @@ export default function CaseStudySection() {
   const [tnstcOpen,   setTnstcOpen]   = useState(false);
   const [swayamOpen,  setSwayamOpen]  = useState(false);
   const [stucorOpen,  setStucorOpen]  = useState(false);
+  const [kfcOpen,     setKfcOpen]     = useState(false);
 
   const applyTransforms = useCallback((idx, animate) => {
     const states = buildStates(getOffset(), N);
@@ -356,6 +366,7 @@ export default function CaseStudySection() {
       if (clickedIdx === 1) setTnstcOpen(true);
       if (clickedIdx === 2) setSwayamOpen(true);
       if (clickedIdx === 3) setStucorOpen(true);
+      if (clickedIdx === 4) setKfcOpen(true);
     }
   };
 
@@ -539,6 +550,10 @@ export default function CaseStudySection() {
       <StucorCaseStudyPage
         isOpen={stucorOpen}
         onClose={() => setStucorOpen(false)}
+      />
+      <KfcCaseStudyPage
+        isOpen={kfcOpen}
+        onClose={() => setKfcOpen(false)}
       />
 
       <section className="cs-section">
