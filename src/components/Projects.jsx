@@ -243,7 +243,7 @@ export default function Projects() {
         */
         .pj-card {
           position: absolute;
-          width: 1078px;
+          width: 1060px;
           height: min(700px, calc(100vh - 60px));
           left: 50%;
           top: 20px;
