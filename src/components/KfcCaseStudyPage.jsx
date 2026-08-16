@@ -236,7 +236,7 @@ const CSS = `
     z-index: 100000;
     overflow-y: auto;
     overflow-x: hidden;
-    background: #f4f4f4;
+    background: #E4002B;          /* KFC red */
     -webkit-font-smoothing: antialiased;
     scroll-behavior: smooth;
   }
@@ -279,11 +279,11 @@ const CSS = `
   .kfc-placeholder {
     width: 100%;
     aspect-ratio: 16 / 7;
-    background: #e2e2e6;
+    background: rgba(255,255,255,0.12);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(0,0,0,0.22);
+    color: rgba(255,255,255,0.55);
   }
 
   .kfc-footer {
@@ -298,7 +298,7 @@ const CSS = `
     width: 100%;
     max-width: 1100px;
     height: 1px;
-    background: rgba(0,0,0,0.1);
+    background: rgba(255,255,255,0.22);
   }
 
   .kfc-back-btn {
@@ -309,8 +309,8 @@ const CSS = `
     height: 52px;
     padding: 0 10px 0 28px;
     background: transparent;
-    color: #1A1A1A;
-    border: 1.5px solid #C4C4C4;
+    color: #ffffff;
+    border: 1.5px solid rgba(255,255,255,0.55);
     border-radius: 100px;
     font-size: 15px;
     font-weight: 500;
@@ -328,14 +328,14 @@ const CSS = `
     content: "";
     position: absolute;
     inset: 0;
-    background: #111111;
+    background: #ffffff;
     border-radius: inherit;
     transform: translateY(102%);
     transition: transform 0.46s cubic-bezier(0.16,1,0.3,1);
     z-index: 0;
   }
   .kfc-back-btn:hover::before { transform: translateY(0); }
-  .kfc-back-btn:hover { color: #ffffff; border-color: #111111; }
+  .kfc-back-btn:hover { color: #E4002B; border-color: #ffffff; }
   .kfc-back-btn:active { transform: scale(0.97); }
 
   .kfc-back-label {
@@ -351,7 +351,7 @@ const CSS = `
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: rgba(0,0,0,0.07);
+    background: rgba(255,255,255,0.14);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -361,7 +361,7 @@ const CSS = `
       transform   0.22s cubic-bezier(0.22,1,0.36,1);
   }
   .kfc-back-btn:hover .kfc-back-arrow {
-    background: rgba(255,255,255,0.15);
+    background: rgba(228,0,43,0.12);
     transform: translateX(-2px);
   }
 

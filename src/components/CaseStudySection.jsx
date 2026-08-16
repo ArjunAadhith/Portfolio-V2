@@ -257,11 +257,11 @@ const DRAG_CANCEL_THRESHOLD = 6;
 const AUTO_ADVANCE_MS       = 5000;
 
 const CARDS = [
+  { src: "/case study/KFC Case Study.png",     alt: "KFC Case Study"             },
   { src: "/case study/Buildo Case Study.png",  alt: "Buildo Case Study"          },
   { src: "/case study/TNSTC Case Study.png",   alt: "TNSTC Bus Booking Redesign" },
   { src: "/case study/Swayam Case Study.png",  alt: "Swayam Case Study"          },
   { src: "/case study/Stucor Case Study.png",  alt: "Stucor Case Study"          },
-  { src: "/case study/KFC Case Study.png",     alt: "KFC Case Study"             },
 ];
 
 const N = CARDS.length; // 5
