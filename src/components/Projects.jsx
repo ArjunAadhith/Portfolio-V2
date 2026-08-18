@@ -304,7 +304,7 @@ export default function Projects() {
           .pj-heading { margin-top: 14px; white-space: normal; text-align: center; padding: 0 20px 24px; font-size: clamp(28px,8vw,42px); letter-spacing: -0.032em; line-height: 1.08; }
           #pj-outer   { height: ${N * 38}vh; }
           .pj-wrapper  { height: 38vh; }
-          .pj-card { width: calc(100vw - 24px); height: auto; aspect-ratio: 16/10; left: 12px; top: 50%; margin-top: calc((100vw - 24px) * -5 / 16); border-radius: 22px; transform: translateY(100%); cursor: pointer; }
+          .pj-card { width: calc(100vw - 24px); height: auto; left: 12px; top: 50%; margin-top: calc((100vw - 24px) * -5 / 16); border-radius: 22px; transform: translateY(100%); cursor: pointer; }
           .pj-card.entered { transform: translateY(0); }
           .pj-card.init    { transform: translateY(0); }
           .pj-cursor { display: none; }
