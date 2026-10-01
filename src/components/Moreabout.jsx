@@ -222,7 +222,7 @@ const JOBS = [
     logo:"https://pps.services.adobe.com/api/profile/AEB6666E5C7A04030A495C4F@AdobeID/image/0b38e040-4c81-45ca-a645-ef6b287f6f8c/276",
     logoBg: "#fff", fallback: "Aspira Design",
     role: "Creative Designer", company: "Aspira Design",
-    periodFull: "June - Present 2026", type: "Internship", index: "07",
+    periodFull: "June - Sep 2026", type: "Internship", index: "07",
     tags: ["UI/UX", "Social Media Design", "Poster Design","Visual Design", "Usability Testing","Web Design"],
     desc: "Designed creative posters, memes and web interfaces with a focus on UI/UX. Performed UX research and wireframing to improve usability and create impactful digital experiences.",
   },
