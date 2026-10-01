@@ -220,8 +220,7 @@ const MAAbout = memo(function MAAbout({ scroller }) {
 const JOBS = [
  {
   logo: "https://media.licdn.com/dms/image/v2/D560BAQGOmb_aGHay2g/company-logo_200_200/B56ZfkLtjtGQAc-/0/1751879965341/etherealdesign_logo?e=2147483647&v=beta&t=v15AMZd367SrblOzKWhyoRsGwdWA3YGH5Z711Q3pPwU",
-  logoBg: "#fff",
-  fallback: "Ethereal Design",
+  logoBg: "#fff", fallback: "Ethereal Design",
   role: "UI/UX Designer",company: "Ethereal Design",
   periodFull: "Oct 2026 - Present",type: "Internship",index: "08",
   tags: [
@@ -229,6 +228,12 @@ const JOBS = [
   ],
   desc: "Designed user-centered web and mobile experiences for real-world products, focusing on UX research, information architecture, wireframing, prototyping, and visual design to create clear and engaging digital experiences."
 },
+{ logo:"https://pps.services.adobe.com/api/profile/AEB6666E5C7A04030A495C4F@AdobeID/image/0b38e040-4c81-45ca-a645-ef6b287f6f8c/276", 
+  logoBg: "#fff", fallback: "Aspira Design", 
+  role: "Creative Designer", company: "Aspira Design", 
+  periodFull: "June - Sep 2026", type: "Internship", index: "07", 
+  tags: ["UI/UX", "Social Media Design", "Poster Design","Visual Design", "Usability Testing","Web Design"], 
+  desc: "Designed creative posters, memes and web interfaces with a focus on UI/UX. Performed UX research and wireframing to improve usability and create impactful digital experiences.", },
   {
     logo:"https://media.licdn.com/dms/image/v2/D560BAQE5Fe4--eCIkQ/company-logo_200_200/company-logo_200_200/0/1721287207246/duhzine_it_solutions_logo?e=2147483647&v=beta&t=jqJTIaPBKygY_hfv0ysW2AyxJoaukNsoFBPioDNfoE4",
     logoBg: "#fff", fallback: "Duhzine IT Solutions",
