@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import PgianCaseStudyPage  from "./PgianCaseStudyPage.jsx";
 import KfcCaseStudyPage    from "./KfcCaseStudyPage.jsx";
 import CaseStudyPage       from "./Casestudypage.jsx";
 import SwayamCaseStudyPage from "./SwayamCaseStudyPage.jsx";
@@ -257,6 +258,7 @@ const DRAG_CANCEL_THRESHOLD = 6;
 const AUTO_ADVANCE_MS       = 5000;
 
 const CARDS = [
+  { src: "/case study/Pgian Case Study.png",   alt: "Pgian Case Study"           },
   { src: "/case study/KFC Case Study.png",     alt: "KFC Case Study"             },
   { src: "/case study/Buildo Case Study.png",  alt: "Buildo Case Study"          },
   { src: "/case study/TNSTC Case Study.png",   alt: "TNSTC Bus Booking Redesign" },
@@ -264,7 +266,7 @@ const CARDS = [
   { src: "/case study/Stucor Case Study.png",  alt: "Stucor Case Study"          },
 ];
 
-const N = CARDS.length; // 5
+const N = CARDS.length; // 6
 
 export default function CaseStudySection() {
   const headerRef = useRef(null);
@@ -273,38 +275,38 @@ export default function CaseStudySection() {
   // ── Fixed-count refs (hooks called unconditionally at top level) ──
   const cardRef0 = useRef(null); const cardRef1 = useRef(null);
   const cardRef2 = useRef(null); const cardRef3 = useRef(null);
-  const cardRef4 = useRef(null);
-  const cardRefs = [cardRef0, cardRef1, cardRef2, cardRef3, cardRef4];
+  const cardRef4 = useRef(null); const cardRef5 = useRef(null);
+  const cardRefs = [cardRef0, cardRef1, cardRef2, cardRef3, cardRef4, cardRef5];
 
   const cursorRef0 = useRef(null); const cursorRef1 = useRef(null);
   const cursorRef2 = useRef(null); const cursorRef3 = useRef(null);
-  const cursorRef4 = useRef(null);
-  const cursorRefs = [cursorRef0, cursorRef1, cursorRef2, cursorRef3, cursorRef4];
+  const cursorRef4 = useRef(null); const cursorRef5 = useRef(null);
+  const cursorRefs = [cursorRef0, cursorRef1, cursorRef2, cursorRef3, cursorRef4, cursorRef5];
 
   const rafId0 = useRef(null); const rafId1 = useRef(null);
   const rafId2 = useRef(null); const rafId3 = useRef(null);
-  const rafId4 = useRef(null);
-  const rafIds = [rafId0, rafId1, rafId2, rafId3, rafId4];
+  const rafId4 = useRef(null); const rafId5 = useRef(null);
+  const rafIds = [rafId0, rafId1, rafId2, rafId3, rafId4, rafId5];
 
   const current0 = useRef({ x: 0, y: 0 }); const current1 = useRef({ x: 0, y: 0 });
   const current2 = useRef({ x: 0, y: 0 }); const current3 = useRef({ x: 0, y: 0 });
-  const current4 = useRef({ x: 0, y: 0 });
-  const currents = [current0, current1, current2, current3, current4];
+  const current4 = useRef({ x: 0, y: 0 }); const current5 = useRef({ x: 0, y: 0 });
+  const currents = [current0, current1, current2, current3, current4, current5];
 
   const target0 = useRef({ x: 0, y: 0 }); const target1 = useRef({ x: 0, y: 0 });
   const target2 = useRef({ x: 0, y: 0 }); const target3 = useRef({ x: 0, y: 0 });
-  const target4 = useRef({ x: 0, y: 0 });
-  const targets = [target0, target1, target2, target3, target4];
+  const target4 = useRef({ x: 0, y: 0 }); const target5 = useRef({ x: 0, y: 0 });
+  const targets = [target0, target1, target2, target3, target4, target5];
 
   const isHover0 = useRef(false); const isHover1 = useRef(false);
   const isHover2 = useRef(false); const isHover3 = useRef(false);
-  const isHover4 = useRef(false);
-  const isHovers = [isHover0, isHover1, isHover2, isHover3, isHover4];
+  const isHover4 = useRef(false); const isHover5 = useRef(false);
+  const isHovers = [isHover0, isHover1, isHover2, isHover3, isHover4, isHover5];
 
   const segFill0 = useRef(null); const segFill1 = useRef(null);
   const segFill2 = useRef(null); const segFill3 = useRef(null);
-  const segFill4 = useRef(null);
-  const segmentFillRefs = [segFill0, segFill1, segFill2, segFill3, segFill4];
+  const segFill4 = useRef(null); const segFill5 = useRef(null);
+  const segmentFillRefs = [segFill0, segFill1, segFill2, segFill3, segFill4, segFill5];
 
   const touchStart       = useRef(null);
   const mouseStart       = useRef(null);
@@ -314,11 +316,12 @@ export default function CaseStudySection() {
   const sectionInViewRef = useRef(false);
 
   const [activeIdx,   setActiveIdx]   = useState(0);
+  const [pgianOpen,   setPgianOpen]   = useState(false);
+  const [kfcOpen,     setKfcOpen]     = useState(false);
   const [buildoOpen,  setBuildoOpen]  = useState(false);
   const [tnstcOpen,   setTnstcOpen]   = useState(false);
   const [swayamOpen,  setSwayamOpen]  = useState(false);
   const [stucorOpen,  setStucorOpen]  = useState(false);
-  const [kfcOpen,     setKfcOpen]     = useState(false);
 
   const applyTransforms = useCallback((idx, animate) => {
     const states = buildStates(getOffset(), N);
@@ -362,11 +365,12 @@ export default function CaseStudySection() {
     if (clickedIdx !== activeIdx) {
       goTo(clickedIdx);
     } else {
-      if (clickedIdx === 0) setKfcOpen(true);
-      if (clickedIdx === 1) setBuildoOpen(true);
-      if (clickedIdx === 2) setTnstcOpen(true);
-      if (clickedIdx === 3) setSwayamOpen(true);
-      if (clickedIdx === 4) setStucorOpen(true);
+      if (clickedIdx === 0) setPgianOpen(true);
+      if (clickedIdx === 1) setKfcOpen(true);
+      if (clickedIdx === 2) setBuildoOpen(true);
+      if (clickedIdx === 3) setTnstcOpen(true);
+      if (clickedIdx === 4) setSwayamOpen(true);
+      if (clickedIdx === 5) setStucorOpen(true);
     }
   };
 
@@ -535,6 +539,10 @@ export default function CaseStudySection() {
     <>
       <style>{styles}</style>
 
+      <PgianCaseStudyPage
+        isOpen={pgianOpen}
+        onClose={() => setPgianOpen(false)}
+      />
       <KfcCaseStudyPage
         isOpen={kfcOpen}
         onClose={() => setKfcOpen(false)}
